@@ -93,6 +93,8 @@
 #include "VectorMagnitudeAux.h"
 #include "ConstantScalarAux.h"
 #include "QuotientAux.h"
+#include "XFEMVolFracAux.h"
+#include "XFEMCutPlaneAux.h"
 #include "NormalizationAux.h"
 #include "VariableGradientComponent.h"
 #include "ParsedAux.h"
@@ -464,6 +466,8 @@ registerObjects(Factory & factory)
   registerAux(VectorMagnitudeAux);
   registerAux(ConstantScalarAux);
   registerAux(QuotientAux);
+  registerAux(XFEMVolFracAux);
+  registerAux(XFEMCutPlaneAux);
   registerAux(NormalizationAux);
   registerAux(FunctionScalarAux);
   registerAux(VariableGradientComponent);
