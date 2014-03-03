@@ -10,6 +10,11 @@
 #include "Diffusion.h"
 #include "Material.h"
 
+namespace libMesh
+{
+class XFEM;
+}
+
 /**
  * Note: This class is named HeatConductionKernel instead of HeatConduction
  * to avoid a class with the namespace HeatConduction.  It is registered
@@ -37,6 +42,8 @@ private:
   const unsigned _dim;
   MaterialProperty<Real> & _diffusion_coefficient;
   MaterialProperty<Real> * const _diffusion_coefficient_dT;
+  bool _has_xfem_volfrac;
+  VariableValue & _xfem_volfrac;
 
 };
 #endif //HEATCONDUCTIONKERNEL_H
