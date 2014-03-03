@@ -19,6 +19,7 @@ InputParameters validParams<StressDivergence>()
   params.addCoupledVar("disp_z", "The z displacement");
   params.addCoupledVar("temp", "The temperature");
   params.addParam<std::string>("appended_property_name", "", "Name appended to material properties to make them unique");
+  params.addCoupledVar("xfem_volfrac", "Coupled XFEM Volume Fraction");
 
   params.set<bool>("use_displaced_mesh") = true;
 
@@ -39,19 +40,29 @@ StressDivergence::StressDivergence(const std::string & name, InputParameters par
    _xdisp_var(_xdisp_coupled ? coupled("disp_x") : 0),
    _ydisp_var(_ydisp_coupled ? coupled("disp_y") : 0),
    _zdisp_var(_zdisp_coupled ? coupled("disp_z") : 0),
-   _temp_var(_temp_coupled ? coupled("temp") : 0)
+   _temp_var(_temp_coupled ? coupled("temp") : 0),
+   _has_xfem_volfrac(isCoupled("xfem_volfrac")),
+   _xfem_volfrac(_has_xfem_volfrac ? coupledValue("xfem_volfrac") : _zero)
 {}
 
 Real
 StressDivergence::computeQpResidual()
 {
-  return _stress[_qp].rowDot(_component, _grad_test[_i][_qp]);
+  Real r=_stress[_qp].rowDot(_component, _grad_test[_i][_qp]);
+  if (_has_xfem_volfrac)
+  {
+    r*=_xfem_volfrac[_qp];
+  }
+  return r;
 }
 
 Real
 StressDivergence::computeQpJacobian()
 {
-  return _Jacobian_mult[_qp].stiffness( _component, _component, _grad_test[_i][_qp], _grad_phi[_j][_qp] );
+  Real jac = _Jacobian_mult[_qp].stiffness( _component, _component, _grad_test[_i][_qp], _grad_phi[_j][_qp] );
+  if (_has_xfem_volfrac)
+    jac*=_xfem_volfrac[_qp];
+  return jac;
 }
 
 Real
@@ -77,16 +88,16 @@ StressDivergence::computeQpOffDiagJacobian(unsigned int jvar)
     active = true;
   }
 
+  Real jac=0.0;
   if ( active )
   {
-    return _Jacobian_mult[_qp].stiffness( _component, coupled_component,
-                                          _grad_test[_i][_qp], _grad_phi[_j][_qp] );
+    jac = _Jacobian_mult[_qp].stiffness( _component, coupled_component,
+                                         _grad_test[_i][_qp], _grad_phi[_j][_qp] );
   }
-
-  if ( _temp_coupled && jvar == _temp_var )
+  else if ( _temp_coupled && jvar == _temp_var )
   {
-    return _d_stress_dT[_qp].rowDot(_component, _grad_test[_i][_qp]) * _phi[_j][_qp];
+    jac = _d_stress_dT[_qp].rowDot(_component, _grad_test[_i][_qp]) * _phi[_j][_qp];
   }
 
-  return 0;
+  return jac;
 }
