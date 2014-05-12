@@ -3644,17 +3644,13 @@ FEProblem::adaptMesh()
   _console << std::flush;
 }
 
-void
+bool
 FEProblem::xfemUpdateMesh()
 {
-  unsigned int cycles_per_step = 1;
-  for (unsigned int i=0; i < cycles_per_step; ++i)
-  {
-    if (_xfem.update(_time))
-    {
-      meshChanged();
-    }
-  }
+  bool updated = _xfem.update(_time);
+  if (updated)
+    meshChanged();
+  return updated;
 }
 #endif //LIBMESH_ENABLE_AMR
 
