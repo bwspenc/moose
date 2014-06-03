@@ -137,7 +137,7 @@ FEProblem::FEProblem(const std::string & name, InputParameters parameters) :
 #ifdef LIBMESH_ENABLE_AMR
     _adaptivity(*this),
 #endif
-    _xfem(&_mesh.getMesh()),
+    _xfem(_material_data, &_mesh.getMesh()),
     _displaced_mesh(NULL),
     _displaced_problem(NULL),
     _geometric_search_data(*this, _mesh),
