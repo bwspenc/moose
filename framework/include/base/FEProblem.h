@@ -982,6 +982,7 @@ protected:
 #endif
 
   XFEM _xfem;
+  std::string _XFEM_cut_type;
 
   // Displaced mesh /////
   MooseMesh * _displaced_mesh;
