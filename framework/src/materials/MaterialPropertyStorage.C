@@ -326,6 +326,12 @@ MaterialPropertyStorage::copy(MaterialData & material_data, const Elem & elem_to
   }
 }
 
+unsigned int
+MaterialPropertyStorage::getPropsSize(const Elem & elem, unsigned int side)
+{
+  return props()[&elem][side].size();
+}
+
 void
 MaterialPropertyStorage::swap(MaterialData & material_data, const Elem & elem, unsigned int side)
 {

@@ -129,6 +129,7 @@ public:
    */
   void copy(MaterialData & material_data, const Elem & elem_to, const Elem & elem_from, unsigned int side, unsigned int n_qpoints);
 
+  unsigned int getPropsSize(const Elem & elem, unsigned int side);
   /**
    * Swap (shallow copy) material properties in MaterialData and MaterialPropertyStorage
    * Thread safe

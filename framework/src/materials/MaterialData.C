@@ -63,6 +63,15 @@ MaterialData::copy(const Elem & elem_to, const Elem & elem_from, unsigned int si
   _storage.copy(*this, elem_to, elem_from, side, _n_qpoints);
 }
 
+bool
+MaterialData::hasSideStateData(const Elem & elem, unsigned int side) const
+{
+  if (_storage.getPropsSize(elem, side) > 0)
+    return true;
+  else
+    return false;
+}
+
 void
 MaterialData::swap(const Elem & elem, unsigned int side/* = 0*/)
 {

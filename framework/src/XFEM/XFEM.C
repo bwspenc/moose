@@ -662,6 +662,14 @@ XFEM::cut_mesh_with_efa()
     //TODO: The 0 here is the thread ID.  Need to sort out how to do this correctly
     //TODO: Also need to copy surface and neighbor material data
     _material_data[0]->copy(*libmesh_elem, *parent_elem, 0);
+    for (unsigned int side = 1; side <= libmesh_elem->n_sides(); ++side)
+    {
+      if (_material_data[0]->hasSideStateData(*parent_elem, side))
+      {
+//      TODO: this is not implemented at all - something must be wrong
+        _material_data[0]->copy(*libmesh_elem, *parent_elem, side);
+      }
+    }
 
     std::cout<<"XFEM added elem "<<libmesh_elem->id()+1<<std::endl;
 
@@ -783,6 +791,15 @@ XFEM::cut_mesh_with_efa()
     }
   }
 
+  // DEBUG
+/*  MeshBase::element_iterator       elem_it  = _mesh->elements_begin();
+  const MeshBase::element_iterator elem_end = _mesh->elements_end();
+  for ( elem_it = _mesh->elements_begin(); elem_it != elem_end; ++elem_it)
+  {
+    Elem *elem = *elem_it;
+    std::cout << "elem = " << elem->id() << ", material data size = " 
+              << _material_data[0]->getPropsOldSize(*elem, 0) << std::endl;
+  }*/
   //store virtual nodes
   //store cut edge info
 
