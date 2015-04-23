@@ -136,9 +136,6 @@ XFEM::update(Real time)
   bool mesh_changed = false;
 
   build_efa_mesh();
-  // DEBUG
-//  std::cout << "***** after efa mesh built *****" << std::endl;
-//  _efa_mesh.printMesh();
   if (mark_cut_edges(time))
   {
     mesh_changed = cut_mesh_with_efa();
@@ -791,15 +788,6 @@ XFEM::cut_mesh_with_efa()
     }
   }
 
-  // DEBUG
-/*  MeshBase::element_iterator       elem_it  = _mesh->elements_begin();
-  const MeshBase::element_iterator elem_end = _mesh->elements_end();
-  for ( elem_it = _mesh->elements_begin(); elem_it != elem_end; ++elem_it)
-  {
-    Elem *elem = *elem_it;
-    std::cout << "elem = " << elem->id() << ", material data size = " 
-              << _material_data[0]->getPropsOldSize(*elem, 0) << std::endl;
-  }*/
   //store virtual nodes
   //store cut edge info
 
