@@ -33,7 +33,7 @@ InputParameters validParams<SolidMechanicsAction>()
   params.addParam<std::vector<AuxVariableName> >("diag_save_in_disp_y", "Auxiliary variables to save the y displacement diagonal preconditioner terms.");
   params.addParam<std::vector<AuxVariableName> >("diag_save_in_disp_z", "Auxiliary variables to save the z displacement diagonal preconditioner terms.");
   params.addParam<std::vector<AuxVariableName> >("diag_save_in_disp_r", "Auxiliary variables to save the r displacement diagonal preconditioner terms.");
-  params.addParam<AuxVariableName>("xfem_volfrac", "Coupled XFEM Volume Fraction");
+  params.addParam<std::string>("xfem_qrule", "volfrac", "XFEM quadrature rule to use");
   return params;
 }
 
@@ -217,13 +217,7 @@ SolidMechanicsAction::act()
       params.set<std::vector<SubdomainName> >("block") = blocks;
       params.set<std::vector<AuxVariableName> >("save_in") = save_in[i];
       params.set<std::vector<AuxVariableName> >("diag_save_in") = diag_save_in[i];
-      params.set<std::string>("appended_property_name") = getParam<std::string>("appended_property_name");
-      if(isParamValid("xfem_volfrac"))
-      {
-        std::vector<VariableName>volfrac_var;
-        volfrac_var.push_back(getParam<AuxVariableName>("xfem_volfrac"));
-        params.set<std::vector<VariableName> >("xfem_volfrac") = volfrac_var;
-      }
+      params.set<std::string>("xfem_qrule") = getParam<std::string>("xfem_qrule");
 
       _problem->addKernel(type, name.str(), params);
     }
