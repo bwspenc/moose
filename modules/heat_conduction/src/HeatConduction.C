@@ -16,7 +16,6 @@ InputParameters validParams<HeatConductionKernel>()
   params.addParam<std::string>("diffusion_coefficient_name", "thermal_conductivity", "Property name of the diffusivity (Default: thermal_conductivity");
   params.addParam<std::string>("diffusion_coefficient_dT_name", "thermal_conductivity_dT", "Property name of the derivative of the diffusivity with respect to the variable (Default: thermal_conductivity_dT");
   params.set<bool>("use_displaced_mesh") = true;
-  params.addCoupledVar("xfem_volfrac", "Coupled XFEM Volume Fraction");
   return params;
 }
 
@@ -24,9 +23,7 @@ HeatConductionKernel::HeatConductionKernel(const std::string & name, InputParame
   Diffusion(name, parameters),
   _dim(_subproblem.mesh().dimension()),
   _diffusion_coefficient(getMaterialProperty<Real>(getParam<std::string>("diffusion_coefficient_name"))),
-  _diffusion_coefficient_dT(hasMaterialProperty<Real>(getParam<std::string>("diffusion_coefficient_dT_name")) ? &getMaterialProperty<Real>(getParam<std::string>("diffusion_coefficient_dT_name")) : NULL),
-  _has_xfem_volfrac(isCoupled("xfem_volfrac")),
-  _xfem_volfrac(_has_xfem_volfrac ? coupledValue("xfem_volfrac") : _zero)
+  _diffusion_coefficient_dT(hasMaterialProperty<Real>(getParam<std::string>("diffusion_coefficient_dT_name")) ? &getMaterialProperty<Real>(getParam<std::string>("diffusion_coefficient_dT_name")) : NULL)
 {
 }
 
@@ -51,8 +48,6 @@ HeatConductionKernel::computeQpResidual()
 //   }
 //   return r;
   r = _diffusion_coefficient[_qp]*Diffusion::computeQpResidual();
-  if (_has_xfem_volfrac)
-    r*=_xfem_volfrac[_qp];
   return r;
 }
 
@@ -65,7 +60,5 @@ HeatConductionKernel::computeQpJacobian()
   {
     jac += (*_diffusion_coefficient_dT)[_qp] * _phi[_j][_qp] * Diffusion::computeQpResidual();
   }
-  if (_has_xfem_volfrac)
-    jac*=_xfem_volfrac[_qp];
   return jac;
 }
