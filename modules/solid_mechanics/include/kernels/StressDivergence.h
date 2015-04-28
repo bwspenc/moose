@@ -47,8 +47,5 @@ private:
   const unsigned int _ydisp_var;
   const unsigned int _zdisp_var;
   const unsigned int _temp_var;
-
-  bool _has_xfem_volfrac;
-  VariableValue & _xfem_volfrac;
 };
 #endif //STRESSDIVERGENCE_H
