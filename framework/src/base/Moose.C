@@ -27,6 +27,7 @@
 // Mesh
 #include "FileMesh.h"
 #include "GeneratedMesh.h"
+#include "PeridynamicsMesh.h"
 #include "TiledMesh.h"
 #include "ImageMesh.h"
 #include "PatternedMesh.h"
@@ -449,6 +450,7 @@ registerObjects(Factory & factory)
   // mesh
   registerMesh(FileMesh);
   registerMesh(GeneratedMesh);
+  registerMesh(PeridynamicsMesh);
   registerMesh(TiledMesh);
   registerMesh(ImageMesh);
   registerMesh(PatternedMesh);
