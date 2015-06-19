@@ -24,14 +24,11 @@ class NonlinearSystem;
 template<>
 InputParameters validParams<PeridynamicsMesh>();
 
-/**
- * Mesh generated from parameters
- */
 class PeridynamicsMesh : public MooseMesh
 {
 public:
   PeridynamicsMesh(const InputParameters & parameters);
-  
+
   virtual ~PeridynamicsMesh();
 
   virtual MooseMesh & clone() const;
