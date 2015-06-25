@@ -3693,7 +3693,11 @@ FEProblem::xfemUpdateMesh()
 {
   bool updated = _xfem.update(_time);
   if (updated)
+  {
     meshChanged();
+    _xfem.initSolution(_nl, _aux);
+    restoreSolutions();
+  }
   return updated;
 }
 #endif //LIBMESH_ENABLE_AMR
