@@ -37,6 +37,13 @@ HeatSourcePD::~HeatSourcePD()
 {
 }
 
+Real
+HeatSourcePD::computeQpResidual()
+{
+  Real factor = _function.value(_t, _q_point[_qp]);
+  return factor;
+}
+
 void
 HeatSourcePD::computeResidual()
 {

@@ -23,7 +23,6 @@ public:
   virtual ~HeatSourcePD();
 
 protected:
-
   MooseVariable * _total_bonds_var;
 
   virtual void computeResidual();

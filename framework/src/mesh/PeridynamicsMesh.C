@@ -134,7 +134,6 @@ InputParameters validParams<PeridynamicsMesh>()
   params.addParam<Real>("ymax", 1.0, "Upper Y Coordinate of the generated mesh");
   params.addParam<Real>("zmax", 1.0, "Upper Z Coordinate of the generated mesh");
   params.addParam<Real>("R", 1.0, "Radius of the circular domain if applicable");
-
   params.addParamNamesToGroup("dim", "Main");
 
   return params;
