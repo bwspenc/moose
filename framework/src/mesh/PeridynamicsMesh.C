@@ -572,7 +572,7 @@ PeridynamicsMesh::buildMesh()
     }
     std::cout << "Total Node Number: " << node_num << std::endl;
     std::cout << "Total Bond Number: " << bond_num << std::endl;
-
     // Prepare for use 
     mesh.prepare_for_use (/*skip_renumber =*/ false);
 }
+

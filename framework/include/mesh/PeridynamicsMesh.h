@@ -28,7 +28,6 @@ class PeridynamicsMesh : public MooseMesh
 {
 public:
   PeridynamicsMesh(const InputParameters & parameters);
-
   virtual ~PeridynamicsMesh();
 
   virtual MooseMesh & clone() const;
