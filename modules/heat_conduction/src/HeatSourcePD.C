@@ -78,4 +78,3 @@ HeatSourcePD::computeResidual()
       _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
   }
 }
-

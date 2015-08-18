@@ -575,4 +575,3 @@ PeridynamicsMesh::buildMesh()
     // Prepare for use 
     mesh.prepare_for_use (/*skip_renumber =*/ false);
 }
-
