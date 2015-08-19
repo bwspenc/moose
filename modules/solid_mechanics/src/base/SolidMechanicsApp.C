@@ -142,6 +142,7 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerVectorPostprocessor(LineMaterialSymmTensorSampler);
 
   registerUserObject(CrackFrontDefinition);
+  registerUserObject(FailureIndexPD);
 }
 
 // External entry point for dynamic syntax association
