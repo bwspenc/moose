@@ -39,7 +39,6 @@ FailureIndexPD::~FailureIndexPD()
 {
 }
 
-
 void
 FailureIndexPD::initialize()
 {
@@ -98,4 +97,3 @@ FailureIndexPD::computeFailureIndex(unsigned int nodeid) const
 
   return 1.0 - sln(ib_dof)/sln(tb_dof);
 }
-

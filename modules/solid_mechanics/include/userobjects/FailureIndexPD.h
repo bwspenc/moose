@@ -39,7 +39,6 @@ protected:
 
   const VariableValue & _bond_critical_strain;
   const VariableValue & _bond_status;
-
 };
 
 #endif // FAILUREINDEXPD_H
