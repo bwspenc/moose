@@ -104,8 +104,9 @@ CrackFrontDefinition::CrackFrontDefinition(const InputParameters & parameters) :
   if (isParamValid("intersecting_boundary"))
   {
     _intersecting_boundary_names = getParam<std::vector<BoundaryName> >("intersecting_boundary");
-    if (_geom_definition_method == CRACK_FRONT_POINTS)
-      mooseError("The use of 'intersecting_boundary' together with 'crack_front_points' is not yet supported");
+    //WJ
+    //if (_geom_definition_method == CRACK_FRONT_POINTS)
+    //  mooseError("The use of 'intersecting_boundary' together with 'crack_front_points' is not yet supported");
   }
 
   MooseEnum end_direction_method_moose_enum = getParam<MooseEnum>("crack_end_direction_method");
@@ -679,7 +680,6 @@ CrackFrontDefinition::updateCrackFrontGeometry()
     {
       unsigned int mid_id = (num_crack_front_points - 1) / 2;
       _crack_plane_normal = _tangent_directions[mid_id].cross(_crack_directions[mid_id]);
-
       //Make sure the normal vector is non-zero
       RealVectorValue zero_vec(0.0);
       if (_crack_plane_normal.absolute_fuzzy_equals(zero_vec, _tol))
@@ -755,6 +755,7 @@ CrackFrontDefinition::updateCrackFrontGeometry()
         point_id = _ordered_crack_front_nodes[i];
       else
         point_id = i;
+
       _console << std::left
                << std::setw(8) << i + 1
                << std::setw(10) << point_id
@@ -816,46 +817,102 @@ CrackFrontDefinition::updateDataForCrackDirection()
   if (_direction_method == CURVED_CRACK_FRONT)
   {
     _crack_plane_normal.zero();
-
-    //Get 3 nodes on crack front
-    unsigned int num_nodes(_ordered_crack_front_nodes.size());
-    if (num_nodes<3)
-    {
-      mooseError("Crack front must contain at least 3 nodes to use CurvedCrackFront option");
+ 
+    // Determine if crack front points are closed loop
+    if(_geom_definition_method == CRACK_FRONT_POINTS){
+      Real average_adjacent_points_lengths = 0;
+      unsigned int num_crack_front_points = getNumCrackFrontPoints();
+      for (unsigned int i=0; i<num_crack_front_points-1; ++i){
+        RealVectorValue adjacent_points =  (*getCrackFrontPoint(i)) -  (*getCrackFrontPoint(i+1));
+        average_adjacent_points_lengths += adjacent_points.size();
+      }
+      average_adjacent_points_lengths = average_adjacent_points_lengths / (num_crack_front_points-1);
+      RealVectorValue first_to_last_point = (*getCrackFrontPoint(0)) - (*getCrackFrontPoint(num_crack_front_points-1));
+      Real dist = first_to_last_point.size();
+      if(dist < average_adjacent_points_lengths * 2.0)
+        _closed_loop = true;
     }
-    unsigned int start_id;
-    unsigned int mid_id;
-    unsigned int end_id;
 
-    if (_closed_loop)
-    {
-      start_id = 0;
-      mid_id = (num_nodes-1)/3;
-      end_id = 2*mid_id;
-    }
-    else
-    {
-      start_id = 0;
-      mid_id = (num_nodes-1)/2;
-      end_id = num_nodes-1;
-    }
-    Node & start = _mesh.node(_ordered_crack_front_nodes[start_id]);
-    Node & mid   = _mesh.node(_ordered_crack_front_nodes[mid_id]);
-    Node & end   = _mesh.node(_ordered_crack_front_nodes[end_id]);
+    if (_geom_definition_method == CRACK_FRONT_NODES){
+      //Get 3 nodes on crack front
+      unsigned int num_nodes(_ordered_crack_front_nodes.size());
+      if (num_nodes<3)
+      {
+        mooseError("Crack front must contain at least 3 nodes to use CurvedCrackFront option");
+      }
+      unsigned int start_id;
+      unsigned int mid_id;
+      unsigned int end_id;
+  
+      if (_closed_loop)
+      {
+        start_id = 0;
+        mid_id = (num_nodes-1)/3;
+        end_id = 2*mid_id;
+      }
+      else
+      {
+        start_id = 0;
+        mid_id = (num_nodes-1)/2;
+        end_id = num_nodes-1;
+      }
+      Node & start = _mesh.node(_ordered_crack_front_nodes[start_id]);
+      Node & mid   = _mesh.node(_ordered_crack_front_nodes[mid_id]);
+      Node & end   = _mesh.node(_ordered_crack_front_nodes[end_id]);
 
-    //Create two vectors connecting them
-    RealVectorValue v1 = mid-start;
-    RealVectorValue v2 = end-mid;
+      //Create two vectors connecting them
+      RealVectorValue v1 = mid-start;
+      RealVectorValue v2 = end-mid;
 
-    //Take cross product to get normal
-    _crack_plane_normal = v1.cross(v2);
-    _crack_plane_normal = _crack_plane_normal.unit();
+      //Take cross product to get normal
+      _crack_plane_normal = v1.cross(v2);
+      _crack_plane_normal = _crack_plane_normal.unit();
 
-    //Make sure they're not collinear
-    RealVectorValue zero_vec(0.0);
-    if (_crack_plane_normal.absolute_fuzzy_equals(zero_vec, _tol))
-    {
-      mooseError("Nodes on crack front are too close to being collinear");
+      //Make sure they're not collinear
+      RealVectorValue zero_vec(0.0);
+      if (_crack_plane_normal.absolute_fuzzy_equals(zero_vec, _tol))
+      {
+        mooseError("Nodes on crack front are too close to being collinear");
+      }
+    }else{
+      
+      unsigned int num_points(_crack_front_points.size()); 
+
+      unsigned int start_id;
+      unsigned int mid_id;
+      unsigned int end_id;
+      
+      if (_closed_loop)
+      {    
+        start_id = 0; 
+        mid_id = (num_points-1)/3;
+        end_id = 2*mid_id;
+      }    
+      else 
+      {    
+        start_id = 0; 
+        mid_id = (num_points-1)/2;
+        end_id = num_points-1;
+      }    
+
+      Point start = _crack_front_points[start_id];
+      Point mid   = _crack_front_points[mid_id];
+      Point end   = _crack_front_points[end_id];
+
+      //Create two vectors connecting them
+      RealVectorValue v1 = mid-start;
+      RealVectorValue v2 = end-mid;
+
+      //Take cross product to get normal
+      _crack_plane_normal = v1.cross(v2);
+      _crack_plane_normal = _crack_plane_normal.unit();
+
+      //Make sure they're not collinear
+      RealVectorValue zero_vec(0.0);
+      if (_crack_plane_normal.absolute_fuzzy_equals(zero_vec, _tol))
+      {    
+        mooseError("Nodes on crack front are too close to being collinear");
+      }   
     }
   }
 }
@@ -1043,111 +1100,220 @@ CrackFrontDefinition::rotateToCrackFrontCoords(const ColumnMajorMatrix tensor, c
 void
 CrackFrontDefinition::calculateRThetaToCrackFront(const Point qp, const unsigned int point_index, Real & r, Real & theta) const
 {
-  unsigned int num_nodes(_ordered_crack_front_nodes.size());
-  Point p = qp;
-  Point closest_node(0.0);
-  RealVectorValue closest_node_to_p;
+  if (_geom_definition_method == CRACK_FRONT_POINTS){
+    unsigned int num_points(_crack_front_points.size());
+    Point p = qp;
+    Point closest_point(0.0);
+    RealVectorValue closest_point_to_p;
 
-  const Point *crack_front_point = getCrackFrontPoint(point_index);
-  RealVectorValue crack_front_node_rot = rotateToCrackFrontCoords(*crack_front_point,point_index);
+    const Point *crack_front_point = getCrackFrontPoint(point_index);
+    RealVectorValue crack_front_point_rot = rotateToCrackFrontCoords(*crack_front_point,point_index);
 
-  RealVectorValue crack_front_edge = rotateToCrackFrontCoords(_tangent_directions[point_index],point_index);
+    RealVectorValue crack_front_edge = rotateToCrackFrontCoords(_tangent_directions[point_index],point_index);
 
-  Point p_rot = rotateToCrackFrontCoords(p,point_index);
-  p_rot = p_rot - crack_front_node_rot;
+    Point p_rot = rotateToCrackFrontCoords(p,point_index);
+    p_rot = p_rot - crack_front_point_rot;
 
-  if (_treat_as_2d)
-  {
-    //In 2D, the closest node is the crack tip node and the position of the crack tip node is (0,0,0) in the crack front coordinate system
-    //In case this is a 3D mesh treated as 2D, project point onto same plane as crack front node.
-    //Note: In the crack front coordinate system, z is always in the tangent direction to the crack front
-    p_rot(2) = closest_node(2);
-    closest_node_to_p = p_rot;
-
-    //Find r, the distance between the qp and the crack front
-    RealVectorValue r_vec = p_rot;
-    r = r_vec.size();
-
-  }
-  else
-  {
-    // Loop over crack front nodes to find the one closest to the point qp
-    Real min_dist = std::numeric_limits<Real>::max();
-    for (unsigned int nit = 0; nit != num_nodes; ++nit)
+    if (_treat_as_2d)
     {
-      Node & crack_front_node = _mesh.node(_ordered_crack_front_nodes[nit]);
-      RealVectorValue crack_node_to_current_node = p - crack_front_node;
-      Real dist = crack_node_to_current_node.size();
+      //In 2D, the closest node is the crack tip node and the position of the crack tip node is (0,0,0) in the crack front coordinate system
+      //In case this is a 3D mesh treated as 2D, project point onto same plane as crack front node.
+      //Note: In the crack front coordinate system, z is always in the tangent direction to the crack front
+      p_rot(2) = closest_point(2);
+      closest_point_to_p = p_rot;
 
-      if (dist < min_dist)
+      //Find r, the distance between the qp and the crack front
+      RealVectorValue r_vec = p_rot;
+      r = r_vec.size();
+
+    }
+    else
+    {
+      // Loop over crack front nodes to find the one closest to the point qp
+      Real min_dist = std::numeric_limits<Real>::max();
+      for (unsigned int nit = 0; nit != num_points; ++nit)
       {
-        min_dist = dist;
-        closest_node = crack_front_node;
+        Point crack_front_point = _crack_front_points[nit];
+        RealVectorValue crack_point_to_current_point = p - crack_front_point;
+        Real dist = crack_point_to_current_point.size();
+
+        if (dist < min_dist)
+        {
+          min_dist = dist;
+          closest_point = crack_front_point;
+        }
       }
+
+      //Rotate coordinates to crack front coordinate system
+      closest_point = rotateToCrackFrontCoords(closest_point,point_index);
+      closest_point = closest_point - crack_front_point_rot;
+
+      //Find r, the distance between the qp and the crack front
+      Real edge_length_sq = crack_front_edge.size_sq();
+      closest_point_to_p = p_rot - closest_point;
+      Real perp = crack_front_edge * closest_point_to_p;
+      Real dist_along_edge = perp / edge_length_sq;
+      RealVectorValue point_on_edge = closest_point + crack_front_edge * dist_along_edge;
+      RealVectorValue r_vec = p_rot - point_on_edge;
+      r = r_vec.size();
+
     }
 
-    //Rotate coordinates to crack front coordinate system
-    closest_node = rotateToCrackFrontCoords(closest_node,point_index);
-    closest_node = closest_node - crack_front_node_rot;
+    //Find theta, the angle between r and the crack front plane
+    RealVectorValue crack_plane_normal = rotateToCrackFrontCoords(_crack_plane_normal,point_index);
+    Real p_to_plane_dist = std::abs(closest_point_to_p*crack_plane_normal);
 
-    //Find r, the distance between the qp and the crack front
-    Real edge_length_sq = crack_front_edge.size_sq();
-    closest_node_to_p = p_rot - closest_node;
-    Real perp = crack_front_edge * closest_node_to_p;
-    Real dist_along_edge = perp / edge_length_sq;
-    RealVectorValue point_on_edge = closest_node + crack_front_edge * dist_along_edge;
-    RealVectorValue r_vec = p_rot - point_on_edge;
-    r = r_vec.size();
+    //Determine if p is above or below the crack plane
+    Real y_local = p_rot(1) - closest_point(1);
+ 
+    //Determine if p is in front of or behind the crack front
+    RealVectorValue p2(p_rot);
+    p2(1) = 0;
+    RealVectorValue p2_vec = p2 - closest_point;
+    Real ahead = crack_front_edge(2) * p2_vec(0) - crack_front_edge(0) * p2_vec(2);
 
-  }
-
-  //Find theta, the angle between r and the crack front plane
-  RealVectorValue crack_plane_normal = rotateToCrackFrontCoords(_crack_plane_normal,point_index);
-  Real p_to_plane_dist = std::abs(closest_node_to_p*crack_plane_normal);
-
-  //Determine if p is above or below the crack plane
-  Real y_local = p_rot(1) - closest_node(1);
-
-  //Determine if p is in front of or behind the crack front
-  RealVectorValue p2(p_rot);
-  p2(1) = 0;
-  RealVectorValue p2_vec = p2 - closest_node;
-  Real ahead = crack_front_edge(2) * p2_vec(0) - crack_front_edge(0) * p2_vec(2);
-
-  Real x_local(0);
-  if (ahead >= 0)
-    x_local = 1;
-  else
-    x_local = -1;
-
-  //Calculate theta based on in which quadrant in the crack front coordinate
-  //system the qp is located
-  if (r > 0)
-  {
-    Real theta_quadrant1(0.0);
-    if (MooseUtils::absoluteFuzzyEqual(r, p_to_plane_dist, _tol))
-      theta_quadrant1 = 0.5*libMesh::pi;
-    else if (p_to_plane_dist > r)
-      mooseError("Invalid distance p_to_plane_dist in CrackFrontDefinition::calculateRThetaToCrackFront");
+    Real x_local(0);
+    if (ahead >= 0)
+      x_local = 1;
     else
-      theta_quadrant1 = std::asin(p_to_plane_dist/r);
+      x_local = -1;
 
-    if (x_local >= 0 && y_local >= 0)
-      theta = theta_quadrant1;
+    //Calculate theta based on in which quadrant in the crack front coordinate
+    //system the qp is located
+    if (r > 0)
+    {
+      Real theta_quadrant1(0.0);
+      if (MooseUtils::absoluteFuzzyEqual(r, p_to_plane_dist, _tol))
+        theta_quadrant1 = 0.5*libMesh::pi;
+      else if (p_to_plane_dist > r)
+        mooseError("Invalid distance p_to_plane_dist in CrackFrontDefinition::calculateRThetaToCrackFront");
+      else
+        theta_quadrant1 = std::asin(p_to_plane_dist/r);
 
-    else if (x_local < 0 && y_local >= 0)
-      theta = libMesh::pi - theta_quadrant1;
+      if (x_local >= 0 && y_local >= 0)
+        theta = theta_quadrant1;
 
-    else if (x_local < 0 && y_local < 0)
-      theta = -(libMesh::pi - theta_quadrant1);
+      else if (x_local < 0 && y_local >= 0)
+        theta = libMesh::pi - theta_quadrant1;
 
-    else if (x_local >= 0 && y_local < 0)
-      theta = -theta_quadrant1;
-  }
-  else if (r == 0)
-    theta = 0;
-  else
-    mooseError("Invalid distance r in CrackFrontDefinition::calculateRThetaToCrackFront");
+      else if (x_local < 0 && y_local < 0)
+        theta = -(libMesh::pi - theta_quadrant1);
+
+      else if (x_local >= 0 && y_local < 0)
+        theta = -theta_quadrant1;
+    }  
+    else if (r == 0)
+      theta = 0;
+    else
+      mooseError("Invalid distance r in CrackFrontDefinition::calculateRThetaToCrackFront");
+ 
+  }else{
+    unsigned int num_nodes(_ordered_crack_front_nodes.size());
+    Point p = qp;
+    Point closest_node(0.0);
+    RealVectorValue closest_node_to_p;
+
+    const Point *crack_front_point = getCrackFrontPoint(point_index);
+    RealVectorValue crack_front_node_rot = rotateToCrackFrontCoords(*crack_front_point,point_index);
+
+    RealVectorValue crack_front_edge = rotateToCrackFrontCoords(_tangent_directions[point_index],point_index);
+
+    Point p_rot = rotateToCrackFrontCoords(p,point_index);
+    p_rot = p_rot - crack_front_node_rot;
+
+    if (_treat_as_2d)
+    {
+      //In 2D, the closest node is the crack tip node and the position of the crack tip node is (0,0,0) in the crack front coordinate system
+      //In case this is a 3D mesh treated as 2D, project point onto same plane as crack front node.
+      //Note: In the crack front coordinate system, z is always in the tangent direction to the crack front
+      p_rot(2) = closest_node(2);
+      closest_node_to_p = p_rot;
+
+      //Find r, the distance between the qp and the crack front
+      RealVectorValue r_vec = p_rot;
+      r = r_vec.size();
+
+    }
+    else
+    {
+      // Loop over crack front nodes to find the one closest to the point qp
+      Real min_dist = std::numeric_limits<Real>::max();
+      for (unsigned int nit = 0; nit != num_nodes; ++nit)
+      {
+        Node & crack_front_node = _mesh.node(_ordered_crack_front_nodes[nit]);
+        RealVectorValue crack_node_to_current_node = p - crack_front_node;
+        Real dist = crack_node_to_current_node.size();
+
+        if (dist < min_dist)
+        {
+          min_dist = dist;
+          closest_node = crack_front_node;
+        }
+      }
+
+      //Rotate coordinates to crack front coordinate system
+      closest_node = rotateToCrackFrontCoords(closest_node,point_index);
+      closest_node = closest_node - crack_front_node_rot;
+
+      //Find r, the distance between the qp and the crack front
+      Real edge_length_sq = crack_front_edge.size_sq();
+      closest_node_to_p = p_rot - closest_node;
+      Real perp = crack_front_edge * closest_node_to_p;
+      Real dist_along_edge = perp / edge_length_sq;
+      RealVectorValue point_on_edge = closest_node + crack_front_edge * dist_along_edge;
+      RealVectorValue r_vec = p_rot - point_on_edge;
+      r = r_vec.size();
+
+    }
+
+    //Find theta, the angle between r and the crack front plane
+    RealVectorValue crack_plane_normal = rotateToCrackFrontCoords(_crack_plane_normal,point_index);
+    Real p_to_plane_dist = std::abs(closest_node_to_p*crack_plane_normal);
+
+    //Determine if p is above or below the crack plane
+    Real y_local = p_rot(1) - closest_node(1);
+ 
+    //Determine if p is in front of or behind the crack front
+    RealVectorValue p2(p_rot);
+    p2(1) = 0;
+    RealVectorValue p2_vec = p2 - closest_node;
+    Real ahead = crack_front_edge(2) * p2_vec(0) - crack_front_edge(0) * p2_vec(2);
+
+    Real x_local(0);
+    if (ahead >= 0)
+      x_local = 1;
+    else
+      x_local = -1;
+
+    //Calculate theta based on in which quadrant in the crack front coordinate
+    //system the qp is located
+    if (r > 0)
+    {
+      Real theta_quadrant1(0.0);
+      if (MooseUtils::absoluteFuzzyEqual(r, p_to_plane_dist, _tol))
+        theta_quadrant1 = 0.5*libMesh::pi;
+      else if (p_to_plane_dist > r)
+        mooseError("Invalid distance p_to_plane_dist in CrackFrontDefinition::calculateRThetaToCrackFront");
+      else
+        theta_quadrant1 = std::asin(p_to_plane_dist/r);
+
+      if (x_local >= 0 && y_local >= 0)
+        theta = theta_quadrant1;
+
+      else if (x_local < 0 && y_local >= 0)
+        theta = libMesh::pi - theta_quadrant1;
+
+      else if (x_local < 0 && y_local < 0)
+        theta = -(libMesh::pi - theta_quadrant1);
+
+      else if (x_local >= 0 && y_local < 0)
+        theta = -theta_quadrant1;
+    }  
+    else if (r == 0)
+      theta = 0;
+    else
+      mooseError("Invalid distance r in CrackFrontDefinition::calculateRThetaToCrackFront");
+  }  
 }
 
 bool
@@ -1179,6 +1345,10 @@ CrackFrontDefinition::isPointWithIndexOnIntersectingBoundary(const unsigned int 
   else
   {
     //TODO: Implement for CRACK_FRONT_POINTS
+    //WJ: the first and last point is assumed to be on the boundary
+    unsigned int num_crack_front_points = getNumCrackFrontPoints();
+    if(point_index==0 || point_index==num_crack_front_points-1)
+      is_on_boundary = true;
   }
   return is_on_boundary;
 }
@@ -1557,8 +1727,9 @@ CrackFrontDefinition::CrackFrontDefinition(const std::string & deprecated_name, 
   if (isParamValid("intersecting_boundary"))
   {
     _intersecting_boundary_names = getParam<std::vector<BoundaryName> >("intersecting_boundary");
-    if (_geom_definition_method == CRACK_FRONT_POINTS)
-      mooseError("The use of 'intersecting_boundary' together with 'crack_front_points' is not yet supported");
+    //WJ
+    //if (_geom_definition_method == CRACK_FRONT_POINTS)
+    //  mooseError("The use of 'intersecting_boundary' together with 'crack_front_points' is not yet supported");
   }
 
   MooseEnum end_direction_method_moose_enum = getParam<MooseEnum>("crack_end_direction_method");
