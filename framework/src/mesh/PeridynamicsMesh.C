@@ -19,6 +19,8 @@
 #include "libmesh/getpot.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/string_to_enum.h"
+#include "libmesh/periodic_boundaries.h"
+#include "libmesh/periodic_boundary_base.h"
 #include "libmesh/edge_edge2.h"
 #include "libmesh/boundary_info.h"
 
