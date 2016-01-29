@@ -39,7 +39,6 @@ protected:
   MaterialProperty<Real> & _bond_response;
   MaterialProperty<Real> & _bond_response_dif_temp;
   MaterialProperty<Real> & _node_volume;
-
 };
 
 #endif //HEATCONDUCTIONMATERIALPD_H

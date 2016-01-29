@@ -34,7 +34,6 @@ protected:
   Real _power_density;
 
   Function * _power_density_function;
-
 };
 
 #endif //HEATSOURCEPD_H

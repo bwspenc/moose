@@ -73,6 +73,7 @@ HeatConductionApp::registerObjects(Factory & factory)
   registerKernel(HeatConductionTimeDerivative);
   registerKernel(HeatSource);
   registerKernel(HeatSourcePD);
+  registerKernel(HeatConductionPD);
   registerBoundaryCondition(HeatConductionBC);
   registerBoundaryCondition(ConvectiveFluxFunction);
   registerBoundaryCondition(GapHeatTransfer);

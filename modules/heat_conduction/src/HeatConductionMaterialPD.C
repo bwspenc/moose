@@ -24,7 +24,6 @@ InputParameters validParams<HeatConductionMaterialPD>()
   params.addParam<FunctionName>("thermal_conductivity_function","","Thermal conductivity as a function of temperature.");
   params.addParam<Real>("mesh_spacing",1,"Distance between to adjacent horizontal nodes.");
   params.addParam<Real>("domain_thickness",1,"The thickness of the domain for 2D problem.");
-
   return params;
 }
 

@@ -89,7 +89,6 @@ InputParameters validParams<LinearIsotropicMaterialPD>()
   params.addCoupledVar("temp","Variable containing the temperature for coupled problem");
   params.addParam<Real>("reference_temp",0,"The reference temperature at which this material has zero strain");
   params.addParam<Real>("thermal_expansion",0,"The thermal expansion coefficient");
-
   return params;
 }
 
@@ -227,4 +226,3 @@ LinearIsotropicMaterialPD::computeProperties()
     }
   }
 }
-

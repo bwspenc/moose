@@ -33,7 +33,6 @@ protected:
   const MaterialProperty<Real> & _bond_response_dif_temp;
 
   const VariableValue & _bond_status;
-
 };
 
 #endif //HEATCONDUCTIONPD_H
