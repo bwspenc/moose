@@ -30,6 +30,8 @@
 #include "ThermalContactMaterialsAction.h"
 #include "HeatSource.h"
 #include "CoupledConvectiveFlux.h"
+#include "HeatConductionPD.h"
+#include "HeatConductionMaterialPD.h"
 
 template<>
 InputParameters validParams<HeatConductionApp>()
@@ -78,6 +80,7 @@ HeatConductionApp::registerObjects(Factory & factory)
   registerMaterial(GapConductance);
   registerMaterial(HeatConductionMaterial);
   registerMaterial(AnisoHeatConductionMaterial);
+  registerMaterial(HeatConductionMaterialPD);
   registerDiracKernel(GapHeatPointSourceMaster);
   registerPostprocessor(HomogenizedThermalConductivity);
   registerPostprocessor(ThermalConductivity);
