@@ -12,6 +12,7 @@
 
 #include "AbaqusCreepMaterial.h"
 #include "AbaqusUmatMaterial.h"
+#include "BondStatusPDAux.h"
 #include "CLSHPlasticMaterial.h"
 #include "CLSHPlasticModel.h"
 #include "CombinedCreepPlasticity.h"
