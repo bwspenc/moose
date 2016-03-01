@@ -38,12 +38,7 @@ protected:
 
   MaterialProperty<Real> & _bond_response;
   MaterialProperty<Real> & _bond_response_dif_temp;
-<<<<<<< e48bdee7d4a87c5e6fb10593fa54979f06371c99
   MaterialProperty<Real> & _node_volume;
-=======
-  MaterialProperty<Real> & _bond_volume;
-
->>>>>>> completed the heat conduction implementation and the coupled thermomechanical model, wrote a aux kernel to update the bond status at the end of each time step.
 };
 
 #endif //HEATCONDUCTIONMATERIALPD_H

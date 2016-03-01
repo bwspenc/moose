@@ -45,30 +45,6 @@ struct node_structure3D
   }bond[122]; // horizon = 3*MeshSpacing, 122 for cube shape, 118 for cylinder shape
 };
 
-<<<<<<< e48bdee7d4a87c5e6fb10593fa54979f06371c99
-=======
-int CountNodeNum(double R,double dx,int nd)
-{
-  int node_num = 0;
-  double X = 0, Y = 0, dis = 0;
-
-  for (int j = 0; j < nd; j++)
-  {
-    for (int i = 0; i < nd; i++)
-    {
-      X = -R  + static_cast<Real>(i)*dx;
-      Y = -R  + static_cast<Real>(j)*dx;
-      dis = std::sqrt(X*X + Y*Y);
-      if (dis <= R + 0.001*dx)
-        {
-          node_num++;
-        }
-    }
-  }
-  return node_num;
-}
-
->>>>>>> completed the heat conduction implementation and the coupled thermomechanical model, wrote a aux kernel to update the bond status at the end of each time step.
 void InitializeNode2D(struct node_structure2D *node,int node_num)
 {
   for(int i = 0; i < node_num; i++)
@@ -194,11 +170,7 @@ PeridynamicsMesh::buildMesh()
   UnstructuredMesh & mesh = dynamic_cast<UnstructuredMesh &>(getMesh());
   mesh.clear();
   mesh.set_mesh_dimension(1);
-<<<<<<< e48bdee7d4a87c5e6fb10593fa54979f06371c99
   BoundaryInfo & boundary_info = mesh.get_boundary_info();
-=======
-  BoundaryInfo& boundary_info = mesh.get_boundary_info();
->>>>>>> completed the heat conduction implementation and the coupled thermomechanical model, wrote a aux kernel to update the bond status at the end of each time step.
   
   double dis, X, Y, Z;
   int i, j, k, n, node_id = 0;
