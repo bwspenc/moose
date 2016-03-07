@@ -86,7 +86,7 @@ void SearchBond2D(struct node_structure2D *node, int node_num, int search_range,
     for(int k = i; k < j; k++)
     {
       dis = std::sqrt(std::pow(node[node_id].X - node[k].X, 2) + std::pow(node[node_id].Y - node[k].Y, 2));
-      if(dis <= horizon && k != node_id)
+      if(dis <= 1.0001 * horizon && k != node_id)
       {
         node[node_id].bond[num].node_index = k;
         num++;
@@ -108,7 +108,7 @@ void SearchBond3D(struct node_structure3D *node, int node_num, int search_range,
     for(int k = i; k < j; k++)
     {
       dis = std::sqrt(std::pow(node[node_id].X - node[k].X, 2) + std::pow(node[node_id].Y - node[k].Y, 2) + std::pow(node[node_id].Z - node[k].Z, 2));
-      if(dis <= horizon && k != node_id)
+      if(dis <= 1.0001 * horizon && k != node_id)
       {
         node[node_id].bond[num].node_index = k;
         num++;

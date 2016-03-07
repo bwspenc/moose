@@ -28,21 +28,16 @@ protected:
   MooseVariable * _disp_z_var;
 
   virtual void computeProperties();
-  virtual void initQpStatefulProperties();
 
   MaterialProperty<Real> & _bond_force;
   MaterialProperty<Real> & _bond_force_dif_disp;
   MaterialProperty<Real> & _bond_force_dif_temp;
   MaterialProperty<Real> & _bond_mechanic_strain;
-  MaterialProperty<Real> & _bond_critical_strain;
-  MaterialProperty<Real> & _bond_critical_strain_old;
 
   const int _pddim;
   const Real _youngs_modulus;
   const Real _poissons_ratio;
   const Real _mesh_spacing;
-  const Real _critical_strain;
-  const Real _standard_deviation;
 
   bool _is_plane_strain;
   bool _is_vary_stiffness;

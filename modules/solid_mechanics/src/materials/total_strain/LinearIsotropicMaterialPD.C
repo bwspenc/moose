@@ -86,9 +86,6 @@ InputParameters validParams<LinearIsotropicMaterialPD>()
   params.addParam<Real>("poissons_ratio",0.33,"Poisson's Ratio");
   params.addParam<Real>("mesh_spacing",1,"mesh_spacing");
 
-  params.addParam<Real>("critical_strain",1, "critical_strain");
-  params.addParam<Real>("standard_deviation",0.0001, "standard_deviation");
-
   params.addCoupledVar("temp","Variable containing the temperature for coupled problem");
   params.addParam<Real>("reference_temp",0,"The reference temperature at which this material has zero strain");
   params.addParam<Real>("thermal_expansion",0,"The thermal expansion coefficient");
@@ -102,15 +99,11 @@ LinearIsotropicMaterialPD::LinearIsotropicMaterialPD(const InputParameters & par
   _bond_force_dif_disp(declareProperty<Real>("bond_force_dif_disp")),
   _bond_force_dif_temp(declareProperty<Real>("bond_force_dif_temp")),
   _bond_mechanic_strain(declareProperty<Real>("bond_mechanic_strain")),
-  _bond_critical_strain(declareProperty<Real>("bond_critical_strain")),
-  _bond_critical_strain_old(declarePropertyOld<Real>("bond_critical_strain")),
 
   _pddim(isParamValid("pddim") ? getParam<int>("pddim") : 3),
   _youngs_modulus(isParamValid("youngs_modulus") ? getParam<Real>("youngs_modulus") : 0),
   _poissons_ratio(isParamValid("poissons_ratio") ? getParam<Real>("poissons_ratio") : 0),
   _mesh_spacing(isParamValid("mesh_spacing") ? getParam<Real>("mesh_spacing") : 1),
-  _critical_strain(isParamValid("critical_strain") ? getParam<Real>("critical_strain") : 1),
-  _standard_deviation(isParamValid("standard_deviation") ? getParam<Real>("standard_deviation") : 0.0001),
 
   _has_temp(isCoupled("temp")),
   _temp(_has_temp ? coupledValue("temp") : _zero),
@@ -144,14 +137,6 @@ LinearIsotropicMaterialPD::LinearIsotropicMaterialPD(const InputParameters & par
 
 LinearIsotropicMaterialPD::~LinearIsotropicMaterialPD()
 {
-}
-
-void
-LinearIsotropicMaterialPD::initQpStatefulProperties()
-{
-// Generate randomized critical stretch by Box-Muller method
-  setRandomResetFrequency(EXEC_INITIAL);
-  _bond_critical_strain[_qp] = std::sqrt(- 2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * _standard_deviation + _critical_strain;
 }
 
 void

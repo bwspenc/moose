@@ -6,34 +6,32 @@
 /****************************************************************/
 
 
-#ifndef BONDSTATUSPDAUX_H
-#define BONDSTATUSPDAUX_H
+#ifndef BONDCRITICALSTRAINPDAUX_H
+#define BONDCRITICALSTRAINPDAUX_H
 
 #include "AuxKernel.h"
 
 //Forward Declarations
-class BondStatusPDAux;
+class BondCriticalStrainPDAux;
 
 template<>
-InputParameters validParams<BondStatusPDAux>();
+InputParameters validParams<BondCriticalStrainPDAux>();
 
-class BondStatusPDAux : public AuxKernel
+class BondCriticalStrainPDAux : public AuxKernel
 {
 public:
 
-  BondStatusPDAux(const InputParameters & parameters);
+  BondCriticalStrainPDAux(const InputParameters & parameters);
 
-  virtual ~BondStatusPDAux() {}
+  virtual ~BondCriticalStrainPDAux() {}
 
 protected:
 
+  const Real _critical_strain;
+  const Real _standard_deviation;
+
   virtual Real computeValue();
-
-  const MaterialProperty<Real> & _bond_mechanic_strain;
-
-  VariableValue & _bond_critical_strain;
-  VariableValue & _bond_status;
 
 };
 
-#endif //BONDSTATUSPDAUX_H
+#endif //BONDCRITICALSTRAINPDAUX_H
