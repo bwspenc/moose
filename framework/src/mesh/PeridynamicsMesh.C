@@ -168,10 +168,10 @@ PeridynamicsMesh::clone() const
 void
 PeridynamicsMesh::buildMesh()
 {
-  UnstructuredMesh& mesh = dynamic_cast<UnstructuredMesh&>(getMesh());
+  UnstructuredMesh & mesh = dynamic_cast<UnstructuredMesh &>(getMesh());
   mesh.clear();
   mesh.set_mesh_dimension(1);
-  BoundaryInfo& boundary_info = mesh.get_boundary_info();
+  BoundaryInfo & boundary_info = mesh.get_boundary_info();
   
   double dis, X, Y, Z;
   int i, j, k, n, node_id = 0;
@@ -268,6 +268,7 @@ PeridynamicsMesh::buildMesh()
         j = std::floor(3.14159265359 / std::asin(1.0 / (2.0 * i)) + 0.5);
         node_num += j;
       }
+
       node = (struct node_structure2D*)malloc(node_num * sizeof(struct node_structure2D));
       InitializeNode2D(node, node_num);
       mesh.reserve_nodes(node_num);
@@ -351,6 +352,7 @@ PeridynamicsMesh::buildMesh()
       boundary_info.nodeset_name(4) = "BottomPoint";
       boundary_info.nodeset_name(5) = "TopPoint";
     }
+    free(node);
   }
   else if(_dim == 3)
   {
@@ -568,6 +570,7 @@ PeridynamicsMesh::buildMesh()
         boundary_info.nodeset_name(7) = "Bottom";
         boundary_info.nodeset_name(8) = "Top";
       }
+    free(node);
     }
     std::cout << "Total Node Number: " << node_num << std::endl;
     std::cout << "Total Bond Number: " << bond_num << std::endl;
