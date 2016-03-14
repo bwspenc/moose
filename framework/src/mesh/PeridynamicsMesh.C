@@ -267,6 +267,7 @@ PeridynamicsMesh::buildMesh()
         j = std::floor(3.14159265359 / std::asin(1.0 / (2.0 * i)) + 0.5);
         node_num += j;
       }
+
       node = (struct node_structure2D*)malloc(node_num * sizeof(struct node_structure2D));
       InitializeNode2D(node, node_num);
       mesh.reserve_nodes(node_num);
