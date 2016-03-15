@@ -43,7 +43,7 @@ protected:
   bool _is_vary_stiffness;
 
   bool _has_temp;
-  VariableValue & _temp;
+  const VariableValue & _temp;
   const Real _temp_ref;
   const Real _thermal_expansion;
 };
