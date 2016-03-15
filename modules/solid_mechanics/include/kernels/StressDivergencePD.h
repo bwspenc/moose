@@ -55,7 +55,7 @@ private:
   const unsigned int _zdisp_var;
   const unsigned int _temp_var;
 
-  VariableValue & _bond_status;
+  const VariableValue & _bond_status;
 
   const std::vector<RealGradient> * _orientation;
 

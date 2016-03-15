@@ -32,7 +32,7 @@ protected:
   const MaterialProperty<Real> & _bond_response;
   const MaterialProperty<Real> & _bond_response_dif_temp;
 
-  VariableValue & _bond_status;
+  const VariableValue & _bond_status;
 
 };
 

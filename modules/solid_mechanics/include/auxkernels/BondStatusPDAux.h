@@ -31,8 +31,8 @@ protected:
 
   const MaterialProperty<Real> & _bond_mechanic_strain;
 
-  VariableValue & _bond_critical_strain;
-  VariableValue & _bond_status;
+  const VariableValue & _bond_critical_strain;
+  const VariableValue & _bond_status;
 
 };
 
