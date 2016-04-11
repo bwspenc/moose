@@ -176,7 +176,10 @@ LinearIsotropicMaterialPD::computeProperties()
     if (_has_temp)
     {
 //bond temperature is taken as the average of two end nodes
-      _bond_mechanic_strain[_qp] = strain - _thermal_expansion * ((_temp[0] + _temp[1]) / 2.0 - _temp_ref);
+      if (_is_plane_strain)
+        _bond_mechanic_strain[_qp] = strain - (1.0 + _poissons_ratio) * _thermal_expansion * ((_temp[0] + _temp[1]) / 2.0 - _temp_ref);
+      else
+        _bond_mechanic_strain[_qp] = strain - _thermal_expansion * ((_temp[0] + _temp[1]) / 2.0 - _temp_ref);
     }
     else
       _bond_mechanic_strain[_qp] = strain;
