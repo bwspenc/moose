@@ -26,7 +26,7 @@ protected:
   virtual void computeResidual();
 
   virtual Real computeQpResidual() {return 0;}
-  
+
   virtual void computeJacobian();
 
   const MaterialProperty<Real> & _bond_response;

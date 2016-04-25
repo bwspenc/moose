@@ -35,7 +35,7 @@ protected:
   MooseVariable * _intact_bonds_var;
   MooseVariable * _total_bonds_var;
 
-  const MaterialProperty<Real> & _bond_mechanic_strain; 
+  const MaterialProperty<Real> & _bond_mechanic_strain;
 
   const VariableValue & _bond_critical_strain;
   const VariableValue & _bond_status;

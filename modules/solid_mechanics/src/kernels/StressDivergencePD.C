@@ -61,7 +61,7 @@ StressDivergencePD::computeResidual()
   VectorValue<Real> force_local = _bond_force[0] * orientation * _bond_status[0];
   _local_re(0) = - force_local(_component);
   _local_re(1) = - _local_re(0);
-	
+
   re += _local_re;
 
   if (_has_save_in)
@@ -78,7 +78,7 @@ StressDivergencePD::computeStiffness(DenseVector<Real> & stiff_elem)
   RealGradient orientation( (*_orientation)[0] );
   Real dist = 2.0 * orientation.size(); //orientation.size() only gives half of the actual distance between two nodes
   orientation /= orientation.size();
-  
+
   //the effect of truss orientation change has been accounted for
   stiff_elem(0) = orientation(0) * orientation(0) * _bond_force_dif_disp[0] + _bond_force[0] * (1.0 - orientation(0) * orientation(0)) / dist;
   stiff_elem(1) = orientation(1) * orientation(1) * _bond_force_dif_disp[0] + _bond_force[0] * (1.0 - orientation(1) * orientation(1)) / dist;
@@ -91,7 +91,7 @@ StressDivergencePD::computeOffDiagStiffness(DenseMatrix<Real> & off_stiff_elem)
   RealGradient orientation( (*_orientation)[0] );
   Real dist = 2.0 * orientation.size(); //orientation.size() only gives half of the actual distance between two nodes
   orientation /= orientation.size();
-  
+
   //the effect of truss orientation change has been accounted for
   off_stiff_elem(0,0) = orientation(0) * orientation(0) * _bond_force_dif_disp[0] + _bond_force[0] * (1.0 - orientation(0) * orientation(0)) / dist;
   off_stiff_elem(0,1) = orientation(0) * orientation(1) * _bond_force_dif_disp[0] - _bond_force[0] * orientation(0) * orientation(1) / dist;

@@ -28,9 +28,9 @@ protected:
   virtual void computeResidual();
 
   virtual Real computeQpResidual() {return 0;}
- 
+
   const MaterialProperty<Real> & _node_volume;
- 
+
   Real _power_density;
 
   Function * _power_density_function;

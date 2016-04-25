@@ -169,7 +169,7 @@ LinearIsotropicMaterialPD::computeProperties()
 
   Real strain = new_length/origin_length - 1.0;
 
-  Real node_volume, bulk_modulus; 
+  Real node_volume, bulk_modulus;
   for (unsigned int _qp = 0; _qp < _qrule->n_points(); ++_qp)
   {
     if (_has_temp)
@@ -190,16 +190,16 @@ LinearIsotropicMaterialPD::computeProperties()
       if (_is_vary_stiffness)
       {
         _bond_force[_qp] = (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda2D(_poissons_ratio)) * _bond_mechanic_strain[_qp] * node_volume;
-        _bond_force_dif_disp[_qp] = (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda2D(_poissons_ratio)) / origin_length * node_volume; 
-        _bond_force_dif_temp[_qp] = - (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda2D(_poissons_ratio)) * _thermal_expansion / 2.0 * node_volume;  
+        _bond_force_dif_disp[_qp] = (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda2D(_poissons_ratio)) / origin_length * node_volume;
+        _bond_force_dif_temp[_qp] = - (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda2D(_poissons_ratio)) * _thermal_expansion / 2.0 * node_volume;
       }
       else
       {
         if (_is_plane_strain)
-//plane strain case      
+//plane strain case
           bulk_modulus = _youngs_modulus / 2.0 / (1.0 + _poissons_ratio) / (1.0 - 2.0 * _poissons_ratio);
         else
-//plane stress case      
+//plane stress case
           bulk_modulus = _youngs_modulus / 2.0 / (1.0 - _poissons_ratio);
 
         _bond_force[_qp] = 12.0 * bulk_modulus / (3.14159265358 * std::pow(3.0 * _mesh_spacing, 3)) * _bond_mechanic_strain[_qp] * node_volume * node_volume;
@@ -213,8 +213,8 @@ LinearIsotropicMaterialPD::computeProperties()
       if (_is_vary_stiffness)
       {
         _bond_force[_qp] = (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda3D(_poissons_ratio)) * _bond_mechanic_strain[_qp] * node_volume;
-        _bond_force_dif_disp[_qp] = (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda3D(_poissons_ratio)) / origin_length * node_volume; 
-        _bond_force_dif_temp[_qp] = - (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda3D(_poissons_ratio)) * _thermal_expansion / 2.0 * node_volume;  
+        _bond_force_dif_disp[_qp] = (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda3D(_poissons_ratio)) / origin_length * node_volume;
+        _bond_force_dif_temp[_qp] = - (_youngs_modulus * std::exp(-origin_length / (3.0 * _mesh_spacing)) / _mesh_spacing / lambda3D(_poissons_ratio)) * _thermal_expansion / 2.0 * node_volume;
       }
       else
       {

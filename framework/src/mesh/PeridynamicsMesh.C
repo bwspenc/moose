@@ -23,14 +23,14 @@
 #include "libmesh/boundary_info.h"
 
 struct node_structure2D
-{	
+{
   double X;
   double Y;
   int bonds_per_node;
   struct bond_structure
   {
     int node_index;
-  }bond[37]; // horizon = 3*Meshspacing, 28 for square shape, 37 for disk shape 
+  }bond[37]; // horizon = 3*Meshspacing, 28 for square shape, 37 for disk shape
 };
 
 struct node_structure3D
@@ -171,7 +171,7 @@ PeridynamicsMesh::buildMesh()
   mesh.clear();
   mesh.set_mesh_dimension(1);
   BoundaryInfo & boundary_info = mesh.get_boundary_info();
-  
+
   double dis, X, Y, Z;
   int i, j, k, n, node_id = 0;
   int node_num = 0, bond_num = 0, node_per_layer, search_range;
@@ -191,11 +191,11 @@ PeridynamicsMesh::buildMesh()
       mesh.reserve_nodes(node_num);
       // Define Nodal Coordinates
       for (j = 0; j < ny; j++)
-      {	
+      {
         for (i = 0; i < _nx; i++)
         {
           X = _xmin + i * mesh_spacing;
-          Y = _ymin + j * mesh_spacing;	
+          Y = _ymin + j * mesh_spacing;
           mesh.add_point (Point(X, Y, 0.0), node_id);
           node[node_id].X = X;
           node[node_id].Y = Y;
@@ -215,7 +215,7 @@ PeridynamicsMesh::buildMesh()
       for (i = 0; i < node_num; i++)
       {
         for(j = 0; j < node[i].bonds_per_node; j++)
-        {	
+        {
           k = node[i].bond[j].node_index;
           if (k > i)
           {
@@ -223,9 +223,9 @@ PeridynamicsMesh::buildMesh()
             elem->set_node(0) = mesh.node_ptr(i);
             elem->set_node(1) = mesh.node_ptr(k);
             elem->subdomain_id() = 0;
-          }		
+          }
         }
-      }	
+      }
       // Define Boundary Nodes
       for (node_id = 0; node_id < node_num; node_id++)
       {

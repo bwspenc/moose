@@ -27,7 +27,7 @@ protected:
   virtual void computeProperties();
 
   MooseVariable * _temp_var;
-  
+
   const Real _my_thermal_conductivity;
 
   MaterialProperty<Real> & _thermal_conductivity;

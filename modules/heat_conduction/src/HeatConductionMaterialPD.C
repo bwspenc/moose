@@ -32,7 +32,7 @@ HeatConductionMaterialPD::HeatConductionMaterialPD(const InputParameters & param
     _my_thermal_conductivity(isParamValid("thermal_conductivity") ? getParam<Real>("thermal_conductivity") : 0),
     _thermal_conductivity(declareProperty<Real>("thermal_conductivity")),
     _thermal_conductivity_function(getParam<FunctionName>("thermal_conductivity_function") != "" ? &getFunction("thermal_conductivity_function") : NULL),
-    
+
     _pddim(isParamValid("pddim") ? getParam<int>("pddim") : 3),
     _mesh_spacing(isParamValid("mesh_spacing") ? getParam<Real>("mesh_spacing") : 1.0),
     _bond_response(declareProperty<Real>("bond_response")),
@@ -60,7 +60,7 @@ HeatConductionMaterialPD::computeProperties()
   const NumericVector<Number>& ghosted_solution = *nonlinear_sys.currentSolution();
   unsigned int temp_dof0(node0->dof_number(nonlinear_sys.number(), _temp_var->number(), 0));
   unsigned int temp_dof1(node1->dof_number(nonlinear_sys.number(), _temp_var->number(), 0));
- 
+
   Real temp_node0 = ghosted_solution(temp_dof0);
   Real temp_node1 = ghosted_solution(temp_dof1);
 
@@ -78,7 +78,7 @@ HeatConductionMaterialPD::computeProperties()
     {
       _thermal_conductivity[_qp] = _my_thermal_conductivity;
     }
- 
+
     if (_pddim == 2)
     {
       _node_volume[_qp] = std::pow(_mesh_spacing, 2);

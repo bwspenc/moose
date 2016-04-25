@@ -19,7 +19,7 @@ InputParameters validParams<HeatConductionPD>()
   return params;
 }
 
-HeatConductionPD::HeatConductionPD(const InputParameters & parameters) 
+HeatConductionPD::HeatConductionPD(const InputParameters & parameters)
   :Kernel(parameters),
   _bond_response(getMaterialProperty<Real>("bond_response")),
   _bond_response_dif_temp(getMaterialProperty<Real>("bond_response_dif_temp")),
@@ -27,7 +27,7 @@ HeatConductionPD::HeatConductionPD(const InputParameters & parameters)
 {
 }
 
-HeatConductionPD::~HeatConductionPD() 
+HeatConductionPD::~HeatConductionPD()
 {
 }
 
@@ -44,7 +44,7 @@ HeatConductionPD::computeResidual()
   re += _local_re;
 
   if (_has_save_in)
-  { 
+  {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     for (unsigned int i = 0; i < _save_in.size(); i++)
       _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
