@@ -12,8 +12,6 @@
 
 #include "AbaqusCreepMaterial.h"
 #include "AbaqusUmatMaterial.h"
-#include "BondCriticalStrainPDAux.h"
-#include "BondStatusPDAux.h"
 #include "CLSHPlasticMaterial.h"
 #include "CLSHPlasticModel.h"
 #include "CombinedCreepPlasticity.h"
@@ -54,8 +52,6 @@
 #include "OutOfPlaneStress.h"
 #include "StressDivergenceRZ.h"
 #include "StressDivergenceRSpherical.h"
-#include "StressDivergencePD.h"
-#include "LinearIsotropicMaterialPD.h"
 #include "RateDepSmearCrackModel.h"
 #include "RateDepSmearIsoCrackModel.h"
 
@@ -125,7 +121,6 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(PowerLawCreep);
   registerMaterial(PowerLawCreepModel);
   registerMaterial(SolidModel);
-  registerMaterial(LinearIsotropicMaterialPD);
   registerMaterial(RateDepSmearCrackModel);
   registerMaterial(RateDepSmearIsoCrackModel);
 
@@ -135,9 +130,6 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerKernel(OutOfPlaneStress);
   registerKernel(StressDivergenceRZ);
   registerKernel(StressDivergenceRSpherical);
-  registerKernel(StressDivergenceTruss);
-  registerKernel(StressDivergencePD);
-  registerKernel(HomogenizationHeatConduction);
 
   registerPostprocessor(HomogenizedElasticConstants);
   registerPostprocessor(JIntegral);
@@ -150,7 +142,6 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerVectorPostprocessor(LineMaterialSymmTensorSampler);
 
   registerUserObject(CrackFrontDefinition);
-  registerUserObject(FailureIndexPD);
 }
 
 // External entry point for dynamic syntax association

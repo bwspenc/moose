@@ -72,8 +72,7 @@ HeatConductionApp::registerObjects(Factory & factory)
   registerKernel(AnisoHeatConduction);
   registerKernel(HeatConductionTimeDerivative);
   registerKernel(HeatSource);
-  registerKernel(HeatSourcePD);
-  registerKernel(HeatConductionPD);
+  registerKernel(HomogenizedHeatConduction);
   registerBoundaryCondition(HeatConductionBC);
   registerBoundaryCondition(ConvectiveFluxFunction);
   registerBoundaryCondition(GapHeatTransfer);
@@ -81,7 +80,6 @@ HeatConductionApp::registerObjects(Factory & factory)
   registerMaterial(GapConductance);
   registerMaterial(HeatConductionMaterial);
   registerMaterial(AnisoHeatConductionMaterial);
-  registerMaterial(HeatConductionMaterialPD);
   registerDiracKernel(GapHeatPointSourceMaster);
   registerPostprocessor(HomogenizedThermalConductivity);
   registerPostprocessor(ThermalConductivity);

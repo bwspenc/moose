@@ -13,6 +13,7 @@ ifeq ($(ALL_MODULES),yes)
         PHASE_FIELD               := yes
         RICHARDS                  := yes
         SOLID_MECHANICS           := yes
+        PERIDYNAMICS              := yes
         TENSOR_MECHANICS          := yes
         WATER_STEAM_EOS           := yes
         XFEM                      := yes
@@ -32,7 +33,11 @@ ifeq ($(POROUS_FLOW),yes)
 endif
 
 # The master list of all moose modules
+<<<<<<< c153a63eabd8f78d76391bdb3cd4ebc30a5f52c1
 MODULE_NAMES := "chemical_reactions contact fluid_properties heat_conduction linear_elasticity misc navier_stokes phase_field richards solid_mechanics tensor_mechanics water_steam_eos xfem porous_flow"
+=======
+MODULE_NAMES := "chemical_reactions contact heat_conduction linear_elasticity misc navier_stokes phase_field peridynamics richards solid_mechanics tensor_mechanics water_steam_eos xfem porous_flow"
+>>>>>>> Create a new module for peridynamics
 
 ###############################################################################
 ########################## MODULE REGISTRATION ################################
@@ -93,6 +98,12 @@ ifeq ($(PHASE_FIELD),yes)
   # Dependency on tensor mechanics
   DEPEND_MODULES     := tensor_mechanics
 
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(PERIDYNAMICS),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/peridynamics
+  APPLICATION_NAME   := peridynamics
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
