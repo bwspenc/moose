@@ -6,31 +6,23 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef HEATSOURCEPD_H
-#define HEATSOURCEPD_H
+#ifndef PERIDYNAMICSACTION_H
+#define PERIDYNAMICSACTION_H
 
-#include "Kernel.h"
-#include "PeridynamicMesh.h"
+#include "Action.h"
 
-class HeatSourcePD;
+class PeridynamicsAction;
 
 template<>
-InputParameters validParams<HeatSourcePD>();
+InputParameters validParams<PeridynamicsAction>();
 
-class HeatSourcePD : public Kernel
+class PeridynamicsAction : public Action
 {
 public:
+  PeridynamicsAction(const InputParameters & params);
 
-  HeatSourcePD(const InputParameters & parameters);
-
-protected:
-  virtual void computeResidual();
-  virtual Real computeQpResidual() {return 0;}
-
-  PeridynamicMesh & _pdmesh;
-
-  double _power_density;
-  Function * _power_density_function;
+  virtual void act();
+  virtual void addkernel(const std::string & name, InputParameters & params);
 };
 
-#endif //HEATSOURCEPD_H
+#endif //PERIDYNAMICSACTION_H

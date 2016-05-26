@@ -26,8 +26,9 @@
 // objects that can be created by MOOSE
 // Mesh
 #include "FileMesh.h"
+#include "FileMeshPD.h"
 #include "GeneratedMesh.h"
-#include "PeridynamicsMesh.h"
+#include "GeneratedMeshPD.h"
 #include "TiledMesh.h"
 #include "ImageMesh.h"
 #include "PatternedMesh.h"
@@ -449,8 +450,9 @@ registerObjects(Factory & factory)
 {
   // mesh
   registerMesh(FileMesh);
+  registerMesh(FileMeshPD);
   registerMesh(GeneratedMesh);
-  registerMesh(PeridynamicsMesh);
+  registerMesh(GeneratedMeshPD);
   registerMesh(TiledMesh);
   registerMesh(ImageMesh);
   registerMesh(PatternedMesh);

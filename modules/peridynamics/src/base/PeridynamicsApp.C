@@ -3,14 +3,17 @@
 #include "AppFactory.h"
 #include "MooseSyntax.h"
 
-#include "BondCriticalStrainPDAux.h"
-#include "BondStatusPDAux.h"
-#include "FailureIndexPD.h"
-#include "FailureIndexPDAux.h"
-#include "HeatConductionMaterialPD.h"
+#include "PeridynamicsAction.h"
+
+#include "BondCriticalStrainAux.h"
+#include "BondStatusAux.h"
+#include "FailureIndex.h"
+#include "FailureIndexAux.h"
+#include "ThermalPDMaterial.h"
 #include "HeatConductionPD.h"
 #include "HeatSourcePD.h"
-#include "LinearIsotropicMaterialPD.h"
+#include "CLEPDMaterial.h"
+#include "VLEPDMaterial.h"
 #include "StressDivergencePD.h"
 
 template<>
@@ -52,23 +55,27 @@ extern "C" void PeridynamicsApp__registerObjects(Factory & factory) { Peridynami
 void
 PeridynamicsApp::registerObjects(Factory & factory)
 {
-  registerAux(FailureIndexPDAux);
-  registerAux(BondStatusPDAux);
-  registerAux(BondCriticalStrainPDAux);
+  registerAux(FailureIndexAux);
+  registerAux(BondStatusAux);
+  registerAux(BondCriticalStrainAux);
 
-  registerMaterial(HeatConductionMaterialPD);
-  registerMaterial(LinearIsotropicMaterialPD);
+  registerMaterial(ThermalPDMaterial);
+  registerMaterial(CLEPDMaterial);
+  registerMaterial(VLEPDMaterial);
 
   registerKernel(HeatConductionPD);
   registerKernel(HeatSourcePD);
   registerKernel(StressDivergencePD);
 
-  registerUserObject(FailureIndexPD);
+  registerUserObject(FailureIndex);
 }
 
 // External entry point for dynamic syntax association
 extern "C" void PeridynamicsApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory) { PeridynamicsApp::associateSyntax(syntax, action_factory); }
 void
-PeridynamicsApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+PeridynamicsApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
+  syntax.registerActionSyntax("PeridynamicsAction", "Kernels/Peridynamics");
+
+  registerAction(PeridynamicsAction, "add_kernel");
 }

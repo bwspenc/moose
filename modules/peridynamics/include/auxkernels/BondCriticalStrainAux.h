@@ -6,33 +6,28 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef HEATCONDUCTIONPD_H
-#define HEATCONDUCTIONPD_H
 
-#include "Kernel.h"
+#ifndef BONDCRITICALSTRAINAUX_H
+#define BONDCRITICALSTRAINAUX_H
 
-//Forward Declarations
-class HeatConductionPD;
+#include "AuxKernel.h"
+
+class BondCriticalStrainAux;
 
 template<>
-InputParameters validParams<HeatConductionPD>();
+InputParameters validParams<BondCriticalStrainAux>();
 
-class HeatConductionPD : public Kernel
+class BondCriticalStrainAux : public AuxKernel
 {
 public:
-
-  HeatConductionPD(const InputParameters & parameters);
-  virtual ~HeatConductionPD();
+  BondCriticalStrainAux(const InputParameters & parameters);
+  virtual ~BondCriticalStrainAux() {}
 
 protected:
-  virtual void computeResidual();
-  virtual Real computeQpResidual() {return 0;}
-  virtual void computeJacobian();
+  const Real _critical_strain;
+  const Real _standard_deviation;
 
-  const MaterialProperty<Real> & _bond_response;
-  const MaterialProperty<Real> & _bond_drdT;
-
-  const VariableValue & _bond_status;
+  virtual Real computeValue();
 };
 
-#endif //HEATCONDUCTIONPD_H
+#endif //BONDCRITICALSTRAINAUX_H

@@ -9,8 +9,6 @@
 
 #include "Kernel.h"
 
-//Forward Declarations
-class ColumnMajorMatrix;
 class StressDivergencePD;
 
 template<>
@@ -19,7 +17,6 @@ InputParameters validParams<StressDivergencePD>();
 class StressDivergencePD : public Kernel
 {
 public:
-
   StressDivergencePD(const InputParameters & parameters);
   virtual ~StressDivergencePD() {}
 
@@ -27,32 +24,24 @@ protected:
   virtual void initialSetup();
 
   virtual void computeResidual();
-
   virtual Real computeQpResidual() {return 0;}
-
   virtual void computeJacobian();
-
   virtual void computeOffDiagJacobian(unsigned int jvar);
 
   virtual void computeStiffness(DenseVector<Real> & stiff_elem);
-
   virtual void computeOffDiagStiffness(DenseMatrix<Real> & off_stiff_elem);
 
   const MaterialProperty<Real> & _bond_force;
-  const MaterialProperty<Real> & _bond_force_dif_disp;
-  const MaterialProperty<Real> & _bond_force_dif_temp;
+  const MaterialProperty<Real> & _bond_dfdU;
+  const MaterialProperty<Real> & _bond_dfdT;
 
 private:
   const unsigned int _component;
 
-  const bool _xdisp_coupled;
-  const bool _ydisp_coupled;
-  const bool _zdisp_coupled;
-  const bool _temp_coupled;
+  unsigned int _ndisp;
+  std::vector<unsigned int> _disp_var;
 
-  const unsigned int _xdisp_var;
-  const unsigned int _ydisp_var;
-  const unsigned int _zdisp_var;
+  const bool _temp_coupled;
   const unsigned int _temp_var;
 
   const VariableValue & _bond_status;

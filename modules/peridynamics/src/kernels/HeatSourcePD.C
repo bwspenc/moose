@@ -1,52 +1,42 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
+/*                       Peridynamics                           */
+/*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#include "HeatSourcePD.h"
 
-#include "FEProblem.h"
-#include "MooseMesh.h"
-#include "Material.h"
+#include "HeatSourcePD.h"
 #include "Function.h"
 #include "Assembly.h"
-using namespace std;
 
 template<>
 InputParameters validParams<HeatSourcePD>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addParam<std::string>("appended_property_name", "", "Name appended to material properties to make them unique");
-  params.addParam<Real>("power_density", 1.0, "power_density");
-  params.addParam<FunctionName>("power_density_function", "", "Function describing the volumetric heat source");
-  params.addCoupledVar("total_bonds","Variable to contain total number of bonds connected to node");
+  params.addParam<Real>("power_density", 0, "Volumetric heat source density");
+  params.addParam<FunctionName>("power_density_function", "", "Function describing the volumetric heat source density");
   return params;
 }
 
 HeatSourcePD::HeatSourcePD(const InputParameters & parameters)
   :Kernel(parameters),
-   _total_bonds_var(getVar("total_bonds",0)),
-   _node_volume(getMaterialProperty<Real>("node_volume" + getParam<std::string>("appended_property_name"))),
-   _power_density(isParamValid("power_density") ? getParam<Real>("power_density") : 0),
-   _power_density_function(getParam<FunctionName>("power_density_function") != "" ? &getFunction("power_density_function") : NULL)
-{
-}
-
-HeatSourcePD::~HeatSourcePD()
+  _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh)),
+  _power_density(getParam<Real>("power_density")),
+  _power_density_function(getParam<FunctionName>("power_density_function") != "" ? &getFunction("power_density_function") : NULL)
 {
 }
 
 void
 HeatSourcePD::computeResidual()
 {
-//get the total_bonds for each node
-  AuxiliarySystem & aux = _fe_problem.getAuxiliarySystem();
-  const NumericVector<Number> & sln = *aux.currentSolution();
-  const Node* const node0 = _current_elem->get_node(0);
-  const Node* const node1 = _current_elem->get_node(1);
-  long int tb_dof0 = node0->dof_number(aux.number(), _total_bonds_var->number(), 0);
-  long int tb_dof1 = node1->dof_number(aux.number(), _total_bonds_var->number(), 0);
+//get the volume and total_bonds for each node
+  double nv0 = _pdmesh.volume(_current_elem->get_node(0)->id());
+  double nv1 = _pdmesh.volume(_current_elem->get_node(1)->id());
+
+  unsigned int tb0 = _pdmesh.n_neighbors(_current_elem->get_node(0)->id());
+  unsigned int tb1 = _pdmesh.n_neighbors(_current_elem->get_node(1)->id());
 
   if(_power_density_function)
   {
@@ -59,8 +49,8 @@ HeatSourcePD::computeResidual()
   _local_re.resize(re.size());
   _local_re.zero();
 
-  _local_re(0) = -_power_density * _node_volume[0] / sln(tb_dof0);
-  _local_re(1) = -_power_density * _node_volume[0] / sln(tb_dof1);
+  _local_re(0) = -_power_density * nv0 / tb0;
+  _local_re(1) = -_power_density * nv1 / tb1;
 
   re += _local_re;
 

@@ -22,7 +22,7 @@ InputParameters validParams<HeatConductionPD>()
 HeatConductionPD::HeatConductionPD(const InputParameters & parameters)
   :Kernel(parameters),
   _bond_response(getMaterialProperty<Real>("bond_response")),
-  _bond_response_dif_temp(getMaterialProperty<Real>("bond_response_dif_temp")),
+  _bond_drdT(getMaterialProperty<Real>("bond_drdT")),
   _bond_status(coupledValue("bond_status"))
 {
 }
@@ -58,9 +58,9 @@ HeatConductionPD::computeJacobian()
   _local_ke.resize(ke.m(), ke.n());
   _local_ke.zero();
 
-  for (_i = 0; _i < _test.size(); _i++)
-    for (_j = 0; _j < _phi.size(); _j++)
-      _local_ke(_i, _j) += (_i == _j ? 1 : -1) * _bond_response_dif_temp[0] * _bond_status[0];
+  for (unsigned int i = 0; i < _test.size(); ++i)
+    for (unsigned int j = 0; j < _phi.size(); ++j)
+      _local_ke(i, j) += (i == j ? 1 : -1) * _bond_drdT[0] * _bond_status[0];
 
   ke += _local_ke;
 
@@ -73,6 +73,6 @@ HeatConductionPD::computeJacobian()
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     for (unsigned int i=0; i < _diag_save_in.size(); i++)
-    _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
   }
 }

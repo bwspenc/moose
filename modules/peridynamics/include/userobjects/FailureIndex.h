@@ -1,26 +1,28 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
+/*                       Peridynamics                           */
+/*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef FAILUREINDEXPD_H
-#define FAILUREINDEXPD_H
+#ifndef FAILUREINDEX_H
+#define FAILUREINDEX_H
 
 #include "ElementUserObject.h"
 
-class FailureIndexPD;
+class FailureIndex;
 
 template<>
-InputParameters validParams<FailureIndexPD>();
+InputParameters validParams<FailureIndex>();
 
-class FailureIndexPD :
+class FailureIndex :
   public ElementUserObject
 {
 public:
-  FailureIndexPD(const InputParameters & parameters);
+  FailureIndex(const InputParameters & parameters);
 
-  virtual ~FailureIndexPD();
+  virtual ~FailureIndex();
 
   virtual void initialize();
   virtual void execute();
@@ -41,4 +43,4 @@ protected:
   const VariableValue & _bond_status;
 };
 
-#endif // FAILUREINDEXPD_H
+#endif // FAILUREINDEX_H

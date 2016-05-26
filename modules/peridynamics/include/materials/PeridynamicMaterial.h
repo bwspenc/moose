@@ -6,31 +6,38 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef HEATSOURCEPD_H
-#define HEATSOURCEPD_H
+#ifndef PERIDYNAMICMATERIAL_H
+#define PERIDYNAMICMATERIAL_H
 
-#include "Kernel.h"
+#include "Material.h"
 #include "PeridynamicMesh.h"
 
-class HeatSourcePD;
+class PeridynamicMaterial;
 
 template<>
-InputParameters validParams<HeatSourcePD>();
+InputParameters validParams<PeridynamicMaterial>();
 
-class HeatSourcePD : public Kernel
+class PeridynamicMaterial : public Material
 {
 public:
-
-  HeatSourcePD(const InputParameters & parameters);
+  PeridynamicMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeResidual();
-  virtual Real computeQpResidual() {return 0;}
+  virtual void initQpStatefulProperties() = 0;
+  virtual void computeProperties();
+  virtual void computeQpProperties() = 0;
 
   PeridynamicMesh & _pdmesh;
 
-  double _power_density;
-  Function * _power_density_function;
+  const double _mesh_spacing;
+  const unsigned int _pddim;
+
+  const double _horizon;
+
+  double _nv_i;
+  double _nv_j;
+
+  double _origin_length;
 };
 
-#endif //HEATSOURCEPD_H
+#endif //PERIDYNAMICMATERIAL_H

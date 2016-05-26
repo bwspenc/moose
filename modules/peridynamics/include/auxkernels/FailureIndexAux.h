@@ -1,37 +1,31 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
+/*                       Peridynamics                           */
+/*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-
-
-#ifndef BONDCRITICALSTRAINPDAUX_H
-#define BONDCRITICALSTRAINPDAUX_H
+#ifndef FAILUREINDEXAUX_H
+#define FAILUREINDEXAUX_H
 
 #include "AuxKernel.h"
+#include "FailureIndex.h"
 
-//Forward Declarations
-class BondCriticalStrainPDAux;
+class FailureIndexAux;
 
 template<>
-InputParameters validParams<BondCriticalStrainPDAux>();
+InputParameters validParams<FailureIndexAux>();
 
-class BondCriticalStrainPDAux : public AuxKernel
+class FailureIndexAux : public AuxKernel
 {
 public:
-
-  BondCriticalStrainPDAux(const InputParameters & parameters);
-
-  virtual ~BondCriticalStrainPDAux() {}
+  FailureIndexAux(const InputParameters & parameters);
+  virtual ~FailureIndexAux() {}
 
 protected:
-
-  const Real _critical_strain;
-  const Real _standard_deviation;
-
+  const FailureIndex * const _failure_index;
   virtual Real computeValue();
-
 };
 
-#endif //BONDCRITICALSTRAINPDAUX_H
+#endif //FAILUREINDEXAUX_H

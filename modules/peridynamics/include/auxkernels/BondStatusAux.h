@@ -1,32 +1,29 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
+/*                        Peridynamics                          */
+/*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-
-#ifndef BONDSTATUSPDAUX_H
-#define BONDSTATUSPDAUX_H
+#ifndef BONDSTATUSAUX_H
+#define BONDSTATUSAUX_H
 
 #include "AuxKernel.h"
 
-//Forward Declarations
-class BondStatusPDAux;
+class BondStatusAux;
 
 template<>
-InputParameters validParams<BondStatusPDAux>();
+InputParameters validParams<BondStatusAux>();
 
-class BondStatusPDAux : public AuxKernel
+class BondStatusAux : public AuxKernel
 {
 public:
-
-  BondStatusPDAux(const InputParameters & parameters);
-
-  virtual ~BondStatusPDAux() {}
+  BondStatusAux(const InputParameters & parameters);
+  virtual ~BondStatusAux() {}
 
 protected:
-
   virtual Real computeValue();
 
   const MaterialProperty<Real> & _bond_mechanic_strain;
@@ -35,4 +32,4 @@ protected:
   const VariableValue & _bond_status;
 };
 
-#endif //BONDSTATUSPDAUX_H
+#endif //BONDSTATUSAUX_H

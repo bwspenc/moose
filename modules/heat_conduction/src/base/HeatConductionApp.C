@@ -30,7 +30,8 @@
 #include "ThermalContactMaterialsAction.h"
 #include "HeatSource.h"
 #include "HeatSourcePD.h"
-#include "ThermalCond.h"
+#include "ThermalConductivity.h"
+#include "CoupledConvectiveFlux.h"
 
 template<>
 InputParameters validParams<HeatConductionApp>()

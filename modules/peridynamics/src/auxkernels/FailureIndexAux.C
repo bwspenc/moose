@@ -1,31 +1,33 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
+/*                       Peridynamics                           */
+/*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "FailureIndexPDAux.h"
+#include "FailureIndexAux.h"
 
 template<>
-InputParameters validParams<FailureIndexPDAux>()
+InputParameters validParams<FailureIndexAux>()
 {
   InputParameters params = validParams<AuxKernel>();
-  params.addRequiredParam<UserObjectName>("failure_index_pd","The name of the FailureIndexPD user object");
+  params.addRequiredParam<UserObjectName>("failure_index","The name of the FailureIndex user object");
   return params;
 }
 
-FailureIndexPDAux::FailureIndexPDAux(const InputParameters & parameters) :
+FailureIndexAux::FailureIndexAux(const InputParameters & parameters) :
   AuxKernel(parameters),
-  _failure_index_pd(&getUserObject<FailureIndexPD>("failure_index_pd"))
+  _failure_index(&getUserObject<FailureIndex>("failure_index"))
 {
 }
 
 Real
-FailureIndexPDAux::computeValue()
+FailureIndexAux::computeValue()
 {
   if (!isNodal())
     mooseError("must run on a nodal variable");
 
-  return _failure_index_pd->computeFailureIndex(_current_node->id());
+  return _failure_index->computeFailureIndex(_current_node->id());
 }
