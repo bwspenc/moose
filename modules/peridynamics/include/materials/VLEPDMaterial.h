@@ -22,11 +22,9 @@ public:
   VLEPDMaterial(const InputParameters & parameters);
 
 protected:
+  virtual double computeBondModulus();
   virtual void computeQpStrain();
   virtual void computeQpForce();
-
-  virtual double computeLambda2D(double poissons_ratio);
-  virtual double computeLambda3D(double poissons_ratio);
 };
 
 #endif //VLEPDMATERIAL_H

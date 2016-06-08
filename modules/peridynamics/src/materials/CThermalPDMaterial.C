@@ -7,13 +7,13 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "ThermalPDMaterial.h"
+#include "CThermalPDMaterial.h"
 #include "Material.h"
 #include "Function.h"
 #include "NonlinearSystem.h"
 
 template<>
-InputParameters validParams<ThermalPDMaterial>()
+InputParameters validParams<CThermalPDMaterial>()
 {
   InputParameters params = validParams<PeridynamicMaterial>();
   params.addRequiredParam<NonlinearVariableName>("temp", "Variable containing the temperature");
@@ -22,7 +22,7 @@ InputParameters validParams<ThermalPDMaterial>()
   return params;
 }
 
-ThermalPDMaterial::ThermalPDMaterial(const InputParameters & parameters) :
+CThermalPDMaterial::CThermalPDMaterial(const InputParameters & parameters) :
     PeridynamicMaterial(parameters),
     _thermal_conductivity(getParam<Real>("thermal_conductivity")),
     _thermal_conductivity_function(getParam<FunctionName>("thermal_conductivity_function") != "" ? &getFunction("thermal_conductivity_function") : NULL),
@@ -34,12 +34,12 @@ ThermalPDMaterial::ThermalPDMaterial(const InputParameters & parameters) :
 }
 
 void
-ThermalPDMaterial::initQpStatefulProperties()
+CThermalPDMaterial::initQpStatefulProperties()
 {
 }
 
 void
-ThermalPDMaterial::computeQpProperties()
+CThermalPDMaterial::computeQpProperties()
 {
   //obtain the temperature solution at the two nodes for each truss element
   NonlinearSystem & nonlinear_sys = _fe_problem.getNonlinearSystem();

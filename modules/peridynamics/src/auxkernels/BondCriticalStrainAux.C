@@ -23,13 +23,13 @@ BondCriticalStrainAux::BondCriticalStrainAux(const InputParameters & parameters)
   _critical_strain(getParam<Real>("critical_strain")),
   _standard_deviation(getParam<Real>("standard_deviation"))
 {
-//  setRandomResetFrequency(EXEC_INITIAL);
+  setRandomResetFrequency(EXEC_INITIAL);
 }
 
 Real
 BondCriticalStrainAux::computeValue()
 {
 // Generate randomized critical stretch by Box-Muller method
-//  return  std::sqrt(-2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * _standard_deviation + _critical_strain;
-  return 0.02;
+  return  std::sqrt(-2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * _standard_deviation + _critical_strain;
+//  return 0.02;
 }

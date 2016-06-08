@@ -31,15 +31,49 @@ public:
   virtual ~PeridynamicMesh();
 
   virtual void buildMesh(){};
-
+  /*
+   * function for neighbor search with given horizon
+   */
   virtual void find_neighbor();
 
-  virtual std::vector<unsigned int> neighbors(dof_id_type node_id);
+  /*
+   * return neighbor nodes indices for node node_id
+   */
+  virtual std::vector<dof_id_type> neighbors(dof_id_type node_id);
+
+  /*
+   * return coordinates for node node_id
+   */
+  virtual Point coord(dof_id_type node_id);
+
+  /*
+   * return nodal volume for node node_id
+   */
   virtual double volume(dof_id_type node_id);
+
+  /*
+   * return neighbor number for node node_id
+   */
   virtual unsigned int n_neighbors(dof_id_type node_id);
+
+  /*
+   * return PD dimension
+   */
   virtual int dim();
+
+  /*
+   * return mesh_spacing
+   */
   virtual double mesh_spacing();
+
+  /*
+   * return total number of nodes
+   */
   virtual unsigned int n_nodes();
+
+  /*
+   * return total number of bonds
+   */
   virtual unsigned int n_bonds();
 
 protected:
@@ -52,7 +86,7 @@ protected:
   unsigned int _total_nodes;
   unsigned int _total_bonds;
 
-  std::vector<std::vector<unsigned int> > _neighbors;
+  std::vector<std::vector<dof_id_type> > _neighbors;
 };
 
-#endif /* PERIDYNAMICMESH_H */
+#endif // PERIDYNAMICMESH_H

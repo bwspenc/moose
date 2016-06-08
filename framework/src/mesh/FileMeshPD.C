@@ -9,6 +9,7 @@
 
 #include "FileMeshPD.h"
 #include "MooseMesh.h"
+#include "stdio.h"
 
 // libMesh includes
 #include "libmesh/serial_mesh.h"
@@ -131,6 +132,22 @@ FileMeshPD::buildMesh()
     }
   }
 
+
+  // define boundary nodeset, ONLY for geometry of circular cross section
+  for (unsigned int i = 0; i < _total_nodes; ++i)
+  {
+    double X = (_node[i].coord)(0);
+    double Y = (_node[i].coord)(1);
+    double dis = std::sqrt(X * X + Y * Y);
+    if (dis < 0.01)
+      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 2);
+    if (std::abs(Y) < 0.01 && dis > 4.1 - 0.1 && X > 0.0)
+      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 3);
+  }
+  pd_boundary_info.nodeset_name(2) = "CenterPoint";
+  pd_boundary_info.nodeset_name(3) = "RightPoint";
+
+
   delete fe_mesh;
   delete _exodusII_io;
 
@@ -138,5 +155,5 @@ FileMeshPD::buildMesh()
   std::cout << "Total Bond Number: " << _total_bonds << std::endl;
 
   // prepare for use
-  pd_mesh.prepare_for_use (/*skip_renumber =*/ false);
+  pd_mesh.prepare_for_use (/*skip_renumber =*/ true);
 }

@@ -45,8 +45,5 @@ PeridynamicMaterial::computeProperties()
   _origin_length = _current_elem->volume();
 
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-  {
     computeQpProperties();
-  }
 }
-

@@ -1,7 +1,7 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
-/*                       Peridynamics                           */
+/*                      Peridynamics                            */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
@@ -21,6 +21,40 @@ VLEPDMaterial::VLEPDMaterial(const InputParameters & parameters)
 {
 }
 
+double
+VLEPDMaterial::computeBondModulus()
+{
+  dof_id_type node_i = _current_elem->get_node(0)->id();
+  dof_id_type node_j = _current_elem->get_node(1)->id();
+
+  std::vector<dof_id_type> i_neighbors = _pdmesh.neighbors(node_i);
+  std::vector<dof_id_type> j_neighbors = _pdmesh.neighbors(node_j);
+  unsigned int i_nneighbor = _pdmesh.n_neighbors(node_i);
+  unsigned int j_nneighbor = _pdmesh.n_neighbors(node_j);
+
+  double val1 = 0, val2 = 0;
+  for (unsigned int k = 0; k < i_nneighbor; ++k)
+    val1 += _pdmesh.volume(i_neighbors[k]);
+
+  for (unsigned int k = 0; k < j_nneighbor; ++k)
+    val2 += _pdmesh.volume(j_neighbors[k]);
+
+  double val = (1.0 / val1 + 1.0 / val2) / _origin_length;
+
+  double Cij;
+  if (_pddim == 2)
+  {
+    if (_plane_strain)
+      Cij = 4.0 * (_youngs_modulus / 2.0 / (1.0 + _poissons_ratio) / (1.0 - 2.0 * _poissons_ratio)) * val;// plane strain
+    else
+      Cij = 4.0 * (_youngs_modulus / 2.0 / (1.0 - _poissons_ratio)) * val;// plane stress
+  }
+  else if (_pddim == 3)
+    Cij = 9.0 * (_youngs_modulus / 3.0 / (1.0 - 2.0 * _poissons_ratio)) * val;
+
+  return Cij;
+}
+
 void
 VLEPDMaterial::computeQpStrain()
 {
@@ -33,58 +67,10 @@ VLEPDMaterial::computeQpStrain()
 void
 VLEPDMaterial::computeQpForce()
 {
+  double Cij = computeBondModulus();
   // bond_force and bond_dfdU, bond_dfdT
-  if (_pddim == 2)
-  {
-    double lambda = computeLambda2D(_poissons_ratio);
-    _bond_force[_qp] = (_youngs_modulus * std::exp(-_origin_length / _horizon) / _mesh_spacing / lambda) * _bond_mechanic_strain[_qp] * _nv_i * _nv_j;
-    _bond_dfdU[_qp] = (_youngs_modulus * std::exp(-_origin_length / _horizon) / _mesh_spacing / lambda) / _origin_length * _nv_i * _nv_j;
-    _bond_dfdT[_qp] = -(_youngs_modulus * std::exp(-_origin_length / _horizon) / _mesh_spacing / lambda) * _alpha / 2.0 * _nv_i * _nv_j;
-  }
-  else if (_pddim == 3)
-  {
-    double lambda = computeLambda3D(_poissons_ratio);
-    _bond_force[_qp] = (_youngs_modulus * std::exp(-_origin_length / _horizon) / _mesh_spacing / lambda) * _bond_mechanic_strain[_qp] * _nv_i * _nv_j;
-    _bond_dfdU[_qp] = (_youngs_modulus * std::exp(-_origin_length / _horizon) / _mesh_spacing / lambda) / _origin_length * _nv_i * _nv_j;
-    _bond_dfdT[_qp] = -(_youngs_modulus * std::exp(-_origin_length / _horizon) / _mesh_spacing / lambda) * _alpha / 2.0 * _nv_i * _nv_j;
-  }
+  _bond_force[_qp] = Cij * _bond_mechanic_strain[_qp] * _nv_j * _nv_i;
+  _bond_dfdU[_qp] =  Cij / _origin_length * _nv_j * _nv_i;
+  _bond_dfdT[_qp] = - Cij * _alpha / 2.0 * _nv_j * _nv_i;
 }
 
-double
-VLEPDMaterial::computeLambda2D(double poissons_ratio)
-{
-  double e = 0.0001, lambda = 0, ftemp, s;
-  for (unsigned int i = -3; i < 4; ++i)
-    for (unsigned int j = 1; j < 4; ++j)
-    {
-      ftemp = std::sqrt(i * i + j * j);
-      if (ftemp <= 3.0001)
-      {
-        s = (std::sqrt(std::pow(j * (1 + e), 2) + std::pow(i * (1 - poissons_ratio * e), 2)) - std::sqrt(i * i + j * j)) / std::sqrt(i * i + j * j);
-        lambda += j * (std::exp(-ftemp / 3) * j / ftemp * s);
-      }
-    }
-  lambda /= e;
-
-  return lambda;
-}
-
-double
-VLEPDMaterial::computeLambda3D(double poissons_ratio)
-{
-  double e = 0.0001, lambda = 0, ftemp, s;
-  for (unsigned int i = -3; i < 4; ++i)
-    for (unsigned int j = -3; j < 4; ++j)
-      for (unsigned int k = 1; k < 4; ++k)
-      {
-        ftemp = std::sqrt(i * i + j * j + k * k);
-        if (ftemp <= 3.0001)
-        {
-          s = (std::sqrt(std::pow(k * (1.0 + e), 2) + std::pow(j * (1.0 - poissons_ratio * e), 2) + std::pow(i * (1.0 - poissons_ratio * e), 2)) - std::sqrt(i * i + j * j + k * k)) / std::sqrt(i * i + j * j + k * k);
-          lambda += k * (std::exp(-ftemp / 3.0) * k / ftemp * s);
-        }
-      }
-  lambda /= e;
-
-  return lambda;
-}

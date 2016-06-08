@@ -77,10 +77,16 @@ PeridynamicMesh::find_neighbor()
   }
 }
 
-std::vector<unsigned int>
+std::vector<dof_id_type>
 PeridynamicMesh::neighbors(dof_id_type node_id)
 {
   return _neighbors[node_id];
+}
+
+Point
+PeridynamicMesh::coord(dof_id_type node_id)
+{
+  return _node[node_id].coord;
 }
 
 double

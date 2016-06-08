@@ -81,7 +81,7 @@ GeneratedMeshPD::buildMesh()
   std::cout << "Total Bond Number: " << _total_bonds << std::endl;
 
   // prepare for use
-  mesh.prepare_for_use (/*skip_renumber =*/ false);
+  mesh.prepare_for_use (/*skip_renumber =*/ true);
 }
 
 void

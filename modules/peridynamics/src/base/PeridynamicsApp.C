@@ -9,7 +9,7 @@
 #include "BondStatusAux.h"
 #include "FailureIndex.h"
 #include "FailureIndexAux.h"
-#include "ThermalPDMaterial.h"
+#include "CThermalPDMaterial.h"
 #include "HeatConductionPD.h"
 #include "HeatSourcePD.h"
 #include "CLEPDMaterial.h"
@@ -59,7 +59,7 @@ PeridynamicsApp::registerObjects(Factory & factory)
   registerAux(BondStatusAux);
   registerAux(BondCriticalStrainAux);
 
-  registerMaterial(ThermalPDMaterial);
+  registerMaterial(CThermalPDMaterial);
   registerMaterial(CLEPDMaterial);
   registerMaterial(VLEPDMaterial);
 
