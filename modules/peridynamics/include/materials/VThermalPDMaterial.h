@@ -6,26 +6,26 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef CTHERMALPDMATERIAL_H
-#define CTHERMALPDMATERIAL_H
+#ifndef VTHERMALPDMATERIAL_H
+#define VTHERMALPDMATERIAL_H
 
 #include "PeridynamicMaterial.h"
 
-class CThermalPDMaterial;
+class VThermalPDMaterial;
 class Function;
 
 template<>
-InputParameters validParams<CThermalPDMaterial>();
+InputParameters validParams<VThermalPDMaterial>();
 
-class CThermalPDMaterial : public PeridynamicMaterial
+class VThermalPDMaterial : public PeridynamicMaterial
 {
 public:
-  CThermalPDMaterial(const InputParameters & parameters);
+  VThermalPDMaterial(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();
-  virtual void computeQpProperties();
   virtual double computeBondModulus(double temp_avg);
+  virtual void computeQpProperties();
 
   const Real _thermal_conductivity;
   Function * _thermal_conductivity_function;
@@ -36,4 +36,4 @@ protected:
   MooseVariable * _temp_var;
 };
 
-#endif //CTHERMALPDMATERIAL_H
+#endif //VTHERMALPDMATERIAL_H

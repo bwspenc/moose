@@ -7,13 +7,13 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "CThermalPDMaterial.h"
+#include "VThermalPDMaterial.h"
 #include "Material.h"
 #include "Function.h"
 #include "NonlinearSystem.h"
 
 template<>
-InputParameters validParams<CThermalPDMaterial>()
+InputParameters validParams<VThermalPDMaterial>()
 {
   InputParameters params = validParams<PeridynamicMaterial>();
   params.addRequiredParam<NonlinearVariableName>("temp", "Variable containing the temperature");
@@ -22,7 +22,7 @@ InputParameters validParams<CThermalPDMaterial>()
   return params;
 }
 
-CThermalPDMaterial::CThermalPDMaterial(const InputParameters & parameters) :
+VThermalPDMaterial::VThermalPDMaterial(const InputParameters & parameters) :
     PeridynamicMaterial(parameters),
     _thermal_conductivity(getParam<Real>("thermal_conductivity")),
     _thermal_conductivity_function(getParam<FunctionName>("thermal_conductivity_function") != "" ? &getFunction("thermal_conductivity_function") : NULL),
@@ -34,13 +34,30 @@ CThermalPDMaterial::CThermalPDMaterial(const InputParameters & parameters) :
 }
 
 void
-CThermalPDMaterial::initQpStatefulProperties()
+VThermalPDMaterial::initQpStatefulProperties()
 {
 }
 
 double
-CThermalPDMaterial::computeBondModulus(double temp_avg)
+VThermalPDMaterial::computeBondModulus(double temp_avg)
 {
+  dof_id_type node_i = _current_elem->get_node(0)->id();
+  dof_id_type node_j = _current_elem->get_node(1)->id();
+
+  std::vector<dof_id_type> i_neighbors = _pdmesh.neighbors(node_i);
+  std::vector<dof_id_type> j_neighbors = _pdmesh.neighbors(node_j);
+  unsigned int i_nneighbor = _pdmesh.n_neighbors(node_i);
+  unsigned int j_nneighbor = _pdmesh.n_neighbors(node_j);
+
+  double val1 = 0, val2 = 0;
+  for (unsigned int k = 0; k < i_nneighbor; ++k)
+    val1 += _pdmesh.volume(i_neighbors[k]);
+
+  for (unsigned int k = 0; k < j_nneighbor; ++k)
+    val2 += _pdmesh.volume(j_neighbors[k]);
+
+  double val = (1.0 / val1 + 1.0 / val2) / _origin_length;
+
   double kappa;
   if (_thermal_conductivity_function)
   {
@@ -50,28 +67,23 @@ CThermalPDMaterial::computeBondModulus(double temp_avg)
   else
     kappa = _thermal_conductivity;
 
-  if (_pddim == 2)
-    kappa *= 6.0 * kappa / (3.14159265358 * std::pow(_horizon, 3));
-  else if (_pddim == 3)
-    kappa *= 6.0 * kappa / (3.14159265358 * std::pow(_horizon, 4));
-
-  return kappa;
+  return _pddim * kappa * val;
 }
 
 void
-CThermalPDMaterial::computeQpProperties()
+VThermalPDMaterial::computeQpProperties()
 {
-  // obtain the temperature solution at the two nodes for each truss element
+  //obtain the temperature solution at the two nodes for each truss element
   NonlinearSystem & nonlinear_sys = _fe_problem.getNonlinearSystem();
   const NumericVector<Number>& ghosted_solution = *nonlinear_sys.currentSolution();
   unsigned int temp_dof0(_current_elem->get_node(0)->dof_number(nonlinear_sys.number(), _temp_var->number(), 0));
   unsigned int temp_dof1(_current_elem->get_node(1)->dof_number(nonlinear_sys.number(), _temp_var->number(), 0));
 
-  Real temp_node0 = ghosted_solution(temp_dof0);
-  Real temp_node1 = ghosted_solution(temp_dof1);
+  double temp_node0 = ghosted_solution(temp_dof0);
+  double temp_node1 = ghosted_solution(temp_dof1);
 
-  // the temperature of the connecting bond is calculated as the avarage of the temperature of two end nodes, this value will be used for temperature (and possibly spatial location) dependent thermal conductivity and specific heat calculation
-  Real temp_avg = (temp_node0 + temp_node1) / 2.0;
+// the temperature of the connecting bond is calculated as the avarage of the temperature of two end nodes, this value will be used for temperature (and possibly spatial location) dependent thermal conductivity and specific heat calculation
+  double temp_avg = (temp_node0 + temp_node1) / 2.0;
 
   double kappa = computeBondModulus(temp_avg);
   _bond_response[_qp] = kappa * (temp_node1 - temp_node0) / _origin_length * _nv_i * _nv_j;

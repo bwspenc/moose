@@ -29,7 +29,7 @@ BondCriticalStrainAux::BondCriticalStrainAux(const InputParameters & parameters)
 Real
 BondCriticalStrainAux::computeValue()
 {
-// Generate randomized critical stretch by Box-Muller method
+// Generate randomized critical stretch by Box-Muller method: randomized_critical_strain = small_random_number + _input_critical_strain
   return  std::sqrt(-2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * _standard_deviation + _critical_strain;
 //  return 0.02;
 }
