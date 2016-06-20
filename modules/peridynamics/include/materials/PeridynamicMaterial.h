@@ -10,6 +10,7 @@
 #define PERIDYNAMICMATERIAL_H
 
 #include "Material.h"
+#include "Assembly.h"
 #include "PeridynamicMesh.h"
 
 class PeridynamicMaterial;
@@ -27,17 +28,27 @@ protected:
   virtual void computeProperties();
   virtual void computeQpProperties() = 0;
 
+  virtual Real computeBondModulus() = 0;
+
+  virtual Real computeVolSum(dof_id_type node_id);
+
+  AuxiliarySystem & _aux;
+
+  const VariableValue & _bond_status;
+  const VariableValue & _bond_contact;
+  const VariableValue & _bond_contact_strain;
+
   PeridynamicMesh & _pdmesh;
 
-  const double _mesh_spacing;
   const unsigned int _pddim;
-
-  const double _horizon;
 
   double _nv_i;
   double _nv_j;
+  double _nvsum_i;
+  double _nvsum_j;
 
   double _origin_length;
+  double _bond_sign;
 };
 
 #endif //PERIDYNAMICMATERIAL_H

@@ -1,38 +1,36 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
-/*                       Peridynamics                           */
+/*                        Peridynamics                          */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#ifndef BONDCRITICALSTRAINAUX_H
-#define BONDCRITICALSTRAINAUX_H
+#ifndef BONDCONTACTAUX_H
+#define BONDCONTACTAUX_H
 
 #include "AuxKernel.h"
 
-class BondCriticalStrainAux;
+class BondContactAux;
 
 template<>
-InputParameters validParams<BondCriticalStrainAux>();
+InputParameters validParams<BondContactAux>();
 
-class BondCriticalStrainAux : public AuxKernel
+class BondContactAux :
+public AuxKernel
 {
 public:
-  BondCriticalStrainAux(const InputParameters & parameters);
-  virtual ~BondCriticalStrainAux() {}
+  BondContactAux(const InputParameters & parameters);
+  virtual ~BondContactAux() {}
 
 protected:
   virtual Real computeValue();
 
-  const double _Gc;
-  const double _E;
-  const double _mu;
+  const MaterialProperty<Real> & _bond_mechanic_strain;
 
-  const int _pddim;
-
-  double _kappa;
+  const VariableValue & _bond_critical_strain;
+//  const VariableValue & _bond_contact_strain;
 };
 
-#endif //BONDCRITICALSTRAINAUX_H
+#endif //BONDCONTACTAUX_H

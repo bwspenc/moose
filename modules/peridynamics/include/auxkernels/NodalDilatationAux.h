@@ -6,23 +6,27 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef VTHERMALPDMATERIAL_H
-#define VTHERMALPDMATERIAL_H
+#ifndef NODALDILATATIONAUX_H
+#define NODALDILATATIONAUX_H
 
-#include "ThermalPDMaterial.h"
+#include "AuxKernel.h"
+#include "PDNodalUO.h"
 
-class VThermalPDMaterial;
+class NodalDilatationAux;
 
 template<>
-InputParameters validParams<VThermalPDMaterial>();
+InputParameters validParams<NodalDilatationAux>();
 
-class VThermalPDMaterial : public ThermalPDMaterial
+class NodalDilatationAux : public AuxKernel
 {
 public:
-  VThermalPDMaterial(const InputParameters & parameters);
+  NodalDilatationAux(const InputParameters & parameters);
+  virtual ~NodalDilatationAux() {}
 
 protected:
-  virtual Real computeBondModulus();
+  virtual Real computeValue();
+
+  const PDNodalUO * const _pd_nodal;
 };
 
-#endif //VTHERMALPDMATERIAL_H
+#endif //NODALDILATATIONAUX_H

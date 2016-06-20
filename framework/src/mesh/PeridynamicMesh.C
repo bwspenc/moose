@@ -16,18 +16,34 @@ template<>
 InputParameters validParams<PeridynamicMesh>()
 {
   InputParameters params = validParams<MooseMesh>();
-  params.addRequiredParam<Real>("horizon", "The horizon size");
+  params.addParam<Real>("horizon_size", "Horizon size");
+  params.addParam<unsigned int>("horizon_number", "The ratio number of horizon radius to the effective mesh spacing");
   return params;
 }
 
 PeridynamicMesh::PeridynamicMesh(const InputParameters & parameters) :
   MooseMesh(parameters),
-  _horizon(getParam<Real>("horizon"))
+  _horizon_size(isParamValid("horizon_size") ? getParam<Real>("horizon_size") : 0),
+  _horizon_number(isParamValid("horizon_number") ? getParam<unsigned int>("horizon_number") : 0)
 {
+  if (isParamValid("horizon_size") && isParamValid("horizon_number"))
+    mooseError("You can specify only one option: horizon_size or horizon_number !");
+
+  if (!isParamValid("horizon_size") && !isParamValid("horizon_number"))
+    mooseError("You must specify one option: horizon_size or horizon_number !");
 }
 
 PeridynamicMesh::~PeridynamicMesh()
 {
+}
+
+double
+PeridynamicMesh::computeHorizon(double spacing)
+{
+  if (isParamValid("horizon_number"))
+    return _horizon_number * spacing;
+  else
+    return _horizon_size;
 }
 
 void
@@ -60,20 +76,22 @@ PeridynamicMesh::find_neighbor()
 //      _neighbors[i].push_back(matches[j].first);
 //  }
 
-  double dis = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
-    unsigned int num = 0;
+    double dis = 0;
     for (unsigned int j = 0; j < _total_nodes; ++j)
     {
       dis = std::sqrt(std::pow((_node[i].coord)(0) - (_node[j].coord)(0), 2) + std::pow((_node[i].coord)(1) - (_node[j].coord)(1), 2) + std::pow((_node[i].coord)(2) - (_node[j].coord)(2), 2));
-      if (dis <= 1.0001 * _horizon && j != i)
+      if (dis <= 1.0001 * _node[i].horizon && j != i)
       {
-        _neighbors[i].push_back(j);
-        ++num;
+        // check whether j was already considered as a neighbor of i, if not, add j to i's neighborlist
+        if (std::find(_neighbors[i].begin(), _neighbors[i].end(), j) == _neighbors[i].end())
+          _neighbors[i].push_back(j);
+        // check whether i was also considered as a neighbor of j, if not, add i to j's neighborlist
+        if (std::find(_neighbors[j].begin(), _neighbors[j].end(), i) == _neighbors[j].end())
+          _neighbors[j].push_back(i);
       }
     }
-    _node[i].bond_num = num;
   }
 }
 
@@ -108,19 +126,25 @@ PeridynamicMesh::dim()
 }
 
 double
-PeridynamicMesh::mesh_spacing()
+PeridynamicMesh::mesh_spacing(dof_id_type node_id)
 {
-  return _mesh_spacing;
+  return _node[node_id].mesh_spacing;
+}
+
+double
+PeridynamicMesh::horizon(dof_id_type node_id)
+{
+  return _node[node_id].horizon;
 }
 
 unsigned int
-PeridynamicMesh::n_nodes()
+PeridynamicMesh::total_nodes()
 {
   return _total_nodes;
 }
 
 unsigned int
-PeridynamicMesh::n_bonds()
+PeridynamicMesh::total_bonds()
 {
   return _total_bonds;
 }

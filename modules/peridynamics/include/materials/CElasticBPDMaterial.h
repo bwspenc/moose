@@ -1,28 +1,28 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
-/*                       Peridynamics                           */
+/*                      Peridynamics                            */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef VTHERMALPDMATERIAL_H
-#define VTHERMALPDMATERIAL_H
+#ifndef CELASTICBPDMATERIAL_H
+#define CELASTICBPDMATERIAL_H
 
-#include "ThermalPDMaterial.h"
+#include "ElasticBPDMaterial.h"
 
-class VThermalPDMaterial;
+class CElasticBPDMaterial;
 
 template<>
-InputParameters validParams<VThermalPDMaterial>();
+InputParameters validParams<CElasticBPDMaterial>();
 
-class VThermalPDMaterial : public ThermalPDMaterial
+class CElasticBPDMaterial : public ElasticBPDMaterial
 {
 public:
-  VThermalPDMaterial(const InputParameters & parameters);
+  CElasticBPDMaterial(const InputParameters & parameters);
 
 protected:
   virtual Real computeBondModulus();
 };
 
-#endif //VTHERMALPDMATERIAL_H
+#endif //CELASTICBPDMATERIAL_H

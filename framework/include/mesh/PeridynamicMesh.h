@@ -20,8 +20,9 @@ InputParameters validParams<PeridynamicMesh>();
 struct pd_node
 {
   Point coord;
+  double mesh_spacing;
+  double horizon;
   double volume;
-  unsigned int bond_num;
 };
 
 class PeridynamicMesh : public MooseMesh
@@ -31,6 +32,11 @@ public:
   virtual ~PeridynamicMesh();
 
   virtual void buildMesh(){};
+  /*
+   * function to compute the  horizon size for each node
+   */
+  virtual double computeHorizon(double spacing);
+
   /*
    * function for neighbor search with given horizon
    */
@@ -64,25 +70,29 @@ public:
   /*
    * return mesh_spacing
    */
-  virtual double mesh_spacing();
+  virtual double mesh_spacing(dof_id_type node_id);
+
+  /*
+   * return horizon size
+   */
+  virtual double horizon(dof_id_type node_id);
 
   /*
    * return total number of nodes
    */
-  virtual unsigned int n_nodes();
+  virtual unsigned int total_nodes();
 
   /*
    * return total number of bonds
    */
-  virtual unsigned int n_bonds();
+  virtual unsigned int total_bonds();
 
 protected:
   int _pddim;
-  double _horizon;
-
+  Real _horizon_size;
+  unsigned int _horizon_number;
   struct pd_node * _node;
 
-  double _mesh_spacing;
   unsigned int _total_nodes;
   unsigned int _total_bonds;
 

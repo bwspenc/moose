@@ -10,7 +10,7 @@
 #define FAILUREINDEXAUX_H
 
 #include "AuxKernel.h"
-#include "FailureIndex.h"
+#include "FailureIndexUO.h"
 
 class FailureIndexAux;
 
@@ -24,7 +24,7 @@ public:
   virtual ~FailureIndexAux() {}
 
 protected:
-  const FailureIndex * const _failure_index;
+  const FailureIndexUO * const _failure_index;
   virtual Real computeValue();
 };
 

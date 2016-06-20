@@ -1,28 +1,29 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
-/*                       Peridynamics                           */
+/*                      Peridynamics                            */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef VTHERMALPDMATERIAL_H
-#define VTHERMALPDMATERIAL_H
+#ifndef ELASTICSPDMATERIAL_H
+#define ELASTICSPDMATERIAL_H
 
-#include "ThermalPDMaterial.h"
+#include "MechanicPDMaterial.h"
 
-class VThermalPDMaterial;
+class ElasticSPDMaterial;
 
 template<>
-InputParameters validParams<VThermalPDMaterial>();
+InputParameters validParams<ElasticSPDMaterial>();
 
-class VThermalPDMaterial : public ThermalPDMaterial
+class ElasticSPDMaterial : public MechanicPDMaterial
 {
 public:
-  VThermalPDMaterial(const InputParameters & parameters);
+  ElasticSPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual Real computeBondModulus();
+  virtual void computeQpStrain();
+  virtual void computeQpForce();
 };
 
-#endif //VTHERMALPDMATERIAL_H
+#endif //ELASTICSPDMATERIAL_H

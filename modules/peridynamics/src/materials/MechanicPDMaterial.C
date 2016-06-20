@@ -28,8 +28,8 @@ InputParameters validParams<MechanicPDMaterial>()
   return params;
 }
 
-MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters)
-  :PeridynamicMaterial(parameters),
+MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters) :
+  PeridynamicMaterial(parameters),
   _bond_force(declareProperty<Real>("bond_force")),
   _bond_dfdU(declareProperty<Real>("bond_dfdU")),
   _bond_dfdT(declareProperty<Real>("bond_dfdT")),
@@ -37,13 +37,11 @@ MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters)
   _bond_mechanic_strain(declareProperty<Real>("bond_mechanic_strain")),
   _bond_elastic_strain(declareProperty<Real>("bond_elastic_strain")),
 
-  _plane_strain(isParamValid("plane_strain")),
   _youngs_modulus(getParam<Real>("youngs_modulus")),
   _poissons_ratio(getParam<Real>("poissons_ratio")),
 
   _temp(coupledValue("temp")),
-  _temp_ref(getParam<Real>("temp_ref")),
-  _thermal_expansion_coeff(getParam<Real>("thermal_expansion_coeff"))
+  _temp_ref(getParam<Real>("temp_ref"))
 {
   const std::vector<NonlinearVariableName> & nl_vnames(getParam<std::vector<NonlinearVariableName> >("displacements"));
   if (_pddim != nl_vnames.size())
@@ -51,6 +49,17 @@ MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters)
   // fetch nonlinear variables
   for (unsigned int i = 0; i < _pddim; ++i)
     _disp_var.push_back(&_fe_problem.getVariable(_tid, nl_vnames[i]));
+
+  if (isParamValid("plane_strain"))
+  {
+    _bulk_modulus = _youngs_modulus / 2.0 / (1.0 + _poissons_ratio) / (1.0 - 2.0 * _poissons_ratio);
+    _alpha = (1.0 + _poissons_ratio) * getParam<Real>("thermal_expansion_coeff");
+  }
+  else
+  {
+    _bulk_modulus = _youngs_modulus / _pddim / (1.0 - (_pddim - 1.0) * _poissons_ratio);
+    _alpha = getParam<Real>("thermal_expansion_coeff");
+  }
 }
 
 void
@@ -65,27 +74,26 @@ MechanicPDMaterial::initQpStatefulProperties()
 void
 MechanicPDMaterial::computeQpProperties()
 {
-  if (_plane_strain)
-    _alpha = (1 + _poissons_ratio) * _thermal_expansion_coeff;
-  else
-    _alpha = _thermal_expansion_coeff;
-
-  // fetch the solution at the two end nodes
-  NonlinearSystem & nonlinear_sys = _fe_problem.getNonlinearSystem();
-  const NumericVector<Number> & sol = *nonlinear_sys.currentSolution();
-  std::vector<std::vector<Real> > disp(2);
-  for (unsigned int i = 0; i < 2; ++i)
-    for (unsigned int j = 0; j < _pddim; ++j)
-      disp[i].push_back(sol(_current_elem->get_node(i)->dof_number(nonlinear_sys.number(), _disp_var[j]->number(), 0)));
-
-  // calculate current length of a truss element
-  RealGradient dxyz;
-  for (unsigned int i = 0; i < _pddim; ++i)
-    dxyz(i) = (*_current_elem->get_node(1))(i) + disp[1][i] - (*_current_elem->get_node(0))(i) - disp[0][i];
-
-  _current_length = dxyz.norm();
+  _current_length = computeBondCurrentLength();
 
   computeQpStrain();
   computeQpForce();
 }
 
+Real
+MechanicPDMaterial::computeBondCurrentLength()
+{
+  // solution at the two end nodes
+  NonlinearSystem & non_sys = _fe_problem.getNonlinearSystem();
+  const NumericVector<Number> & sol = *non_sys.currentSolution();
+  std::vector<std::vector<Real> > disp(2);
+  RealGradient dxyz;
+  for (unsigned int i = 0; i < 2; ++i)
+    for (unsigned int j = 0; j < _pddim; ++j)
+      disp[i].push_back(sol(_current_elem->get_node(i)->dof_number(non_sys.number(), _disp_var[j]->number(), 0)));
+  // current length of a truss element
+  for (unsigned int i = 0; i < _pddim; ++i)
+    dxyz(i) = (*_current_elem->get_node(1))(i) + disp[1][i] - (*_current_elem->get_node(0))(i) - disp[0][i];
+
+  return dxyz.norm();
+}

@@ -6,33 +6,35 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+#ifndef THERMALPDMATERIAL_H
+#define THERMALPDMATERIAL_H
 
-#ifndef BONDCRITICALSTRAINAUX_H
-#define BONDCRITICALSTRAINAUX_H
+#include "PeridynamicMaterial.h"
 
-#include "AuxKernel.h"
-
-class BondCriticalStrainAux;
+class ThermalPDMaterial;
+class Function;
 
 template<>
-InputParameters validParams<BondCriticalStrainAux>();
+InputParameters validParams<ThermalPDMaterial>();
 
-class BondCriticalStrainAux : public AuxKernel
+class ThermalPDMaterial : public PeridynamicMaterial
 {
 public:
-  BondCriticalStrainAux(const InputParameters & parameters);
-  virtual ~BondCriticalStrainAux() {}
+  ThermalPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual void initQpStatefulProperties();
+  virtual void computeQpProperties();
 
-  const double _Gc;
-  const double _E;
-  const double _mu;
+  const Real _thermal_conductivity;
+  Function * _thermal_conductivity_function;
 
-  const int _pddim;
+  MaterialProperty<Real> & _bond_response;
+  MaterialProperty<Real> & _bond_drdT;
+
+  MooseVariable * _temp_var;
 
   double _kappa;
 };
 
-#endif //BONDCRITICALSTRAINAUX_H
+#endif //THERMALPDMATERIAL_H

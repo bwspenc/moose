@@ -6,41 +6,45 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef FAILUREINDEX_H
-#define FAILUREINDEX_H
+#ifndef DILATATIONUO_H
+#define DILATATIONUO_H
 
 #include "ElementUserObject.h"
+#include "PeridynamicMesh.h"
 
-class FailureIndex;
+class DilatationUO;
 
 template<>
-InputParameters validParams<FailureIndex>();
+InputParameters validParams<DilatationUO>();
 
-class FailureIndex :
-  public ElementUserObject
+class DilatationUO : public ElementUserObject
 {
 public:
-  FailureIndex(const InputParameters & parameters);
-
-  virtual ~FailureIndex();
+  DilatationUO(const InputParameters & parameters);
+  virtual ~DilatationUO() {}
 
   virtual void initialize();
   virtual void execute();
-  virtual void threadJoin(const UserObject & u );
+  virtual void threadJoin(const UserObject & uo);
   virtual void finalize();
-  virtual Real computeFailureIndex(unsigned int nodeid) const;
 
 protected:
-
   AuxiliarySystem & _aux;
 
-  MooseVariable * _intact_bonds_var;
-  MooseVariable * _total_bonds_var;
+  PeridynamicMesh & _pdmesh;
+  const unsigned int _pddim;
 
-  const MaterialProperty<Real> & _bond_mechanic_strain;
+  const Real _temp_ref;
+  const VariableValue & _temp;
 
-  const VariableValue & _bond_critical_strain;
+  MooseVariable * _nodal_dila_var;
+
+  std::vector<MooseVariable *> _disp_var;
+
   const VariableValue & _bond_status;
+  const VariableValue & _bond_contact;
+
+  double _alpha;
 };
 
-#endif // FAILUREINDEX_H
+#endif // DILATATIONUO_H

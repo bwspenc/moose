@@ -51,8 +51,8 @@ FileMeshPD::buildMesh()
   _exodusII_io->read(_file_name);
   fe_mesh->allow_renumbering(false);
   fe_mesh->prepare_for_use(/*true*/);
+  fe_mesh->find_neighbors();// build neighborlist for fe_mesh elements 
 
-  _mesh_spacing = 0;
   _total_nodes = fe_mesh->n_elem();
   _pddim = fe_mesh->mesh_dimension();
   BoundaryInfo & fe_boundary_info = fe_mesh->get_boundary_info();
@@ -70,7 +70,18 @@ FileMeshPD::buildMesh()
   for (MeshBase::element_iterator it = fe_mesh->elements_begin(); it != fe_mesh->elements_end(); ++it)
   {
     Elem *fe_elem = *it;
+    // calculate the mesh_spacing as average distance between fe_mesh element with its neighbors
+    unsigned int nneighbor = 0;
+    double spacing = 0;
+    for (unsigned int i = 0; i < fe_elem->n_neighbors(); ++i)
+      if (fe_elem->neighbor(i) != NULL)
+      {
+        spacing += (fe_elem->centroid() - fe_elem->neighbor(i)->centroid()).size();
+        nneighbor += 1;
+      }
     _node[fe_elem->id()].coord = fe_elem->centroid();
+    _node[fe_elem->id()].mesh_spacing = spacing / nneighbor;
+    _node[fe_elem->id()].horizon = PeridynamicMesh::computeHorizon(spacing / nneighbor);
     _node[fe_elem->id()].volume = fe_elem->volume();
     pd_mesh.add_point(fe_elem->centroid(), fe_elem->id());
   }
@@ -81,12 +92,12 @@ FileMeshPD::buildMesh()
   // generate PD mesh
   _total_bonds = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    _total_bonds += _node[i].bond_num;
+    _total_bonds += _neighbors[i].size();
 
   _total_bonds /= 2;
   pd_mesh.reserve_elem(_total_bonds);
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    for(unsigned int j = 0; j < _node[i].bond_num; ++j)
+    for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
       if (_neighbors[i][j] > i)
       {
         Elem* pd_elem = pd_mesh.add_elem(new Edge2);
@@ -132,21 +143,21 @@ FileMeshPD::buildMesh()
     }
   }
 
-
-  // define boundary nodeset, ONLY for geometry of circular cross section
+  // define center and right nodes, ONLY for geometry of circular cross section centered at the origin
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
     double X = (_node[i].coord)(0);
     double Y = (_node[i].coord)(1);
     double dis = std::sqrt(X * X + Y * Y);
     if (dis < 0.01)
-      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 2);
+      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 100);
     if (std::abs(Y) < 0.01 && dis > 4.1 - 0.1 && X > 0.0)
-      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 3);
+      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 101);
+    pd_boundary_info.add_node(pd_mesh.node_ptr(i), 102);
   }
-  pd_boundary_info.nodeset_name(2) = "CenterPoint";
-  pd_boundary_info.nodeset_name(3) = "RightPoint";
-
+  pd_boundary_info.nodeset_name(100) = "CenterPoint";
+  pd_boundary_info.nodeset_name(101) = "RightPoint";
+  pd_boundary_info.nodeset_name(102) = "All";
 
   delete fe_mesh;
   delete _exodusII_io;

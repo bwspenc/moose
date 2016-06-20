@@ -7,24 +7,27 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "VThermalPDMaterial.h"
+#include "NodalDilatationAux.h"
 
 template<>
-InputParameters validParams<VThermalPDMaterial>()
+InputParameters validParams<NodalDilatationAux>()
 {
-  InputParameters params = validParams<ThermalPDMaterial>();
+  InputParameters params = validParams<AuxKernel>();
+  params.addRequiredParam<UserObjectName>("pd_nodal", "The name of the PDNodal user object");
   return params;
 }
 
-VThermalPDMaterial::VThermalPDMaterial(const InputParameters & parameters) :
-  ThermalPDMaterial(parameters)
+NodalDilatationAux::NodalDilatationAux(const InputParameters & parameters) :
+  AuxKernel(parameters),
+  _pd_nodal(&getUserObject<PDNodalUO>("pd_nodal"))
 {
 }
 
 Real
-VThermalPDMaterial::computeBondModulus()
+NodalDilatationAux::computeValue()
 {
-  double val = (1.0 / _nvsum_i + 1.0 / _nvsum_j) / _origin_length;
+  if (!isNodal())
+    mooseError("must run on a nodal variable");
 
-  return _pddim * _kappa * val;
+  return _pd_nodal->computeDilatation(_current_node->id());
 }

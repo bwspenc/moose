@@ -1,21 +1,47 @@
+/****************************************************************/
+/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
+/*                                                              */
+/*                         Peridynamics                         */
+/*                                                              */
+/*          All contents are licensed under LGPL V2.1           */
+/*             See LICENSE for full restrictions                */
+/****************************************************************/
+
+// Default
 #include "PeridynamicsApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
 #include "MooseSyntax.h"
 
+// Actions
 #include "PeridynamicsAction.h"
 
+// AuxKernels
 #include "BondCriticalStrainAux.h"
+#include "BondContactStrainAux.h"
 #include "BondStatusAux.h"
-#include "FailureIndex.h"
+#include "BondContactAux.h"
 #include "FailureIndexAux.h"
+#include "NodalVolSumAux.h"
+#include "NodalDilatationAux.h"
+
+// UserObjects
+#include "FailureIndexUO.h"
+#include "PDNodalUO.h"
+#include "DilatationUO.h"
+
+// Materials
+#include "CElasticBPDMaterial.h"
+#include "CElasticSPDMaterial.h"
+#include "VElasticBPDMaterial.h"
+#include "VElasticSPDMaterial.h"
 #include "CThermalPDMaterial.h"
 #include "VThermalPDMaterial.h"
+
+//Kernels
+#include "StressDivergencePD.h"
 #include "HeatConductionPD.h"
 #include "HeatSourcePD.h"
-#include "CLEPDMaterial.h"
-#include "VLEPDMaterial.h"
-#include "StressDivergencePD.h"
 
 template<>
 InputParameters validParams<PeridynamicsApp>()
@@ -58,18 +84,26 @@ PeridynamicsApp::registerObjects(Factory & factory)
 {
   registerAux(FailureIndexAux);
   registerAux(BondStatusAux);
+  registerAux(BondContactAux);
   registerAux(BondCriticalStrainAux);
+  registerAux(BondContactStrainAux);
+  registerAux(NodalVolSumAux);
+  registerAux(NodalDilatationAux);
 
   registerMaterial(CThermalPDMaterial);
   registerMaterial(VThermalPDMaterial);
-  registerMaterial(CLEPDMaterial);
-  registerMaterial(VLEPDMaterial);
+  registerMaterial(CElasticBPDMaterial);
+  registerMaterial(CElasticSPDMaterial);
+  registerMaterial(VElasticBPDMaterial);
+  registerMaterial(VElasticSPDMaterial);
 
   registerKernel(HeatConductionPD);
   registerKernel(HeatSourcePD);
   registerKernel(StressDivergencePD);
 
-  registerUserObject(FailureIndex);
+  registerUserObject(FailureIndexUO);
+  registerUserObject(PDNodalUO);
+  registerUserObject(DilatationUO);
 }
 
 // External entry point for dynamic syntax association

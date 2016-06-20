@@ -19,7 +19,7 @@ InputParameters validParams<FailureIndexAux>()
 
 FailureIndexAux::FailureIndexAux(const InputParameters & parameters) :
   AuxKernel(parameters),
-  _failure_index(&getUserObject<FailureIndex>("failure_index"))
+  _failure_index(&getUserObject<FailureIndexUO>("failure_index"))
 {
 }
 

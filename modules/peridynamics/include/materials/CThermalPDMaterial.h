@@ -9,31 +9,20 @@
 #ifndef CTHERMALPDMATERIAL_H
 #define CTHERMALPDMATERIAL_H
 
-#include "PeridynamicMaterial.h"
+#include "ThermalPDMaterial.h"
 
 class CThermalPDMaterial;
-class Function;
 
 template<>
 InputParameters validParams<CThermalPDMaterial>();
 
-class CThermalPDMaterial : public PeridynamicMaterial
+class CThermalPDMaterial : public ThermalPDMaterial
 {
 public:
   CThermalPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties();
-  virtual void computeQpProperties();
-  virtual double computeBondModulus(double temp_avg);
-
-  const Real _thermal_conductivity;
-  Function * _thermal_conductivity_function;
-
-  MaterialProperty<Real> & _bond_response;
-  MaterialProperty<Real> & _bond_drdT;
-
-  MooseVariable * _temp_var;
+  virtual Real computeBondModulus();
 };
 
 #endif //CTHERMALPDMATERIAL_H

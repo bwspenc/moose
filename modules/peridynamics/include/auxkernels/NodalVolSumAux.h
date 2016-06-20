@@ -6,23 +6,27 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef VTHERMALPDMATERIAL_H
-#define VTHERMALPDMATERIAL_H
+#ifndef NODALVOLSUMAUX_H
+#define NODALVOLSUMAUX_H
 
-#include "ThermalPDMaterial.h"
+#include "AuxKernel.h"
+#include "PDNodalUO.h"
 
-class VThermalPDMaterial;
+class NodalVolSumAux;
 
 template<>
-InputParameters validParams<VThermalPDMaterial>();
+InputParameters validParams<NodalVolSumAux>();
 
-class VThermalPDMaterial : public ThermalPDMaterial
+class NodalVolSumAux : public AuxKernel
 {
 public:
-  VThermalPDMaterial(const InputParameters & parameters);
+  NodalVolSumAux(const InputParameters & parameters);
+  virtual ~NodalVolSumAux() {}
 
 protected:
-  virtual Real computeBondModulus();
+  virtual Real computeValue();
+
+  const PDNodalUO * const _pd_nodal;
 };
 
-#endif //VTHERMALPDMATERIAL_H
+#endif //NODALVOLSUMAUX_H

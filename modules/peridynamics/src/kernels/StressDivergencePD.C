@@ -19,7 +19,6 @@ InputParameters validParams<StressDivergencePD>()
   params.addRequiredParam<unsigned int>("component", "An integer corresponding to the variable this kernel acts on (0 for x, 1 for y, 2 for z)");
   params.addRequiredCoupledVar("displacements", "The displacement variables");
   params.addCoupledVar("temp", "The temperature");
-  params.addCoupledVar("bond_status", "Auxiliary variable for bond status");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -33,7 +32,6 @@ StressDivergencePD::StressDivergencePD(const InputParameters & parameters)
   _ndisp(coupledComponents("displacements")),
   _temp_coupled(isCoupled("temp")),
   _temp_var(_temp_coupled ? coupled("temp") : 0),
-  _bond_status(coupledValue("bond_status")),
   _orientation(NULL)
 {
   for (unsigned int i = 0; i < _ndisp; ++i)
@@ -56,7 +54,7 @@ StressDivergencePD::computeResidual()
 
   RealGradient ori((*_orientation)[0]);
   ori /= ori.size();
-  VectorValue<Real> force_local = _bond_force[0] * ori * _bond_status[0];
+  VectorValue<Real> force_local = _bond_force[0] * ori;
   _local_re(0) = - force_local(_component);
   _local_re(1) = - _local_re(0);
 
@@ -117,7 +115,7 @@ StressDivergencePD::computeJacobian()
 
   for (unsigned int i = 0; i < _test.size(); ++i)
     for (unsigned int j = 0; j < _phi.size(); ++j)
-       _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem(_component) * _bond_status[0];
+       _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem(_component);
 
   ke += _local_ke;
 
@@ -163,7 +161,7 @@ StressDivergencePD::computeOffDiagJacobian(unsigned int jvar)
       computeOffDiagStiffness(off_stiff_elem);
       for (unsigned int i = 0; i < _test.size(); ++i)
         for (unsigned int j = 0; j < _phi.size(); ++j)
-          ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem(_component, coupled_component) * _bond_status[0];
+          ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem(_component, coupled_component);
     }
   }
 }

@@ -7,24 +7,27 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "VThermalPDMaterial.h"
+#include "NodalVolSumAux.h"
 
 template<>
-InputParameters validParams<VThermalPDMaterial>()
+InputParameters validParams<NodalVolSumAux>()
 {
-  InputParameters params = validParams<ThermalPDMaterial>();
+  InputParameters params = validParams<AuxKernel>();
+  params.addRequiredParam<UserObjectName>("pd_nodal", "The name of the PDNodal user object");
   return params;
 }
 
-VThermalPDMaterial::VThermalPDMaterial(const InputParameters & parameters) :
-  ThermalPDMaterial(parameters)
+NodalVolSumAux::NodalVolSumAux(const InputParameters & parameters) :
+  AuxKernel(parameters),
+  _pd_nodal(&getUserObject<PDNodalUO>("pd_nodal"))
 {
 }
 
 Real
-VThermalPDMaterial::computeBondModulus()
+NodalVolSumAux::computeValue()
 {
-  double val = (1.0 / _nvsum_i + 1.0 / _nvsum_j) / _origin_length;
+  if (!isNodal())
+    mooseError("must run on a nodal variable");
 
-  return _pddim * _kappa * val;
+  return _pd_nodal->computeVolSum(_current_node->id());
 }

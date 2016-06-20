@@ -14,7 +14,6 @@ template<>
 InputParameters validParams<HeatConductionPD>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addCoupledVar("bond_status","Auxiliary variable contains bond status");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -22,8 +21,7 @@ InputParameters validParams<HeatConductionPD>()
 HeatConductionPD::HeatConductionPD(const InputParameters & parameters)
   :Kernel(parameters),
   _bond_response(getMaterialProperty<Real>("bond_response")),
-  _bond_drdT(getMaterialProperty<Real>("bond_drdT")),
-  _bond_status(coupledValue("bond_status"))
+  _bond_drdT(getMaterialProperty<Real>("bond_drdT"))
 {
 }
 
@@ -38,7 +36,7 @@ HeatConductionPD::computeResidual()
   _local_re.resize(re.size());
   _local_re.zero();
 
-  _local_re(0) = - _bond_response[0] * _bond_status[0];
+  _local_re(0) = - _bond_response[0];
   _local_re(1) = - _local_re(0);
 
   re += _local_re;
@@ -46,7 +44,7 @@ HeatConductionPD::computeResidual()
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i = 0; i < _save_in.size(); i++)
+    for (unsigned int i = 0; i < _save_in.size(); ++i)
       _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
   }
 }
@@ -60,7 +58,7 @@ HeatConductionPD::computeJacobian()
 
   for (unsigned int i = 0; i < _test.size(); ++i)
     for (unsigned int j = 0; j < _phi.size(); ++j)
-      _local_ke(i, j) += (i == j ? 1 : -1) * _bond_drdT[0] * _bond_status[0];
+      _local_ke(i, j) += (i == j ? 1 : -1) * _bond_drdT[0];
 
   ke += _local_ke;
 
@@ -68,11 +66,11 @@ HeatConductionPD::computeJacobian()
   {
     unsigned int rows = ke.m();
     DenseVector<Number> diag(rows);
-    for (unsigned int i = 0; i < rows; i++)
-      diag(i) = _local_ke(i,i);
+    for (unsigned int i = 0; i < rows; ++i)
+      diag(i) = _local_ke(i, i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i < _diag_save_in.size(); i++)
+    for (unsigned int i = 0; i < _diag_save_in.size(); ++i)
       _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
   }
 }

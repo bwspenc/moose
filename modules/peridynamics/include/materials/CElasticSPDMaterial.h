@@ -6,24 +6,23 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef CLEPDMATERIAL_H
-#define CLEPDMATERIAL_H
+#ifndef CELASTICSPDMATERIAL_H
+#define CELASTICSPDMATERIAL_H
 
-#include "MechanicPDMaterial.h"
+#include "ElasticSPDMaterial.h"
 
-class CLEPDMaterial;
+class CElasticSPDMaterial;
 
 template<>
-InputParameters validParams<CLEPDMaterial>();
+InputParameters validParams<CElasticSPDMaterial>();
 
-class CLEPDMaterial : public MechanicPDMaterial
+class CElasticSPDMaterial : public ElasticSPDMaterial
 {
 public:
-  CLEPDMaterial(const InputParameters & parameters);
+  CElasticSPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpStrain();
-  virtual void computeQpForce();
+  virtual Real computeBondModulus();
 };
 
-#endif //CLEPDMATERIAL_H
+#endif //CELASTICSPDMATERIAL_H

@@ -6,23 +6,26 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef VTHERMALPDMATERIAL_H
-#define VTHERMALPDMATERIAL_H
 
-#include "ThermalPDMaterial.h"
-
-class VThermalPDMaterial;
+#include "BondContactStrainAux.h"
 
 template<>
-InputParameters validParams<VThermalPDMaterial>();
-
-class VThermalPDMaterial : public ThermalPDMaterial
+InputParameters validParams<BondContactStrainAux>()
 {
-public:
-  VThermalPDMaterial(const InputParameters & parameters);
+  InputParameters params = validParams<AuxKernel>();
+  params.addCoupledVar("bond_critical_strain", "Auxiliary variable for bond critical strain");
+  return params;
+}
 
-protected:
-  virtual Real computeBondModulus();
-};
+BondContactStrainAux::BondContactStrainAux(const InputParameters & parameters) :
+  AuxKernel(parameters),
+  _bond_critical_strain(coupledValue("bond_critical_strain"))
+{
+}
 
-#endif //VTHERMALPDMATERIAL_H
+Real
+BondContactStrainAux::computeValue()
+{
+// Critical strain for contact
+  return _bond_critical_strain[0] / 10.0;
+}

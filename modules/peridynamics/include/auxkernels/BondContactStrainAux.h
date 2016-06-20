@@ -1,30 +1,32 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
-/*                      Peridynamics                            */
+/*                       Peridynamics                           */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef VLEPDMATERIAL_H
-#define VLEPDMATERIAL_H
 
-#include "MechanicPDMaterial.h"
+#ifndef BONDCONTACTSTRAINAUX_H
+#define BONDCONTACTSTRAINAUX_H
 
-class VLEPDMaterial;
+#include "AuxKernel.h"
+
+class BondContactStrainAux;
 
 template<>
-InputParameters validParams<VLEPDMaterial>();
+InputParameters validParams<BondContactStrainAux>();
 
-class VLEPDMaterial : public MechanicPDMaterial
+class BondContactStrainAux : public AuxKernel
 {
 public:
-  VLEPDMaterial(const InputParameters & parameters);
+  BondContactStrainAux(const InputParameters & parameters);
+  virtual ~BondContactStrainAux() {}
 
 protected:
-  virtual double computeBondModulus();
-  virtual void computeQpStrain();
-  virtual void computeQpForce();
+  const VariableValue & _bond_critical_strain;
+
+  virtual Real computeValue();
 };
 
-#endif //VLEPDMATERIAL_H
+#endif //BONDCONTACTSTRAINAUX_H

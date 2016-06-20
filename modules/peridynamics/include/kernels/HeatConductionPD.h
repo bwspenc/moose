@@ -11,7 +11,6 @@
 
 #include "Kernel.h"
 
-//Forward Declarations
 class HeatConductionPD;
 
 template<>
@@ -31,8 +30,6 @@ protected:
 
   const MaterialProperty<Real> & _bond_response;
   const MaterialProperty<Real> & _bond_drdT;
-
-  const VariableValue & _bond_status;
 };
 
 #endif //HEATCONDUCTIONPD_H

@@ -28,6 +28,8 @@ protected:
   virtual void computeQpStrain() = 0;
   virtual void computeQpForce() = 0;
 
+  virtual Real computeBondCurrentLength();
+
   MaterialProperty<Real> & _bond_force;
   MaterialProperty<Real> & _bond_dfdU;
   MaterialProperty<Real> & _bond_dfdT;
@@ -35,17 +37,16 @@ protected:
   MaterialProperty<Real> & _bond_mechanic_strain;
   MaterialProperty<Real> & _bond_elastic_strain;
 
-  const bool _plane_strain;
   const Real _youngs_modulus;
   const Real _poissons_ratio;
 
   const VariableValue & _temp;
   const Real _temp_ref;
-  const Real _thermal_expansion_coeff;
 
   std::vector<MooseVariable *> _disp_var;
 
   double _alpha;
+  double _bulk_modulus;
   double _current_length;
 };
 

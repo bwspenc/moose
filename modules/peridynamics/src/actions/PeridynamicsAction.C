@@ -19,7 +19,6 @@ InputParameters validParams<PeridynamicsAction>()
   params.addClassDescription("Set up peridynamic stress divergence kernels");
   params.addRequiredParam<std::vector<NonlinearVariableName> >("displacements", "The nonlinear displacement variables for the problem");
   params.addParam<NonlinearVariableName>("temp", "The temperature");
-  params.addRequiredParam<AuxVariableName>("bond_status", "Auxiliary variable for bond status");
   params.addParam<bool>("use_displaced_mesh", true, "Whether to use displaced mesh in the kernels");
   params.addParam<std::vector<SubdomainName> >("block", "The list of ids of the blocks (subdomain) that the stress divergence kernel will be applied to");
   params.addParam<std::vector<AuxVariableName> >("save_in", "The displacement residuals");
@@ -56,7 +55,6 @@ PeridynamicsAction::act()
   if (isParamValid("temp"))
     params.addCoupledVar("temp", "The temperature");
 
-  params.addCoupledVar("bond_status", "Auxiliary variable for bond status");
   params.set<bool>("use_displaced_mesh") = getParam<bool>("use_displaced_mesh");
 
   // check whether this StressDivergencePD kernel is restricted to certain block?

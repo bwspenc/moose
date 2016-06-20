@@ -1,6 +1,8 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
+/*                         Peridynamics                         */
+/*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
@@ -44,10 +46,7 @@ private:
   const bool _temp_coupled;
   const unsigned int _temp_var;
 
-  const VariableValue & _bond_status;
-
   const std::vector<RealGradient> * _orientation;
-
 };
 
 #endif //STRESSDIVERGENCEPD_H
