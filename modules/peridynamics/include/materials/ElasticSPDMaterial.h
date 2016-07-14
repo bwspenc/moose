@@ -22,8 +22,20 @@ public:
   ElasticSPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpStrain();
   virtual void computeQpForce();
+
+  MaterialProperty<Real> & _bond_force_ij;
+  MaterialProperty<Real> & _bond_force_i;
+  MaterialProperty<Real> & _bond_force_j;
+  MaterialProperty<Real> & _bond_dfdU_ij;
+  MaterialProperty<Real> & _bond_dfdU_i;
+  MaterialProperty<Real> & _bond_dfdU_j;
+  MaterialProperty<Real> & _bond_dfdT_ij;
+
+  double _a;
+  double _b;
+  double _d_i;
+  double _d_j;
 };
 
 #endif //ELASTICSPDMATERIAL_H

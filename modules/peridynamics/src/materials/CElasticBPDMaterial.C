@@ -24,11 +24,7 @@ CElasticBPDMaterial::CElasticBPDMaterial(const InputParameters & parameters) :
 Real
 CElasticBPDMaterial::computeBondModulus()
 {
-  double Cij;
-  double h0 = _pdmesh.horizon(_current_elem->get_node(0)->id());
-  double h1 = _pdmesh.horizon(_current_elem->get_node(1)->id());
-
-  Cij = (6.0 * _pddim * _bulk_modulus / (3.14159265358 * std::pow(h0, _pddim + 1)) + 6.0 * _pddim * _bulk_modulus / (3.14159265358 * std::pow(h1, _pddim + 1))) / 2.0;
+  double Cij = (6.0 * _pddim * _bulk_modulus / (3.14159265358 * std::pow(_horizon_i, _pddim + 1)) + 6.0 * _pddim * _bulk_modulus / (3.14159265358 * std::pow(_horizon_j, _pddim + 1))) / 2.0;
 
   return Cij;
 }

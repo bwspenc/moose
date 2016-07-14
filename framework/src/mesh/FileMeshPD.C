@@ -71,30 +71,31 @@ FileMeshPD::buildMesh()
   {
     Elem *fe_elem = *it;
     // calculate the mesh_spacing as average distance between fe_mesh element with its neighbors
-    unsigned int nneighbor = 0;
+    unsigned int nneighbors = 0;
     double spacing = 0;
     for (unsigned int i = 0; i < fe_elem->n_neighbors(); ++i)
       if (fe_elem->neighbor(i) != NULL)
       {
         spacing += (fe_elem->centroid() - fe_elem->neighbor(i)->centroid()).size();
-        nneighbor += 1;
+        nneighbors += 1;
       }
     _node[fe_elem->id()].coord = fe_elem->centroid();
-    _node[fe_elem->id()].mesh_spacing = spacing / nneighbor;
-    _node[fe_elem->id()].horizon = PeridynamicMesh::computeHorizon(spacing / nneighbor);
+    _node[fe_elem->id()].mesh_spacing = spacing / nneighbors;
+    _node[fe_elem->id()].horizon = PeridynamicMesh::computeHorizon(spacing / nneighbors);
     _node[fe_elem->id()].volume = fe_elem->volume();
+    _node[fe_elem->id()].volumesum = 0.0;
     pd_mesh.add_point(fe_elem->centroid(), fe_elem->id());
   }
 
-  // search node neighbor
+  // search node neighbors
   PeridynamicMesh::find_neighbor();
 
   // generate PD mesh
   _total_bonds = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
     _total_bonds += _neighbors[i].size();
-
   _total_bonds /= 2;
+
   pd_mesh.reserve_elem(_total_bonds);
   for (unsigned int i = 0; i < _total_nodes; ++i)
     for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
@@ -148,16 +149,55 @@ FileMeshPD::buildMesh()
   {
     double X = (_node[i].coord)(0);
     double Y = (_node[i].coord)(1);
+    double Z = (_node[i].coord)(2);
     double dis = std::sqrt(X * X + Y * Y);
     if (dis < 0.01)
       pd_boundary_info.add_node(pd_mesh.node_ptr(i), 100);
     if (std::abs(Y) < 0.01 && dis > 4.1 - 0.1 && X > 0.0)
       pd_boundary_info.add_node(pd_mesh.node_ptr(i), 101);
-    pd_boundary_info.add_node(pd_mesh.node_ptr(i), 102);
+    if (std::abs(Z) < 0.01)
+      pd_boundary_info.add_node(pd_mesh.node_ptr(i), 102);
+    pd_boundary_info.add_node(pd_mesh.node_ptr(i), 103);
   }
   pd_boundary_info.nodeset_name(100) = "CenterPoint";
   pd_boundary_info.nodeset_name(101) = "RightPoint";
-  pd_boundary_info.nodeset_name(102) = "All";
+  pd_boundary_info.nodeset_name(102) = "CenterPlane";
+  pd_boundary_info.nodeset_name(103) = "All";
+
+////-----------------------
+//  double val = 0;
+//  for (unsigned int i = 0; i < _total_nodes; ++i)
+//  {
+//    if ((_node[i].coord)(2) < -0.0001)
+////    if ((_node[i].coord)(1) < -0.0001)
+//    {
+//      double voli = 0;
+//      for(unsigned int k = 0; k < _neighbors[i].size(); ++k)
+//        voli += _node[_neighbors[i][k]].volume;
+
+//      for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
+//      {
+//        if ((_node[_neighbors[i][j]].coord)(2) > 0.0001)
+////        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
+//        {
+//          double volj = 0;
+//          for(unsigned int k = 0; k < _neighbors[_neighbors[i][j]].size(); ++k)
+//            volj += _node[_neighbors[_neighbors[i][j]][k]].volume;
+
+//          double dx = (_node[i].coord)(0) - (_node[_neighbors[i][j]].coord)(0);
+//          double dy = (_node[i].coord)(1) - (_node[_neighbors[i][j]].coord)(1);
+//          double dz = (_node[i].coord)(2) - (_node[_neighbors[i][j]].coord)(2);
+////          double cosij = dy / std::sqrt(dx * dx + dy * dy);
+//          double cosij = dz / std::sqrt(dx * dx + dy * dy + dz * dz);
+//          val += _node[i].volume * _node[_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
+//        }
+//      }
+//    }
+//  }
+////  double s = std::sqrt(2 * 0.004 * 8.2 / (239836.911 * 4.0 * val));
+//  double s = std::sqrt(2 * 0.004 * 3.1415926 * 4.1 * 4.1 / (133333.33333 * 9.0 * val));
+//  std::cout << s << std::endl;
+////-----------------------
 
   delete fe_mesh;
   delete _exodusII_io;

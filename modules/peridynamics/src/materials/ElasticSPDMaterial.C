@@ -17,25 +17,31 @@ InputParameters validParams<ElasticSPDMaterial>()
 }
 
 ElasticSPDMaterial::ElasticSPDMaterial(const InputParameters & parameters) :
-  MechanicPDMaterial(parameters)
+  MechanicPDMaterial(parameters),
+  _bond_force_ij(declareProperty<Real>("bond_force_ij")),
+  _bond_force_i(declareProperty<Real>("bond_force_i")),
+  _bond_force_j(declareProperty<Real>("bond_force_j")),
+  _bond_dfdU_ij(declareProperty<Real>("bond_dfdU_ij")),
+  _bond_dfdU_i(declareProperty<Real>("bond_dfdU_i")),
+  _bond_dfdU_j(declareProperty<Real>("bond_dfdU_j")),
+  _bond_dfdT_ij(declareProperty<Real>("bond_dfdT_ij"))
 {
-}
-
-void
-ElasticSPDMaterial::computeQpStrain()
-{
-  _bond_total_strain[_qp] = _current_length / _origin_length - 1.0;
-  // bond temperature is taken as the average of two end nodes
-  _bond_mechanic_strain[_qp] = _bond_total_strain[_qp] - _alpha * ((_temp[0] + _temp[1]) / 2.0 - _temp_ref);
-  _bond_elastic_strain[_qp] = _bond_mechanic_strain[_qp];
 }
 
 void
 ElasticSPDMaterial::computeQpForce()
 {
-  double Cij = computeBondModulus();
-  // bond_force, bond_dfdU and bond_dfdT
-  _bond_force[_qp] = Cij * _bond_mechanic_strain[_qp] * _nv_i * _nv_j;
-  _bond_dfdU[_qp] = Cij / _origin_length * _nv_i * _nv_j;
-  _bond_dfdT[_qp] = - Cij * _alpha / 2.0 * _nv_i * _nv_j;
+  // assign bond constants values
+  double zero = computeBondModulus();
+
+  // need to use the temperature at the two end nodes
+  _bond_force_ij[_qp] = (- 2.0 * _pddim * _alpha * _a * ( _d_i * (_temp[0] - _temp_ref) + _d_j * (_temp[1] - _temp_ref)) + 2.0 * _b * _bond_mechanic_strain[_qp] ) / _origin_length * _nv_i * _nv_j;
+  _bond_force_i[_qp] = 2.0 * _a * _d_i * _d_i * _bond_total_strain[_qp] * _nv_i * _nv_j;
+  _bond_force_j[_qp] = 2.0 * _a * _d_j * _d_j * _bond_total_strain[_qp] * _nv_i * _nv_j;
+
+  _bond_dfdU_ij[_qp] = 2.0 * _b / _origin_length / _origin_length * _nv_i * _nv_j;
+  _bond_dfdU_i[_qp] = 2.0 * _a * _d_i * _d_i / _origin_length * _nv_i * _nv_j;
+  _bond_dfdU_j[_qp] = 2.0 * _a * _d_j * _d_j / _origin_length * _nv_i * _nv_j;
+
+  _bond_dfdT_ij[_qp] = - 2.0 * _b / _origin_length * _alpha / 2.0 * _nv_i * _nv_j;
 }

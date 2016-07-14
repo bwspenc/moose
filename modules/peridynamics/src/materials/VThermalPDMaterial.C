@@ -24,7 +24,7 @@ VThermalPDMaterial::VThermalPDMaterial(const InputParameters & parameters) :
 Real
 VThermalPDMaterial::computeBondModulus()
 {
-  double val = (1.0 / _nvsum_i + 1.0 / _nvsum_j) / _origin_length;
+  double val = _pddim * _kappa * (1.0 / _nvsum_i + 1.0 / _nvsum_j) / _origin_length;
 
-  return _pddim * _kappa * val;
+  return val;
 }

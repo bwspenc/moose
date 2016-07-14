@@ -22,8 +22,11 @@ public:
   ElasticBPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpStrain();
   virtual void computeQpForce();
+
+  MaterialProperty<Real> & _bond_force;
+  MaterialProperty<Real> & _bond_dfdU;
+  MaterialProperty<Real> & _bond_dfdT;
 };
 
 #endif //ELASTICBPDMATERIAL_H

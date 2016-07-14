@@ -27,5 +27,5 @@ Real
 BondContactStrainAux::computeValue()
 {
 // Critical strain for contact
-  return _bond_critical_strain[0] / 10.0;
+  return _bond_critical_strain[0] / 5.0;
 }

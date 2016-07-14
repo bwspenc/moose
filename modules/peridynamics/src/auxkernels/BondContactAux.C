@@ -27,7 +27,7 @@ BondContactAux::BondContactAux(const InputParameters & parameters) :
 Real
 BondContactAux::computeValue()
 {
-  if (_bond_mechanic_strain[0] < _bond_critical_strain[0] / 10.0)
+  if (_bond_mechanic_strain[0] < _bond_critical_strain[0] / 5.0)
     return 1.0;
   else
     return 0.0;

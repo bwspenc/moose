@@ -25,14 +25,11 @@ protected:
   virtual void initQpStatefulProperties();
   virtual void computeQpProperties();
 
-  virtual void computeQpStrain() = 0;
+  virtual void computeQpStrain();
   virtual void computeQpForce() = 0;
 
   virtual Real computeBondCurrentLength();
 
-  MaterialProperty<Real> & _bond_force;
-  MaterialProperty<Real> & _bond_dfdU;
-  MaterialProperty<Real> & _bond_dfdT;
   MaterialProperty<Real> & _bond_total_strain;
   MaterialProperty<Real> & _bond_mechanic_strain;
   MaterialProperty<Real> & _bond_elastic_strain;
@@ -46,8 +43,8 @@ protected:
   std::vector<MooseVariable *> _disp_var;
 
   double _alpha;
+  double _shear_modulus;
   double _bulk_modulus;
-  double _current_length;
 };
 
 #endif //MECHANICPDMATERIAL_H

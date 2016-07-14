@@ -6,21 +6,22 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef STRESSDIVERGENCEPD_H
-#define STRESSDIVERGENCEPD_H
+#ifndef STRESSDIVERGENCESPD_H
+#define STRESSDIVERGENCESPD_H
 
 #include "Kernel.h"
+#include "PeridynamicMesh.h"
 
-class StressDivergencePD;
+class StressDivergenceSPD;
 
 template<>
-InputParameters validParams<StressDivergencePD>();
+InputParameters validParams<StressDivergenceSPD>();
 
-class StressDivergencePD : public Kernel
+class StressDivergenceSPD : public Kernel
 {
 public:
-  StressDivergencePD(const InputParameters & parameters);
-  virtual ~StressDivergencePD() {}
+  StressDivergenceSPD(const InputParameters & parameters);
+  virtual ~StressDivergenceSPD() {}
 
 protected:
   virtual void initialSetup();
@@ -28,25 +29,32 @@ protected:
   virtual void computeResidual();
   virtual Real computeQpResidual() {return 0;}
   virtual void computeJacobian();
+  virtual void computePartialJacobian();
+  virtual void computeFullJacobian();
   virtual void computeOffDiagJacobian(unsigned int jvar);
+  virtual void computePartialOffDiagJacobian(unsigned int jvar);
+  virtual void computeFullOffDiagJacobian(unsigned int jvar);
 
-  virtual void computeStiffness(DenseVector<Real> & stiff_elem);
-  virtual void computeOffDiagStiffness(DenseMatrix<Real> & off_stiff_elem);
-
-  const MaterialProperty<Real> & _bond_force;
-  const MaterialProperty<Real> & _bond_dfdU;
-  const MaterialProperty<Real> & _bond_dfdT;
+  const MaterialProperty<Real> & _bond_force_ij;
+  const MaterialProperty<Real> & _bond_force_i;
+  const MaterialProperty<Real> & _bond_force_j;
+  const MaterialProperty<Real> & _bond_dfdU_ij;
+  const MaterialProperty<Real> & _bond_dfdU_i;
+  const MaterialProperty<Real> & _bond_dfdU_j;
+  const MaterialProperty<Real> & _bond_dfdT_ij;
 
 private:
   const unsigned int _component;
-
   unsigned int _ndisp;
   std::vector<unsigned int> _disp_var;
 
   const bool _temp_coupled;
   const unsigned int _temp_var;
 
+  PeridynamicMesh & _pdmesh;
+  const unsigned int _pddim;
+
   const std::vector<RealGradient> * _orientation;
 };
 
-#endif //STRESSDIVERGENCEPD_H
+#endif //STRESSDIVERGENCESPD_H

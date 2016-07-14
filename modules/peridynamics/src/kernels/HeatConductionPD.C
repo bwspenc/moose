@@ -18,8 +18,8 @@ InputParameters validParams<HeatConductionPD>()
   return params;
 }
 
-HeatConductionPD::HeatConductionPD(const InputParameters & parameters)
-  :Kernel(parameters),
+HeatConductionPD::HeatConductionPD(const InputParameters & parameters) :
+  Kernel(parameters),
   _bond_response(getMaterialProperty<Real>("bond_response")),
   _bond_drdT(getMaterialProperty<Real>("bond_drdT"))
 {

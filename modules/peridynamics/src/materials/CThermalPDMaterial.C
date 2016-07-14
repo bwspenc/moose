@@ -24,11 +24,7 @@ CThermalPDMaterial::CThermalPDMaterial(const InputParameters & parameters) :
 double
 CThermalPDMaterial::computeBondModulus()
 {
-  double Kij;
-  double h0 = _pdmesh.horizon(_current_elem->get_node(0)->id());
-  double h1 = _pdmesh.horizon(_current_elem->get_node(1)->id());
-
-  Kij = (6.0 * _kappa / (3.14159265358 * std::pow(h0, _pddim + 1)) + 6.0 * _kappa / (3.14159265358 * std::pow(h1, _pddim + 1))) / 2.0;
+  double Kij = (6.0 * _kappa / (3.14159265358 * std::pow(_horizon_i, _pddim + 1)) + 6.0 * _kappa / (3.14159265358 * std::pow(_horizon_j, _pddim + 1))) / 2.0;
 
   return Kij;
 }

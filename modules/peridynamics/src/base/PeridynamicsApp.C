@@ -27,8 +27,6 @@
 
 // UserObjects
 #include "FailureIndexUO.h"
-#include "PDNodalUO.h"
-#include "DilatationUO.h"
 
 // Materials
 #include "CElasticBPDMaterial.h"
@@ -39,7 +37,8 @@
 #include "VThermalPDMaterial.h"
 
 //Kernels
-#include "StressDivergencePD.h"
+#include "StressDivergenceBPD.h"
+#include "StressDivergenceSPD.h"
 #include "HeatConductionPD.h"
 #include "HeatSourcePD.h"
 
@@ -99,11 +98,10 @@ PeridynamicsApp::registerObjects(Factory & factory)
 
   registerKernel(HeatConductionPD);
   registerKernel(HeatSourcePD);
-  registerKernel(StressDivergencePD);
+  registerKernel(StressDivergenceBPD);
+  registerKernel(StressDivergenceSPD);
 
   registerUserObject(FailureIndexUO);
-  registerUserObject(PDNodalUO);
-  registerUserObject(DilatationUO);
 }
 
 // External entry point for dynamic syntax association

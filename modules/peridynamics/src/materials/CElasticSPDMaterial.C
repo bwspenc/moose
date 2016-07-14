@@ -24,11 +24,14 @@ CElasticSPDMaterial::CElasticSPDMaterial(const InputParameters & parameters) :
 Real
 CElasticSPDMaterial::computeBondModulus()
 {
-  double Cij;
-  double h0 = _pdmesh.horizon(_current_elem->get_node(0)->id());
-  double h1 = _pdmesh.horizon(_current_elem->get_node(1)->id());
+  _a = 0.5 * (_bulk_modulus  -  (8.0 - _pddim) / 3.0 * _shear_modulus);
 
-  Cij = (6.0 * _pddim * _bulk_modulus / (3.14159265358 * std::pow(h0, _pddim + 1)) + 6.0 * _pddim * _bulk_modulus / (3.14159265358 * std::pow(h1, _pddim + 1))) / 2.0;
+  // _b = 2 * _b * _horizon_(i/j) * _origin_length //_origin_length will be cancelled out in parent material model
+  _b = _origin_length * (3.0 * _pddim + 6.0) * _shear_modulus / 3.1415926 / std::pow(_horizon_i, _pddim + 1.0);
 
-  return Cij;
+  // _d_i = _di * _horizon_(i/j)
+  _d_i = (_pddim / 4.0 + 1.5) / 3.1415926 / std::pow(_horizon_i, _pddim);
+  _d_j = _d_i;
+
+  return 0;
 }

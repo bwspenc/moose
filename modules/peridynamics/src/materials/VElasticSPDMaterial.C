@@ -24,22 +24,14 @@ VElasticSPDMaterial::VElasticSPDMaterial(const InputParameters & parameters) :
 Real
 VElasticSPDMaterial::computeBondModulus()
 {
-  dof_id_type node_i = _current_elem->get_node(0)->id();
-  dof_id_type node_j = _current_elem->get_node(1)->id();
+  _a = 0.5 * (_bulk_modulus  -  (8.0 - _pddim) / 3.0 * _shear_modulus);
 
-  std::vector<dof_id_type> i_neighbors = _pdmesh.neighbors(node_i);
-  std::vector<dof_id_type> j_neighbors = _pdmesh.neighbors(node_j);
-  unsigned int i_nneighbor = _pdmesh.n_neighbors(node_i);
-  unsigned int j_nneighbor = _pdmesh.n_neighbors(node_j);
+  // _b = _bij * _horizon_i + _bji * _horizon_j
+  _b = _pddim * _pddim * (_bulk_modulus / 2.0 - _a) * (1.0 / _nvsum_i + 1.0 / _nvsum_j);
 
-  double val1 = 0, val2 = 0;
-  for (unsigned int k = 0; k < i_nneighbor; ++k)
-    val1 += _pdmesh.volume(i_neighbors[k]);
+  // _d_i = _di * _horizon_i = _pddim / _nvsum_i
+  _d_i = _pddim / _nvsum_i;
+  _d_j = _pddim / _nvsum_j;
 
-  for (unsigned int k = 0; k < j_nneighbor; ++k)
-    val2 += _pdmesh.volume(j_neighbors[k]);
-
-  double val = (1.0 / val1 + 1.0 / val2) / _origin_length;
-
-  return _pddim * _pddim * _bulk_modulus * val;
+  return 0;
 }

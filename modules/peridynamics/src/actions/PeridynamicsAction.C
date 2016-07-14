@@ -16,8 +16,10 @@ template<>
 InputParameters validParams<PeridynamicsAction>()
 {
   InputParameters params = validParams<Action>();
-  params.addClassDescription("Set up peridynamic stress divergence kernels");
+  params.addClassDescription("Set up peridynamic stress divergence kernels. Default is BPD. For SPD, partial Jacobian is the default");
   params.addRequiredParam<std::vector<NonlinearVariableName> >("displacements", "The nonlinear displacement variables for the problem");
+  params.addParam<std::string>("state_based_formulation", "Whether to use SPD or not");
+  params.addParam<std::string>("full_jacobian", "whether to use full SPD jacobian or not");
   params.addParam<NonlinearVariableName>("temp", "The temperature");
   params.addParam<bool>("use_displaced_mesh", true, "Whether to use displaced mesh in the kernels");
   params.addParam<std::vector<SubdomainName> >("block", "The list of ids of the blocks (subdomain) that the stress divergence kernel will be applied to");
@@ -49,15 +51,24 @@ PeridynamicsAction::act()
   if (isParamValid("diag_save_in") && diag_save_in.size() != _ndisp)
     mooseError("Number of diag_save_in variables should equal to the number of displacement variables " << _ndisp);
 
-  InputParameters params = _factory.getValidParams("StressDivergencePD");
+  std::string type;
+  if (isParamValid("state_based_formulation"))
+    type = "StressDivergenceBPD";
+  else
+    type = "StressDivergenceSPD";
+
+  InputParameters params = _factory.getValidParams(type);
   params.set<std::vector<VariableName> >("displacements") = coupled_displacements;
+
+  if (isParamValid("state_based_formulation") && isParamValid("full_jacobian"))
+    params.set<std::string>("full_jacobian") = getParam<std::string>("full_jacobian");
 
   if (isParamValid("temp"))
     params.addCoupledVar("temp", "The temperature");
 
   params.set<bool>("use_displaced_mesh") = getParam<bool>("use_displaced_mesh");
 
-  // check whether this StressDivergencePD kernel is restricted to certain block?
+  // check whether this kernel is restricted to certain block?
   if (isParamValid("block"))
     params.set<std::vector<SubdomainName> >("block") = getParam<std::vector<SubdomainName> >("block");
 
@@ -79,5 +90,8 @@ PeridynamicsAction::act()
 void
 PeridynamicsAction::addkernel(const std::string & name,  InputParameters & params)
 {
-  _problem->addKernel("StressDivergencePD", name, params);
+  if (isParamValid("state_based_formulation"))
+    _problem->addKernel("StressDivergenceSPD", name, params);
+  else
+    _problem->addKernel("StressDivergenceBPD", name, params);
 }

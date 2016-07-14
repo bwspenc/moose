@@ -27,10 +27,10 @@ PeridynamicMesh::PeridynamicMesh(const InputParameters & parameters) :
   _horizon_number(isParamValid("horizon_number") ? getParam<unsigned int>("horizon_number") : 0)
 {
   if (isParamValid("horizon_size") && isParamValid("horizon_number"))
-    mooseError("You can specify only one option: horizon_size or horizon_number !");
+    mooseError("You can specify only one option: horizon_size or horizon_number in the mesh block!");
 
   if (!isParamValid("horizon_size") && !isParamValid("horizon_number"))
-    mooseError("You must specify one option: horizon_size or horizon_number !");
+    mooseError("You must specify one option: horizon_size or horizon_number in the mesh block!");
 }
 
 PeridynamicMesh::~PeridynamicMesh()
@@ -86,10 +86,16 @@ PeridynamicMesh::find_neighbor()
       {
         // check whether j was already considered as a neighbor of i, if not, add j to i's neighborlist
         if (std::find(_neighbors[i].begin(), _neighbors[i].end(), j) == _neighbors[i].end())
+        {  
           _neighbors[i].push_back(j);
+          _node[i].volumesum += _node[j].volume;
+        }
         // check whether i was also considered as a neighbor of j, if not, add i to j's neighborlist
         if (std::find(_neighbors[j].begin(), _neighbors[j].end(), i) == _neighbors[j].end())
+        {
           _neighbors[j].push_back(i);
+          _node[j].volumesum += _node[i].volume;
+        }
       }
     }
   }
@@ -111,6 +117,12 @@ double
 PeridynamicMesh::volume(dof_id_type node_id)
 {
   return _node[node_id].volume;
+}
+
+double
+PeridynamicMesh::volumesum(dof_id_type node_id)
+{
+  return _node[node_id].volumesum;
 }
 
 unsigned int

@@ -24,7 +24,7 @@ VElasticBPDMaterial::VElasticBPDMaterial(const InputParameters & parameters) :
 Real
 VElasticBPDMaterial::computeBondModulus()
 {
-  double val = (1.0 / _nvsum_i + 1.0 / _nvsum_j) / _origin_length;
+  double val = _pddim * _pddim * _bulk_modulus * (1.0 / _nvsum_i + 1.0 / _nvsum_j) / _origin_length;
 
-  return _pddim * _pddim * _bulk_modulus * val;
+  return val;
 }

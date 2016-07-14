@@ -10,8 +10,8 @@
 #define PERIDYNAMICMATERIAL_H
 
 #include "Material.h"
-#include "Assembly.h"
 #include "PeridynamicMesh.h"
+#include "NonlinearSystem.h"
 
 class PeridynamicMaterial;
 
@@ -28,11 +28,10 @@ protected:
   virtual void computeProperties();
   virtual void computeQpProperties() = 0;
 
-  virtual Real computeBondModulus() = 0;
+  virtual Real computeBondModulus(){return 0;}
+  virtual Real computeBondCurrentLength(){return 0;}
 
-  virtual Real computeVolSum(dof_id_type node_id);
-
-  AuxiliarySystem & _aux;
+  NonlinearSystem & _nsys;
 
   const VariableValue & _bond_status;
   const VariableValue & _bond_contact;
@@ -42,12 +41,17 @@ protected:
 
   const unsigned int _pddim;
 
+  double _horizon_i;
+  double _horizon_j;
   double _nv_i;
   double _nv_j;
   double _nvsum_i;
   double _nvsum_j;
+  double _temp_i;
+  double _temp_j;
 
   double _origin_length;
+  double _current_length;
   double _bond_sign;
 };
 

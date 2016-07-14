@@ -9,6 +9,7 @@
 
 #include "BondCriticalStrainAux.h"
 #include "PeridynamicMesh.h"
+#include "MooseRandom.h"
 
 template<>
 InputParameters validParams<BondCriticalStrainAux>()
@@ -40,9 +41,15 @@ Real
 BondCriticalStrainAux::computeValue()
 {
   // Generate randomized critical stretch by Box-Muller method: randomized_critical_strain = small_random_number + _input_critical_strain
-  double val = std::sqrt(2.0 * _Gc / _kappa / std::pow(_pddim, 2) / _current_elem_volume);
-//  double val = std::sqrt(8.0 * 3.1415926 * _Gc / 27.0 / _E / 0.17697842);
-//  double val = 0.000446185; // 3x
-//  double val = 0.00034595; // 5x
+//  double val = std::sqrt(2.0 * _Gc / _kappa / std::pow(_pddim, 2) / _current_elem_volume);
+//  double val = std::sqrt(8.0 * 3.1415926 * _Gc / 27.0 / _E / 0.17697842); //3x
+//  double val = std::sqrt(8.0 * 3.1415926 * _Gc / 27.0 / _E / 0.294964033); //5x
+//  double val = 0.000446185; // 3x irregular
+  double val = 0.00034595; // 5x irregular
+//  double val = 0.000592505; // 3x regular
+//  double val = 0.00038582; // 5x regular
+//  double val = 0.000300093; // 3x irregular 3D
+//  double val = 0.000233381; // 5x irregular 3D
   return  (std::sqrt(- 2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * 0.05 + 1.0) * val;
+//  return MooseRandom::randNormal(0.0, 0.05 * val) + val;
 }

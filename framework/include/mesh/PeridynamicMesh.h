@@ -23,6 +23,7 @@ struct pd_node
   double mesh_spacing;
   double horizon;
   double volume;
+  double volumesum;
 };
 
 class PeridynamicMesh : public MooseMesh
@@ -56,6 +57,11 @@ public:
    * return nodal volume for node node_id
    */
   virtual double volume(dof_id_type node_id);
+
+  /*
+   * return summation of neighbor nodal volumes for node node_id
+   */
+  virtual double volumesum(dof_id_type node_id);
 
   /*
    * return neighbor number for node node_id

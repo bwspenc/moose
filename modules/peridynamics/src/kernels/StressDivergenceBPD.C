@@ -7,15 +7,16 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "StressDivergencePD.h"
+#include "StressDivergenceBPD.h"
 #include "MooseMesh.h"
 #include "Material.h"
 #include "Assembly.h"
 
 template<>
-InputParameters validParams<StressDivergencePD>()
+InputParameters validParams<StressDivergenceBPD>()
 {
   InputParameters params = validParams<Kernel>();
+  params.addClassDescription("BPD Stress divergence kernel with full Jacobian");
   params.addRequiredParam<unsigned int>("component", "An integer corresponding to the variable this kernel acts on (0 for x, 1 for y, 2 for z)");
   params.addRequiredCoupledVar("displacements", "The displacement variables");
   params.addCoupledVar("temp", "The temperature");
@@ -23,8 +24,8 @@ InputParameters validParams<StressDivergencePD>()
   return params;
 }
 
-StressDivergencePD::StressDivergencePD(const InputParameters & parameters)
-  :Kernel(parameters),
+StressDivergenceBPD::StressDivergenceBPD(const InputParameters & parameters) :
+  Kernel(parameters),
   _bond_force(getMaterialProperty<Real>("bond_force")),
   _bond_dfdU(getMaterialProperty<Real>("bond_dfdU")),
   _bond_dfdT(getMaterialProperty<Real>("bond_dfdT")),
@@ -39,23 +40,22 @@ StressDivergencePD::StressDivergencePD(const InputParameters & parameters)
 }
 
 void
-StressDivergencePD::initialSetup()
+StressDivergenceBPD::initialSetup()
 {
-  _orientation = &_subproblem.assembly(_tid).getFE(FEType(), 1)->get_dxyzdxi();
+  _orientation = &_assembly.getFE(FEType(), 1)->get_dxyzdxi();
 }
 
 void
-StressDivergencePD::computeResidual()
+StressDivergenceBPD::computeResidual()
 {
   DenseVector<Number> & re = _assembly.residualBlock(_var.number());
-  mooseAssert(re.size() == 2, "Truss elements must have two nodes");
+  mooseAssert(re.size() == 2, "Truss element has only two nodes");
   _local_re.resize(re.size());
   _local_re.zero();
 
-  RealGradient ori((*_orientation)[0]);
+  RealGradient ori = (*_orientation)[0];
   ori /= ori.size();
-  VectorValue<Real> force_local = _bond_force[0] * ori;
-  _local_re(0) = - force_local(_component);
+  _local_re(0) = - _bond_force[0] * ori(_component);
   _local_re(1) = - _local_re(0);
 
   re += _local_re;
@@ -69,53 +69,21 @@ StressDivergencePD::computeResidual()
 }
 
 void
-StressDivergencePD::computeStiffness(DenseVector<Real> & stiff_elem)
-{
-  RealGradient ori((*_orientation)[0]);
-  Real dist = 2.0 * ori.size(); //ori.size() only gives half of the actual distance between two nodes
-  ori /= ori.size();
-
-  //the effect of truss ori change has been accounted for
-  stiff_elem(0) = ori(0) * ori(0) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(0) * ori(0)) / dist;
-  stiff_elem(1) = ori(1) * ori(1) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(1) * ori(1)) / dist;
-  stiff_elem(2) = ori(2) * ori(2) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(2) * ori(2)) / dist;
-}
-
-void
-StressDivergencePD::computeOffDiagStiffness(DenseMatrix<Real> & off_stiff_elem)
-{
-  RealGradient ori((*_orientation)[0]);
-  Real dist = 2.0 * ori.size(); //ori.size() only gives half of the actual distance between two nodes
-  ori /= ori.size();
-
-  //the effect of truss ori change has been accounted for
-  off_stiff_elem(0, 0) = ori(0) * ori(0) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(0) * ori(0)) / dist;
-  off_stiff_elem(0, 1) = ori(0) * ori(1) * _bond_dfdU[0] - _bond_force[0] * ori(0) * ori(1) / dist;
-  off_stiff_elem(0, 2) = ori(0) * ori(2) * _bond_dfdU[0] - _bond_force[0] * ori(0) * ori(2) / dist;
-  off_stiff_elem(0, 3) = ori(0) * _bond_dfdT[0];
-  off_stiff_elem(1, 0) = ori(1) * ori(0) * _bond_dfdU[0] - _bond_force[0] * ori(1) * ori(0) / dist;
-  off_stiff_elem(1, 1) = ori(1) * ori(1) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(1) * ori(1)) / dist;
-  off_stiff_elem(1, 2) = ori(1) * ori(2) * _bond_dfdU[0] - _bond_force[0] * ori(1) * ori(2) / dist;
-  off_stiff_elem(1, 3) = ori(1) * _bond_dfdT[0];
-  off_stiff_elem(2, 0) = ori(2) * ori(0) * _bond_dfdU[0] - _bond_force[0] * ori(2) * ori(0) / dist;
-  off_stiff_elem(2, 1) = ori(2) * ori(1) * _bond_dfdU[0] - _bond_force[0] * ori(2) * ori(1) / dist;
-  off_stiff_elem(2, 2) = ori(2) * ori(2) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(2) * ori(2)) / dist;
-  off_stiff_elem(2, 3) = ori(2) * _bond_dfdT[0];
-}
-
-void
-StressDivergencePD::computeJacobian()
+StressDivergenceBPD::computeJacobian()
 {
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), _var.number());
   _local_ke.resize(ke.m(), ke.n());
   _local_ke.zero();
 
-  DenseVector<Real> stiff_elem(3);
-  computeStiffness(stiff_elem);
+  RealGradient ori = (*_orientation)[0];
+  double current_length = 2.0 * ori.size(); // ori.size() only gives half current length
+  ori /= ori.size();
+
+  double stiff_elem = ori(_component) * ori(_component) * _bond_dfdU[0] + _bond_force[0] * (1.0 - ori(_component) * ori(_component)) / current_length;
 
   for (unsigned int i = 0; i < _test.size(); ++i)
     for (unsigned int j = 0; j < _phi.size(); ++j)
-       _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem(_component);
+       _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem;
 
   ke += _local_ke;
 
@@ -128,12 +96,12 @@ StressDivergencePD::computeJacobian()
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     for (unsigned int i = 0; i < _diag_save_in.size(); ++i)
-    _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
   }
 }
 
 void
-StressDivergencePD::computeOffDiagJacobian(unsigned int jvar)
+StressDivergenceBPD::computeOffDiagJacobian(unsigned int jvar)
 {
   if (jvar == _var.number())
     computeJacobian();
@@ -157,11 +125,19 @@ StressDivergencePD::computeOffDiagJacobian(unsigned int jvar)
     DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), jvar);
     if (active)
     {
-      DenseMatrix<Real> off_stiff_elem(3, 4);
-      computeOffDiagStiffness(off_stiff_elem);
+      RealGradient ori = (*_orientation)[0];
+      double current_length = 2.0 * ori.size(); // ori.size() only gives half current length
+      ori /= ori.size();
+
+      double off_stiff_elem;
+      if(coupled_component == 3)
+        off_stiff_elem = ori(_component) * _bond_dfdT[0];
+      else
+        off_stiff_elem = ori(_component) * ori(coupled_component) * _bond_dfdU[0] - _bond_force[0] * ori(_component) * ori(coupled_component) / current_length;
+
       for (unsigned int i = 0; i < _test.size(); ++i)
         for (unsigned int j = 0; j < _phi.size(); ++j)
-          ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem(_component, coupled_component);
+          ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem;
     }
   }
 }

@@ -16,6 +16,7 @@ template<>
 InputParameters validParams<PeridynamicMaterial>()
 {
   InputParameters params = validParams<Material>();
+//  params.addParam<NonlinearVariableName>("temp", "Variable containing the temperature");
   params.addCoupledVar("bond_status", "Auxiliary variable for bond failure status");
   params.addCoupledVar("bond_contact", "Auxiliary variable for bond contact status");
   params.addCoupledVar("bond_contact_strain", "Auxiliary variable for bond contact strain");
@@ -24,7 +25,7 @@ InputParameters validParams<PeridynamicMaterial>()
 
 PeridynamicMaterial::PeridynamicMaterial(const InputParameters & parameters) :
   Material(parameters),
-  _aux(_fe_problem.getAuxiliarySystem()),
+  _nsys(_fe_problem.getNonlinearSystem()),
   _bond_status(coupledValue("bond_status")),
   _bond_contact(coupledValue("bond_contact")),
   _bond_contact_strain(coupledValue("bond_contact_strain")),
@@ -42,42 +43,45 @@ void
 PeridynamicMaterial::computeProperties()
 {
   // the volume for the two end nodes
+  _horizon_i = _pdmesh.horizon(_current_elem->get_node(0)->id());
+  _horizon_j = _pdmesh.horizon(_current_elem->get_node(1)->id());
+  // the volume for the two end nodes
   _nv_i = _pdmesh.volume(_current_elem->get_node(0)->id());
   _nv_j = _pdmesh.volume(_current_elem->get_node(1)->id());
   // the volume sum of all neighbors for the two end nodes
-  _nvsum_i = computeVolSum(_current_elem->get_node(0)->id());
-  _nvsum_j = computeVolSum(_current_elem->get_node(1)->id());
+  _nvsum_i = _pdmesh.volumesum(_current_elem->get_node(0)->id());
+  _nvsum_j = _pdmesh.volumesum(_current_elem->get_node(1)->id());
+  // nodal temperature for the two end nodes
+//  if (isParamValid("temp"))
+//    computeNodalTemp();
+//  else
+//  {
+//    _temp_i = 273;
+//    _temp_j = 273;
+//  }
 
   // original length of a truss element
-  RealGradient dxyz;
-  for (unsigned int i = 0; i < _pddim; ++i)
-    dxyz(i) = (*_current_elem->get_node(1))(i) - (*_current_elem->get_node(0))(i);
-
-  _origin_length = dxyz.norm();
+  _origin_length = (*_current_elem->get_node(1) - *_current_elem->get_node(0)).size();
+  // current length of a truss element
+  _current_length = computeBondCurrentLength();
 
   // check whether the bond is broken and/or in contact
   if (std::abs(_bond_status[0] - 1.0) < 0.01)
     _bond_sign = 1.0;
   else
-    _bond_sign = 0.0;
-//    if (std::abs(_bond_contact[0] - 1.0) < 0.01)
-//      _bond_sign = 1.0;
-//    else
-//      _bond_sign = 0.0;
+    if (std::abs(_bond_contact[0] - 1.0) < 0.01)
+      _bond_sign = 1.0;
+    else
+      _bond_sign = 0.0;
 
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     computeQpProperties();
 }
 
-Real
-PeridynamicMaterial::computeVolSum(dof_id_type node_id)
-{
-  double val = 0;
-  unsigned int nneighbors = _pdmesh.n_neighbors(node_id);
-  std::vector<dof_id_type> neighbors = _pdmesh.neighbors(node_id);
-
-  for (unsigned int k = 0; k < nneighbors; ++k)
-    val += _pdmesh.volume(neighbors[k]);
-
-  return val;
-}
+//void
+//PeridynamicMaterial::computeNodalTemp()
+//{
+//  const NumericVector<Number> & sol = *_nsys.currentSolution();
+//  _temp_i = sol(_current_elem->get_node(0)->dof_number(_nsys.number(), _temp_var->number(), 0));
+//  _temp_j = sol(_current_elem->get_node(1)->dof_number(_nsys.number(), _temp_var->number(), 0));
+//}

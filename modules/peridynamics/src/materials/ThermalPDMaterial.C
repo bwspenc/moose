@@ -42,12 +42,11 @@ void
 ThermalPDMaterial::computeQpProperties()
 {
   //obtain the temperature solution at the two nodes for each truss element
-  NonlinearSystem & nonlinear_sys = _fe_problem.getNonlinearSystem();
-  const NumericVector<Number>& ghosted_solution = *nonlinear_sys.currentSolution();
-  unsigned int temp_dof0(_current_elem->get_node(0)->dof_number(nonlinear_sys.number(), _temp_var->number(), 0));
-  unsigned int temp_dof1(_current_elem->get_node(1)->dof_number(nonlinear_sys.number(), _temp_var->number(), 0));
+  const NumericVector<Number> & sol = *_nsys.currentSolution();
+  unsigned int dof0(_current_elem->get_node(0)->dof_number(_nsys.number(), _temp_var->number(), 0));
+  unsigned int dof1(_current_elem->get_node(1)->dof_number(_nsys.number(), _temp_var->number(), 0));
   // the temperature of the connecting bond is calculated as the avarage of the temperature of two end nodes, this value will be used for temperature (and possibly spatial location) dependent thermal conductivity and specific heat calculation
-  double temp_avg = (ghosted_solution(temp_dof0) + ghosted_solution(temp_dof1)) / 2.0;
+  double temp_avg = (sol(dof0) + sol(dof1)) / 2.0;
   if (_thermal_conductivity_function)
   {
     Point p;
@@ -57,14 +56,14 @@ ThermalPDMaterial::computeQpProperties()
     _kappa = _thermal_conductivity;
 
   double Kij = computeBondModulus();
-  if (std::abs(_bond_sign - 1.0) < 0.01)
+  if (std::abs(_bond_status[0] - 1.0) < 0.01)
   {
-    _bond_response[_qp] = Kij * (ghosted_solution(temp_dof1) - ghosted_solution(temp_dof0)) / _origin_length * _nv_i * _nv_j * _bond_sign;
-    _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j * _bond_sign;
+    _bond_response[_qp] = Kij * (sol(dof1) - sol(dof0)) / _origin_length * _nv_i * _nv_j;
+    _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j;
   }
   else
   {
-    _bond_response[_qp] = Kij * (ghosted_solution(temp_dof1) - ghosted_solution(temp_dof0)) / _origin_length * _nv_i * _nv_j * 0.8;
-    _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j * 0.8;
+    _bond_response[_qp] = Kij * (sol(dof1) - sol(dof0)) / _origin_length * _nv_i * _nv_j * 0.5;
+    _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j * 0.5;
   }
 }

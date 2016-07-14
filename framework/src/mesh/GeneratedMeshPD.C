@@ -76,6 +76,35 @@ GeneratedMeshPD::buildMesh()
   else
    mooseError("The domain cross section shape can only be 0: circular and 1: rectangular!");
 
+//-----------------------
+//  double val = 0;
+//  for (unsigned int i = 0; i < _total_nodes; ++i)
+//  {
+//    if ((_node[i].coord)(1) < -0.0001)
+//    {   
+//      double voli = 0;
+//      for(unsigned int k = 0; k < _neighbors[i].size(); ++k)
+//        voli += _node[_neighbors[i][k]].volume;
+
+//      for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
+//      {   
+//        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
+//        {   
+//          double volj = 0;
+//          for(unsigned int k = 0; k < _neighbors[_neighbors[i][j]].size(); ++k)
+//            volj += _node[_neighbors[_neighbors[i][j]][k]].volume;
+//          double dx = (_node[i].coord)(0) - (_node[_neighbors[i][j]].coord)(0);
+//          double dy = (_node[i].coord)(1) - (_node[_neighbors[i][j]].coord)(1);
+//          double cosij = dy / std::sqrt(dx * dx + dy * dy);
+//          val += _node[i].volume * _node[_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
+//        }   
+//      }   
+//    }   
+//  }
+//  double s = std::sqrt(2 * 0.004 * 8.2 / (239836.911 * 4 * val));
+//  std::cout << s << std::endl;
+//-----------------------
+
   std::cout << "Total Node Number: " << _total_nodes << std::endl;
   std::cout << "Total Bond Number: " << _total_bonds << std::endl;
 
@@ -107,6 +136,7 @@ GeneratedMeshPD::build2DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
       _node[k].mesh_spacing = spacing;
       _node[k].horizon = horizon;
       _node[k].volume = spacing * spacing;
+      _node[k].volumesum = 0.0;
       ++k;
     }
 
@@ -185,6 +215,7 @@ GeneratedMeshPD::build2DCircular(UnstructuredMesh & mesh, BoundaryInfo & boundar
         _node[k].mesh_spacing = spacing;
         _node[k].horizon = horizon;
         _node[k].volume = spacing * spacing;
+        _node[k].volumesum = 0.0;
         ++k;
       }
     }
@@ -262,6 +293,7 @@ GeneratedMeshPD::build3DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
         _node[k].mesh_spacing = spacing;
         _node[k].horizon = horizon;
         _node[k].volume = spacing * spacing * spacing;
+        _node[k].volumesum = 0.0;
         ++k;
       }
 
@@ -352,6 +384,7 @@ GeneratedMeshPD::build3DCylindrical(UnstructuredMesh & mesh, BoundaryInfo & boun
           _node[k].mesh_spacing = spacing;
           _node[k].horizon = horizon;
           _node[k].volume = spacing * spacing * spacing;
+          _node[k].volumesum = 0.0;
           ++k;
         }
       }
