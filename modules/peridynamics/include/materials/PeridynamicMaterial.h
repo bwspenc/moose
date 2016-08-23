@@ -12,6 +12,7 @@
 #include "Material.h"
 #include "PeridynamicMesh.h"
 #include "NonlinearSystem.h"
+#include "RankTwoTensor.h"
 
 class PeridynamicMaterial;
 
@@ -24,9 +25,13 @@ public:
   PeridynamicMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties() = 0;
+  virtual void initQpStatefulProperties(){};
   virtual void computeProperties();
-  virtual void computeQpProperties() = 0;
+  virtual void computeQpStrain() = 0;
+  virtual void computeQpForce() = 0;
+  virtual void computeNodalTemp() = 0;
+  virtual void computeElasticStrainTensor(){};
+  virtual void computeStressTensor(){};
 
   virtual Real computeBondModulus(){return 0;}
   virtual Real computeBondCurrentLength(){return 0;}

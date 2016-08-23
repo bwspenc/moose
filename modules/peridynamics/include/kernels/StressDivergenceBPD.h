@@ -32,6 +32,7 @@ protected:
 
   const MaterialProperty<Real> & _bond_force;
   const MaterialProperty<Real> & _bond_dfdU;
+  const MaterialProperty<Real> & _bond_dfdE;
   const MaterialProperty<Real> & _bond_dfdT;
 
 private:
@@ -42,6 +43,9 @@ private:
 
   const bool _temp_coupled;
   const unsigned int _temp_var;
+
+  const bool _strain_zz_coupled;
+  const unsigned int _strain_zz_var;
 
   const std::vector<RealGradient> * _orientation;
 };

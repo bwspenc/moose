@@ -51,7 +51,7 @@ FileMeshPD::buildMesh()
   _exodusII_io->read(_file_name);
   fe_mesh->allow_renumbering(false);
   fe_mesh->prepare_for_use(/*true*/);
-  fe_mesh->find_neighbors();// build neighborlist for fe_mesh elements 
+  fe_mesh->find_neighbors();// build neighborlist for fe_mesh elements
 
   _total_nodes = fe_mesh->n_elem();
   _pddim = fe_mesh->mesh_dimension();
@@ -157,19 +157,19 @@ FileMeshPD::buildMesh()
       pd_boundary_info.add_node(pd_mesh.node_ptr(i), 101);
     if (std::abs(Z) < 0.01)
       pd_boundary_info.add_node(pd_mesh.node_ptr(i), 102);
-    pd_boundary_info.add_node(pd_mesh.node_ptr(i), 103);
+    pd_boundary_info.add_node(pd_mesh.node_ptr(i), 999);
   }
   pd_boundary_info.nodeset_name(100) = "CenterPoint";
   pd_boundary_info.nodeset_name(101) = "RightPoint";
   pd_boundary_info.nodeset_name(102) = "CenterPlane";
-  pd_boundary_info.nodeset_name(103) = "All";
+  pd_boundary_info.nodeset_name(999) = "All";
 
-////-----------------------
+//-----------------------
 //  double val = 0;
 //  for (unsigned int i = 0; i < _total_nodes; ++i)
 //  {
-//    if ((_node[i].coord)(2) < -0.0001)
-////    if ((_node[i].coord)(1) < -0.0001)
+////    if ((_node[i].coord)(2) < -0.0001)
+//    if ((_node[i].coord)(1) < -0.0001)
 //    {
 //      double voli = 0;
 //      for(unsigned int k = 0; k < _neighbors[i].size(); ++k)
@@ -177,8 +177,8 @@ FileMeshPD::buildMesh()
 
 //      for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
 //      {
-//        if ((_node[_neighbors[i][j]].coord)(2) > 0.0001)
-////        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
+////        if ((_node[_neighbors[i][j]].coord)(2) > 0.0001)
+//        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
 //        {
 //          double volj = 0;
 //          for(unsigned int k = 0; k < _neighbors[_neighbors[i][j]].size(); ++k)
@@ -187,17 +187,17 @@ FileMeshPD::buildMesh()
 //          double dx = (_node[i].coord)(0) - (_node[_neighbors[i][j]].coord)(0);
 //          double dy = (_node[i].coord)(1) - (_node[_neighbors[i][j]].coord)(1);
 //          double dz = (_node[i].coord)(2) - (_node[_neighbors[i][j]].coord)(2);
-////          double cosij = dy / std::sqrt(dx * dx + dy * dy);
-//          double cosij = dz / std::sqrt(dx * dx + dy * dy + dz * dz);
+//          double cosij = dy / std::sqrt(dx * dx + dy * dy);
+////          double cosij = dz / std::sqrt(dx * dx + dy * dy + dz * dz);
 //          val += _node[i].volume * _node[_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
 //        }
 //      }
 //    }
 //  }
-////  double s = std::sqrt(2 * 0.004 * 8.2 / (239836.911 * 4.0 * val));
-//  double s = std::sqrt(2 * 0.004 * 3.1415926 * 4.1 * 4.1 / (133333.33333 * 9.0 * val));
+//  double s = std::sqrt(2 * 0.004 * 8.2 / (239836.911 * 4.0 * val));
+////  double s = std::sqrt(2 * 0.004 * 3.1415926 * 4.1 * 4.1 / (133333.33333 * 9.0 * val));
 //  std::cout << s << std::endl;
-////-----------------------
+//-----------------------
 
   delete fe_mesh;
   delete _exodusII_io;

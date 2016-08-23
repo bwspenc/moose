@@ -81,15 +81,15 @@ GeneratedMeshPD::buildMesh()
 //  for (unsigned int i = 0; i < _total_nodes; ++i)
 //  {
 //    if ((_node[i].coord)(1) < -0.0001)
-//    {   
+//    {
 //      double voli = 0;
 //      for(unsigned int k = 0; k < _neighbors[i].size(); ++k)
 //        voli += _node[_neighbors[i][k]].volume;
 
 //      for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
-//      {   
+//      {
 //        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
-//        {   
+//        {
 //          double volj = 0;
 //          for(unsigned int k = 0; k < _neighbors[_neighbors[i][j]].size(); ++k)
 //            volj += _node[_neighbors[_neighbors[i][j]][k]].volume;
@@ -97,9 +97,9 @@ GeneratedMeshPD::buildMesh()
 //          double dy = (_node[i].coord)(1) - (_node[_neighbors[i][j]].coord)(1);
 //          double cosij = dy / std::sqrt(dx * dx + dy * dy);
 //          val += _node[i].volume * _node[_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
-//        }   
-//      }   
-//    }   
+//        }
+//      }
+//    }
 //  }
 //  double s = std::sqrt(2 * 0.004 * 8.2 / (239836.911 * 4 * val));
 //  std::cout << s << std::endl;
@@ -174,12 +174,14 @@ GeneratedMeshPD::build2DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
       boundary_info.add_node(mesh.node_ptr(i), 3);
     if (std::abs((_xmax - _xmin) * (_ymin - Y) - (_xmin - X) * (_ymax - _ymin)) / std::sqrt(std::pow(_xmax - _xmin, 2) + std::pow(_ymax - _ymin, 2)) < 0.1 * spacing)
       boundary_info.add_node(mesh.node_ptr(i), 4);
+    boundary_info.add_node(mesh.node_ptr(i), 999);
   }
   boundary_info.nodeset_name(0) = "Left";
   boundary_info.nodeset_name(1) = "Right";
   boundary_info.nodeset_name(2) = "Bottom";
   boundary_info.nodeset_name(3) = "Top";
   boundary_info.nodeset_name(4) = "UpDiag";
+  boundary_info.nodeset_name(999) = "All";
 }
 
 void
@@ -257,6 +259,7 @@ GeneratedMeshPD::build2DCircular(UnstructuredMesh & mesh, BoundaryInfo & boundar
       boundary_info.add_node(mesh.node_ptr(i), 4);
     if (std::abs(X) < 0.001 * spacing && dis > _R - spacing && Y > 0.0)
       boundary_info.add_node(mesh.node_ptr(i), 5);
+    boundary_info.add_node(mesh.node_ptr(i), 999);
   }
   boundary_info.nodeset_name(0) = "Periphery";
   boundary_info.nodeset_name(1) = "CenterPoint";
@@ -264,6 +267,7 @@ GeneratedMeshPD::build2DCircular(UnstructuredMesh & mesh, BoundaryInfo & boundar
   boundary_info.nodeset_name(3) = "RightPoint";
   boundary_info.nodeset_name(4) = "BottomPoint";
   boundary_info.nodeset_name(5) = "TopPoint";
+  boundary_info.nodeset_name(999) = "All";
 }
 
 void
@@ -336,6 +340,7 @@ GeneratedMeshPD::build3DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
       boundary_info.add_node(mesh.node_ptr(i), 5);
     if (std::sqrt(((std::pow(_xmin - X, 2) + std::pow(_ymin - Y, 2) + std::pow(_zmin - Z, 2)) * (std::pow(_xmax - _xmin, 2) + std::pow(_ymax - _ymin, 2) + std::pow(_zmax - _zmin, 2)) - std::pow((_xmin - X) * (_xmax - _xmin) + (_ymin - Y) * (_ymax - _ymin) + (_zmin - Z) * (_zmax - _zmin), 2)) / (std::pow(_xmax - _xmin, 2) + std::pow(_ymax - _ymin, 2) + std::pow(_zmax - _zmin, 2))) < 0.1 * spacing)
       boundary_info.add_node(mesh.node_ptr(i), 6);
+    boundary_info.add_node(mesh.node_ptr(i), 999);
   }
   boundary_info.nodeset_name(0) = "Left";
   boundary_info.nodeset_name(1) = "Right";
@@ -344,6 +349,7 @@ GeneratedMeshPD::build3DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
   boundary_info.nodeset_name(4) = "Back";
   boundary_info.nodeset_name(5) = "Front";
   boundary_info.nodeset_name(6) = "UpDiag";
+  boundary_info.nodeset_name(999) = "All";
 }
 
 void
@@ -433,6 +439,7 @@ GeneratedMeshPD::build3DCylindrical(UnstructuredMesh & mesh, BoundaryInfo & boun
       boundary_info.add_node(mesh.node_ptr(i), 7);
     if (Z > _zmax - spacing)
       boundary_info.add_node(mesh.node_ptr(i), 8);
+    boundary_info.add_node(mesh.node_ptr(i), 999);
   }
   boundary_info.nodeset_name(0) = "Periphery";
   boundary_info.nodeset_name(1) = "CenterLine";
@@ -443,4 +450,5 @@ GeneratedMeshPD::build3DCylindrical(UnstructuredMesh & mesh, BoundaryInfo & boun
   boundary_info.nodeset_name(6) = "FrontLine";
   boundary_info.nodeset_name(7) = "Bottom";
   boundary_info.nodeset_name(8) = "Top";
+  boundary_info.nodeset_name(999) = "All";
 }

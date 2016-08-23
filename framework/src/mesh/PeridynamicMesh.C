@@ -86,7 +86,7 @@ PeridynamicMesh::find_neighbor()
       {
         // check whether j was already considered as a neighbor of i, if not, add j to i's neighborlist
         if (std::find(_neighbors[i].begin(), _neighbors[i].end(), j) == _neighbors[i].end())
-        {  
+        {
           _neighbors[i].push_back(j);
           _node[i].volumesum += _node[j].volume;
         }

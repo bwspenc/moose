@@ -19,11 +19,10 @@
 // AuxKernels
 #include "BondCriticalStrainAux.h"
 #include "BondContactStrainAux.h"
-#include "BondStatusAux.h"
 #include "BondContactAux.h"
+#include "BondStatusAux.h"
 #include "FailureIndexAux.h"
-#include "NodalVolSumAux.h"
-#include "NodalDilatationAux.h"
+#include "NodalRankTwoAux.h"
 
 // UserObjects
 #include "FailureIndexUO.h"
@@ -39,6 +38,7 @@
 //Kernels
 #include "StressDivergenceBPD.h"
 #include "StressDivergenceSPD.h"
+#include "GeneralizedPlaneStrainPD.h"
 #include "HeatConductionPD.h"
 #include "HeatSourcePD.h"
 
@@ -81,13 +81,12 @@ extern "C" void PeridynamicsApp__registerObjects(Factory & factory) { Peridynami
 void
 PeridynamicsApp::registerObjects(Factory & factory)
 {
-  registerAux(FailureIndexAux);
-  registerAux(BondStatusAux);
-  registerAux(BondContactAux);
   registerAux(BondCriticalStrainAux);
+  registerAux(BondContactAux);
   registerAux(BondContactStrainAux);
-  registerAux(NodalVolSumAux);
-  registerAux(NodalDilatationAux);
+  registerAux(BondStatusAux);
+  registerAux(FailureIndexAux);
+  registerAux(NodalRankTwoAux);
 
   registerMaterial(CThermalPDMaterial);
   registerMaterial(VThermalPDMaterial);
@@ -96,10 +95,11 @@ PeridynamicsApp::registerObjects(Factory & factory)
   registerMaterial(VElasticBPDMaterial);
   registerMaterial(VElasticSPDMaterial);
 
-  registerKernel(HeatConductionPD);
-  registerKernel(HeatSourcePD);
   registerKernel(StressDivergenceBPD);
   registerKernel(StressDivergenceSPD);
+  registerKernel(GeneralizedPlaneStrainPD);
+  registerKernel(HeatConductionPD);
+  registerKernel(HeatSourcePD);
 
   registerUserObject(FailureIndexUO);
 }

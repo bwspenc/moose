@@ -21,6 +21,7 @@ include $(FRAMEWORK_DIR)/moose.mk
 APPLICATION_DIR    := $(MODULE_DIR)/peridynamics
 APPLICATION_NAME   := peridynamics
 BUILD_EXEC         := yes
+DEPEND_MODULES     := tensor_mechanics
 DEP_APPS           := $(shell $(FRAMEWORK_DIR)/scripts/find_dep_apps.py $(APPLICATION_NAME))
 include            $(FRAMEWORK_DIR)/app.mk
 

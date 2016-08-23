@@ -16,10 +16,11 @@ template<>
 InputParameters validParams<StressDivergenceBPD>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("BPD Stress divergence kernel with full Jacobian");
+  params.addClassDescription("BPD Stress divergence kernel");
   params.addRequiredParam<unsigned int>("component", "An integer corresponding to the variable this kernel acts on (0 for x, 1 for y, 2 for z)");
-  params.addRequiredCoupledVar("displacements", "The displacement variables");
-  params.addCoupledVar("temp", "The temperature");
+  params.addRequiredCoupledVar("displacements", "Coupled variable for the displacements");
+  params.addCoupledVar("temp", "Coupled variable for the temperature");
+  params.addCoupledVar("strain_zz", "Coupled variable for the strain_zz");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -28,11 +29,14 @@ StressDivergenceBPD::StressDivergenceBPD(const InputParameters & parameters) :
   Kernel(parameters),
   _bond_force(getMaterialProperty<Real>("bond_force")),
   _bond_dfdU(getMaterialProperty<Real>("bond_dfdU")),
+  _bond_dfdE(getMaterialProperty<Real>("bond_dfdE")),
   _bond_dfdT(getMaterialProperty<Real>("bond_dfdT")),
   _component(getParam<unsigned int>("component")),
   _ndisp(coupledComponents("displacements")),
   _temp_coupled(isCoupled("temp")),
   _temp_var(_temp_coupled ? coupled("temp") : 0),
+  _strain_zz_coupled(isCoupled("strain_zz")),
+  _strain_zz_var(_strain_zz_coupled ? coupled("strain_zz") : 0),
   _orientation(NULL)
 {
   for (unsigned int i = 0; i < _ndisp; ++i)
@@ -122,6 +126,12 @@ StressDivergenceBPD::computeOffDiagJacobian(unsigned int jvar)
       active = true;
     }
 
+    if (_strain_zz_coupled && jvar == _strain_zz_var)
+    {
+      coupled_component = 4;
+      active = true;
+    }
+
     DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), jvar);
     if (active)
     {
@@ -130,14 +140,27 @@ StressDivergenceBPD::computeOffDiagJacobian(unsigned int jvar)
       ori /= ori.size();
 
       double off_stiff_elem;
-      if(coupled_component == 3)
+      if (coupled_component == 3)
+      {
         off_stiff_elem = ori(_component) * _bond_dfdT[0];
+        for (unsigned int i = 0; i < _test.size(); ++i)
+          for (unsigned int j = 0; j < _phi.size(); ++j)
+            ke(i, j) += (i == 1 ? 1 : -1) * off_stiff_elem;
+      }
+      else if (coupled_component == 4)
+      {
+        off_stiff_elem = ori(_component) * _bond_dfdE[0];
+        for (unsigned int i = 0; i < _test.size(); ++i)
+          for (unsigned int j = 0; j < _phi.size(); ++j)
+            ke(i, j) += (i == 1 ? 1 : -1) * off_stiff_elem;
+      }
       else
+      {
         off_stiff_elem = ori(_component) * ori(coupled_component) * _bond_dfdU[0] - _bond_force[0] * ori(_component) * ori(coupled_component) / current_length;
-
-      for (unsigned int i = 0; i < _test.size(); ++i)
-        for (unsigned int j = 0; j < _phi.size(); ++j)
-          ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem;
+        for (unsigned int i = 0; i < _test.size(); ++i)
+          for (unsigned int j = 0; j < _phi.size(); ++j)
+            ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem;
+      }
     }
   }
 }

@@ -24,15 +24,17 @@ public:
 
 protected:
   virtual void initQpStatefulProperties();
-  virtual void computeQpProperties();
+  virtual void computeQpStrain(){};
+  virtual void computeQpForce();
+  virtual void computeNodalTemp();
+
+  MooseVariable * _temp_var;
 
   const Real _thermal_conductivity;
   Function * _thermal_conductivity_function;
 
   MaterialProperty<Real> & _bond_response;
   MaterialProperty<Real> & _bond_drdT;
-
-  MooseVariable * _temp_var;
 
   double _kappa;
 };

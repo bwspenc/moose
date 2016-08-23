@@ -20,6 +20,7 @@ ElasticBPDMaterial::ElasticBPDMaterial(const InputParameters & parameters) :
   MechanicPDMaterial(parameters),
   _bond_force(declareProperty<Real>("bond_force")),
   _bond_dfdU(declareProperty<Real>("bond_dfdU")),
+  _bond_dfdE(declareProperty<Real>("bond_dfdE")),
   _bond_dfdT(declareProperty<Real>("bond_dfdT"))
 {
 }
@@ -29,7 +30,10 @@ ElasticBPDMaterial::computeQpForce()
 {
   double Cij = computeBondModulus();
 
-  _bond_force[_qp] = Cij * (_bond_mechanic_strain[_qp] - (1.0 - _bond_status[0]) * _bond_contact[0] * _bond_contact_strain[0]) * _nv_i * _nv_j * _bond_sign;
+//  _bond_force[_qp] = Cij * (_bond_elastic_strain[_qp] - (1.0 - _bond_status[0]) * _bond_contact[0] * _bond_contact_strain[0] + _poissons_ratio * (_strain_zz_i - _alpha * (_temp_i - _temp_ref) + _strain_zz_j - _alpha * (_temp_j - _temp_ref)) / 2.0) * _nv_i * _nv_j * _bond_sign;
+  _bond_force[_qp] = Cij * (_bond_elastic_strain[_qp] + _poissons_ratio * (_strain_zz_i - _alpha * (_temp_i - _temp_ref) + _strain_zz_j - _alpha * (_temp_j - _temp_ref)) / 2.0) * _nv_i * _nv_j * _bond_sign;
+
   _bond_dfdU[_qp] = Cij / _origin_length * _nv_i * _nv_j * _bond_sign;
-  _bond_dfdT[_qp] = - Cij * _alpha / 2.0 * _nv_i * _nv_j * _bond_sign;
+  _bond_dfdE[_qp] = Cij * _poissons_ratio / 2.0 * _nv_i * _nv_j * _bond_sign;
+  _bond_dfdT[_qp] = - Cij * (1.0 + _poissons_ratio) * _alpha / 2.0 * _nv_i * _nv_j * _bond_sign;
 }

@@ -20,7 +20,7 @@ InputParameters validParams<BondStatusAux>()
 
 BondStatusAux::BondStatusAux(const InputParameters & parameters) :
   AuxKernel(parameters),
-  _bond_mechanic_strain(getMaterialProperty<Real>("bond_mechanic_strain")),
+  _bond_elastic_strain(getMaterialProperty<Real>("bond_elastic_strain")),
   _bond_critical_strain(coupledValue("bond_critical_strain")),
   _bond_status(coupledValue("bond_status"))
 {
@@ -29,8 +29,7 @@ BondStatusAux::BondStatusAux(const InputParameters & parameters) :
 Real
 BondStatusAux::computeValue()
 {
-//  if (std::abs(_bond_status[0] - 1.0) < 0.01 && std::abs(_bond_mechanic_strain[0]) < _bond_critical_strain[0])
-  if (std::abs(_bond_status[0] - 1.0) < 0.01 && _bond_mechanic_strain[0] < _bond_critical_strain[0])
+  if (std::abs(_bond_status[0] - 1.0) < 0.01 && _bond_elastic_strain[0] < _bond_critical_strain[0])
     return 1.0;
   else
     return 0.0;

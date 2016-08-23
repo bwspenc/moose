@@ -36,20 +36,25 @@ protected:
   virtual void computeFullOffDiagJacobian(unsigned int jvar);
 
   const MaterialProperty<Real> & _bond_force_ij;
-  const MaterialProperty<Real> & _bond_force_i;
-  const MaterialProperty<Real> & _bond_force_j;
+  const MaterialProperty<Real> & _bond_force_i_j;
   const MaterialProperty<Real> & _bond_dfdU_ij;
-  const MaterialProperty<Real> & _bond_dfdU_i;
-  const MaterialProperty<Real> & _bond_dfdU_j;
+  const MaterialProperty<Real> & _bond_dfdU_i_j;
+  const MaterialProperty<Real> & _bond_dfdE_ij;
+  const MaterialProperty<Real> & _bond_dfdE_i_j;
   const MaterialProperty<Real> & _bond_dfdT_ij;
+  const MaterialProperty<Real> & _bond_dfdT_i_j;
 
 private:
+  NonlinearSystem & _nsys;
   const unsigned int _component;
   unsigned int _ndisp;
   std::vector<unsigned int> _disp_var;
 
   const bool _temp_coupled;
   const unsigned int _temp_var;
+
+  const bool _strain_zz_coupled;
+  const unsigned int _strain_zz_var;
 
   PeridynamicMesh & _pdmesh;
   const unsigned int _pddim;

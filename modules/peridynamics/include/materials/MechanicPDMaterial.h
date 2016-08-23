@@ -22,22 +22,28 @@ public:
   MechanicPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties();
-  virtual void computeQpProperties();
-
   virtual void computeQpStrain();
   virtual void computeQpForce() = 0;
 
+  virtual void computeNodalTemp();
+  virtual void computeElasticStrainTensor();
+  virtual void computeStressTensor();
   virtual Real computeBondCurrentLength();
 
-  MaterialProperty<Real> & _bond_total_strain;
-  MaterialProperty<Real> & _bond_mechanic_strain;
   MaterialProperty<Real> & _bond_elastic_strain;
+  MaterialProperty<RankFourTensor> & _elasticity_tensor;
+  MaterialProperty<Real> & _thermal_expansion;
+  MaterialProperty<RankTwoTensor> & _shape_tensor;
+  MaterialProperty<RankTwoTensor> & _deformation_gradient;
+  MaterialProperty<RankTwoTensor> & _elastic_strain;
+  MaterialProperty<RankTwoTensor> & _strain;
+  MaterialProperty<RankTwoTensor> & _stress;
 
   const Real _youngs_modulus;
   const Real _poissons_ratio;
 
-  const VariableValue & _temp;
+  MooseVariable * _strain_zz_var;
+  MooseVariable * _temp_var;
   const Real _temp_ref;
 
   std::vector<MooseVariable *> _disp_var;
@@ -45,6 +51,11 @@ protected:
   double _alpha;
   double _shear_modulus;
   double _bulk_modulus;
+
+  RankFourTensor _Cijkl;
+
+  double _strain_zz_i;
+  double _strain_zz_j;
 };
 
 #endif //MECHANICPDMATERIAL_H

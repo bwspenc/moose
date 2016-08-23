@@ -1,0 +1,42 @@
+[Tests]
+  [./regular_grid_const_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_rc.i'
+    exodiff = '2d_square_bond_rc.e'
+  [../]
+  [./regular_grid_vary_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_rv.i'
+    exodiff = '2d_square_bond_rv.e'
+  [../]
+  [./regular_grid_const_state]
+    type = 'Exodiff'
+    input = '2d_square_state_rc.i'
+    exodiff = '2d_square_state_rc.e'
+  [../]
+  [./regular_grid_vary_state]
+    type = 'Exodiff'
+    input = '2d_square_state_rv.i'
+    exodiff = '2d_square_state_rv.e'
+  [../]
+  [./irregular_grid_const_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_ic.i'
+    exodiff = '2d_square_bond_ic.e'
+  [../]
+  [./irregular_grid_vary_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_iv.i'
+    exodiff = '2d_square_bond_iv.e'
+  [../]
+  [./irregular_grid_const_state]
+    type = 'Exodiff'
+    input = '2d_square_state_ic.i'
+    exodiff = '2d_square_state_ic.e'
+  [../]
+  [./irregular_grid_vary_state]
+    type = 'Exodiff'
+    input = '2d_square_state_iv.i'
+    exodiff = '2d_square_state_iv.e'
+  [../]
+[]

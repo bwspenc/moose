@@ -20,7 +20,8 @@ InputParameters validParams<PeridynamicsAction>()
   params.addRequiredParam<std::vector<NonlinearVariableName> >("displacements", "The nonlinear displacement variables for the problem");
   params.addParam<std::string>("state_based_formulation", "Whether to use SPD or not");
   params.addParam<std::string>("full_jacobian", "whether to use full SPD jacobian or not");
-  params.addParam<NonlinearVariableName>("temp", "The temperature");
+  params.addParam<NonlinearVariableName>("temp", "The temperature variable");
+  params.addParam<NonlinearVariableName>("strain_zz", "The strain_zz variable");
   params.addParam<bool>("use_displaced_mesh", true, "Whether to use displaced mesh in the kernels");
   params.addParam<std::vector<SubdomainName> >("block", "The list of ids of the blocks (subdomain) that the stress divergence kernel will be applied to");
   params.addParam<std::vector<AuxVariableName> >("save_in", "The displacement residuals");
@@ -64,7 +65,10 @@ PeridynamicsAction::act()
     params.set<std::string>("full_jacobian") = getParam<std::string>("full_jacobian");
 
   if (isParamValid("temp"))
-    params.addCoupledVar("temp", "The temperature");
+    params.addCoupledVar("temp", "The temperature variable");
+
+  if (isParamValid("strain_zz"))
+    params.addCoupledVar("strain_zz", "The strain_zz variable");
 
   params.set<bool>("use_displaced_mesh") = getParam<bool>("use_displaced_mesh");
 
