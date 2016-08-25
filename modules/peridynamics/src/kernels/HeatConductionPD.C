@@ -14,6 +14,7 @@ template<>
 InputParameters validParams<HeatConductionPD>()
 {
   InputParameters params = validParams<Kernel>();
+  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -21,7 +22,10 @@ InputParameters validParams<HeatConductionPD>()
 HeatConductionPD::HeatConductionPD(const InputParameters & parameters) :
   Kernel(parameters),
   _bond_response(getMaterialProperty<Real>("bond_response")),
-  _bond_drdT(getMaterialProperty<Real>("bond_drdT"))
+  _bond_drdT(getMaterialProperty<Real>("bond_drdT")),
+  _aux(_fe_problem.getAuxiliarySystem()),
+  _bond_status_var(getVar("bond_status", 0)),
+  _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh))
 {
 }
 
@@ -32,11 +36,15 @@ HeatConductionPD::~HeatConductionPD()
 void
 HeatConductionPD::computeResidual()
 {
+  NumericVector<Number> & sln = _aux.solution();
+  long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+  unsigned int bond_status = sln(bs_dof);
+
   DenseVector<Number> & re = _assembly.residualBlock(_var.number());
   _local_re.resize(re.size());
   _local_re.zero();
 
-  _local_re(0) = - _bond_response[0];
+  _local_re(0) = - _bond_response[0] * bond_status;
   _local_re(1) = - _local_re(0);
 
   re += _local_re;
@@ -52,13 +60,17 @@ HeatConductionPD::computeResidual()
 void
 HeatConductionPD::computeJacobian()
 {
+  NumericVector<Number> & sln = _aux.solution();
+  long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+  unsigned int bond_status = sln(bs_dof);
+
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), _var.number());
   _local_ke.resize(ke.m(), ke.n());
   _local_ke.zero();
 
   for (unsigned int i = 0; i < _test.size(); ++i)
     for (unsigned int j = 0; j < _phi.size(); ++j)
-      _local_ke(i, j) += (i == j ? 1 : -1) * _bond_drdT[0];
+      _local_ke(i, j) += (i == j ? 1 : -1) * _bond_drdT[0] * bond_status;
 
   ke += _local_ke;
 

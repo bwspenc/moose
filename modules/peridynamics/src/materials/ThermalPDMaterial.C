@@ -33,11 +33,6 @@ ThermalPDMaterial::ThermalPDMaterial(const InputParameters & parameters) :
 }
 
 void
-ThermalPDMaterial::initQpStatefulProperties()
-{
-}
-
-void
 ThermalPDMaterial::computeQpForce()
 {
   if (_thermal_conductivity_function)
@@ -49,16 +44,9 @@ ThermalPDMaterial::computeQpForce()
     _kappa = _thermal_conductivity;
 
   double Kij = computeBondModulus();
-  if (std::abs(_bond_status[0] - 1.0) < 0.01)
-  {
-    _bond_response[_qp] = Kij * (_temp_j - _temp_i) / _origin_length * _nv_i * _nv_j;
-    _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j;
-  }
-  else
-  {
-    _bond_response[_qp] = Kij * (_temp_j - _temp_i) / _origin_length * _nv_i * _nv_j * 0.8;
-    _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j * 0.8;
-  }
+
+  _bond_response[_qp] = Kij * (_temp_j - _temp_i) / _origin_length * _nv_i * _nv_j;
+  _bond_drdT[_qp] = Kij / _origin_length * _nv_i * _nv_j;
 }
 
 void

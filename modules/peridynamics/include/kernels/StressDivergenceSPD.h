@@ -45,9 +45,14 @@ protected:
   const MaterialProperty<Real> & _bond_dfdT_i_j;
 
 private:
+  AuxiliarySystem & _aux;
+
   NonlinearSystem & _nsys;
+
   const unsigned int _component;
+
   unsigned int _ndisp;
+
   std::vector<unsigned int> _disp_var;
 
   const bool _temp_coupled;
@@ -55,6 +60,8 @@ private:
 
   const bool _strain_zz_coupled;
   const unsigned int _strain_zz_var;
+
+  MooseVariable * _bond_status_var;
 
   PeridynamicMesh & _pdmesh;
   const unsigned int _pddim;

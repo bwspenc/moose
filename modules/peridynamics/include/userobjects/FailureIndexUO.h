@@ -33,7 +33,7 @@ protected:
 
   MooseVariable * _intact_bonds_var;
 
-  const VariableValue & _bond_status;
+  MooseVariable * _bond_status_var;
 };
 
 #endif // FAILUREINDEXUO_H

@@ -22,6 +22,7 @@ public:
   MechanicPDMaterial(const InputParameters & parameters);
 
 protected:
+  virtual void initQpStatefulProperties();
   virtual void computeQpStrain();
   virtual void computeQpForce() = 0;
 
@@ -31,6 +32,8 @@ protected:
   virtual Real computeBondCurrentLength();
 
   MaterialProperty<Real> & _bond_elastic_strain;
+  MaterialProperty<Real> & _bond_critical_strain;
+  MaterialProperty<Real> & _bond_critical_strain_old;
   MaterialProperty<RankFourTensor> & _elasticity_tensor;
   MaterialProperty<Real> & _thermal_expansion;
   MaterialProperty<RankTwoTensor> & _shape_tensor;

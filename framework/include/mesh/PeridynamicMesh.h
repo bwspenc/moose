@@ -39,14 +39,19 @@ public:
   virtual double computeHorizon(double spacing);
 
   /*
-   * function for neighbor search with given horizon
+   * function for node neighbor search with given horizon
    */
-  virtual void find_neighbor();
+  virtual void findNodeNeighbor();
 
   /*
    * return neighbor nodes indices for node node_id
    */
   virtual std::vector<dof_id_type> neighbors(dof_id_type node_id);
+
+  /*
+   * return neighbor nodes indices for node node_id
+   */
+  virtual std::vector<dof_id_type> bonds(dof_id_type node_id);
 
   /*
    * return coordinates for node node_id
@@ -95,14 +100,17 @@ public:
 
 protected:
   int _pddim;
+
   Real _horizon_size;
   unsigned int _horizon_number;
-  struct pd_node * _node;
+
+  struct pd_node * _pdnode;
 
   unsigned int _total_nodes;
   unsigned int _total_bonds;
 
-  std::vector<std::vector<dof_id_type> > _neighbors;
+  std::vector<std::vector<dof_id_type> > _node_neighbors;
+  std::vector<std::vector<dof_id_type> > _node_bonds;
 };
 
 #endif // PERIDYNAMICMESH_H

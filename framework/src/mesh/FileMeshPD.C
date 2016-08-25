@@ -63,8 +63,9 @@ FileMeshPD::buildMesh()
   pd_mesh.set_mesh_dimension(_pddim);
   BoundaryInfo & pd_boundary_info = pd_mesh.get_boundary_info();
   pd_mesh.reserve_nodes(_total_nodes);
-  _node = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
-  _neighbors.resize(_total_nodes);
+  _pdnode = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
+  _node_neighbors.resize(_total_nodes);
+  _node_bonds.resize(_total_nodes);
 
   // loop through all fe elements to generate PD nodes structure
   for (MeshBase::element_iterator it = fe_mesh->elements_begin(); it != fe_mesh->elements_end(); ++it)
@@ -79,32 +80,38 @@ FileMeshPD::buildMesh()
         spacing += (fe_elem->centroid() - fe_elem->neighbor(i)->centroid()).size();
         nneighbors += 1;
       }
-    _node[fe_elem->id()].coord = fe_elem->centroid();
-    _node[fe_elem->id()].mesh_spacing = spacing / nneighbors;
-    _node[fe_elem->id()].horizon = PeridynamicMesh::computeHorizon(spacing / nneighbors);
-    _node[fe_elem->id()].volume = fe_elem->volume();
-    _node[fe_elem->id()].volumesum = 0.0;
+    _pdnode[fe_elem->id()].coord = fe_elem->centroid();
+    _pdnode[fe_elem->id()].mesh_spacing = spacing / nneighbors;
+    _pdnode[fe_elem->id()].horizon = PeridynamicMesh::computeHorizon(spacing / nneighbors);
+    _pdnode[fe_elem->id()].volume = fe_elem->volume();
+    _pdnode[fe_elem->id()].volumesum = 0.0;
     pd_mesh.add_point(fe_elem->centroid(), fe_elem->id());
   }
 
   // search node neighbors
-  PeridynamicMesh::find_neighbor();
+  PeridynamicMesh::findNodeNeighbor();
 
   // generate PD mesh
   _total_bonds = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    _total_bonds += _neighbors[i].size();
+    _total_bonds += _node_neighbors[i].size();
   _total_bonds /= 2;
 
   pd_mesh.reserve_elem(_total_bonds);
+  int k = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
-      if (_neighbors[i][j] > i)
+    for(unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
+      if (_node_neighbors[i][j] > i)
       {
         Elem* pd_elem = pd_mesh.add_elem(new Edge2);
+        pd_elem->set_id() = k;
         pd_elem->set_node(0) = pd_mesh.node_ptr(i);
-        pd_elem->set_node(1) = pd_mesh.node_ptr(_neighbors[i][j]);
+        pd_elem->set_node(1) = pd_mesh.node_ptr(_node_neighbors[i][j]);
         pd_elem->subdomain_id() = 0;
+        // build the bond list for each node
+        _node_bonds[i].push_back(k);
+        _node_bonds[_node_neighbors[i][j]].push_back(k);
+        ++k;
       }
 
   // convert boundary info from fe_boundary_info to pd_boundary_info
@@ -147,9 +154,9 @@ FileMeshPD::buildMesh()
   // define center and right nodes, ONLY for geometry of circular cross section centered at the origin
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
-    double X = (_node[i].coord)(0);
-    double Y = (_node[i].coord)(1);
-    double Z = (_node[i].coord)(2);
+    double X = (_pdnode[i].coord)(0);
+    double Y = (_pdnode[i].coord)(1);
+    double Z = (_pdnode[i].coord)(2);
     double dis = std::sqrt(X * X + Y * Y);
     if (dis < 0.01)
       pd_boundary_info.add_node(pd_mesh.node_ptr(i), 100);
@@ -168,28 +175,28 @@ FileMeshPD::buildMesh()
 //  double val = 0;
 //  for (unsigned int i = 0; i < _total_nodes; ++i)
 //  {
-////    if ((_node[i].coord)(2) < -0.0001)
-//    if ((_node[i].coord)(1) < -0.0001)
+////    if ((_pdnode[i].coord)(2) < -0.0001)
+//    if ((_pdnode[i].coord)(1) < -0.0001)
 //    {
 //      double voli = 0;
-//      for(unsigned int k = 0; k < _neighbors[i].size(); ++k)
-//        voli += _node[_neighbors[i][k]].volume;
+//      for(unsigned int k = 0; k < _node_neighbors[i].size(); ++k)
+//        voli += _pdnode[_node_neighbors[i][k]].volume;
 
-//      for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
+//      for(unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
 //      {
-////        if ((_node[_neighbors[i][j]].coord)(2) > 0.0001)
-//        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
+////        if ((_pdnode[_node_neighbors[i][j]].coord)(2) > 0.0001)
+//        if ((_pdnode[_node_neighbors[i][j]].coord)(1) > 0.0001)
 //        {
 //          double volj = 0;
-//          for(unsigned int k = 0; k < _neighbors[_neighbors[i][j]].size(); ++k)
-//            volj += _node[_neighbors[_neighbors[i][j]][k]].volume;
+//          for(unsigned int k = 0; k < _node_neighbors[_node_neighbors[i][j]].size(); ++k)
+//            volj += _pdnode[_node_neighbors[_node_neighbors[i][j]][k]].volume;
 
-//          double dx = (_node[i].coord)(0) - (_node[_neighbors[i][j]].coord)(0);
-//          double dy = (_node[i].coord)(1) - (_node[_neighbors[i][j]].coord)(1);
-//          double dz = (_node[i].coord)(2) - (_node[_neighbors[i][j]].coord)(2);
+//          double dx = (_pdnode[i].coord)(0) - (_pdnode[_node_neighbors[i][j]].coord)(0);
+//          double dy = (_pdnode[i].coord)(1) - (_pdnode[_node_neighbors[i][j]].coord)(1);
+//          double dz = (_pdnode[i].coord)(2) - (_pdnode[_node_neighbors[i][j]].coord)(2);
 //          double cosij = dy / std::sqrt(dx * dx + dy * dy);
 ////          double cosij = dz / std::sqrt(dx * dx + dy * dy + dz * dz);
-//          val += _node[i].volume * _node[_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
+//          val += _pdnode[i].volume * _pdnode[_node_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
 //        }
 //      }
 //    }

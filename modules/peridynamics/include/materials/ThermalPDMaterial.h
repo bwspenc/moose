@@ -23,7 +23,7 @@ public:
   ThermalPDMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties();
+  virtual void initQpStatefulProperties(){};
   virtual void computeQpStrain(){};
   virtual void computeQpForce();
   virtual void computeNodalTemp();

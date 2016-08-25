@@ -10,6 +10,7 @@
 #define HEATCONDUCTIONPD_H
 
 #include "Kernel.h"
+#include "PeridynamicMesh.h"
 
 class HeatConductionPD;
 
@@ -30,6 +31,12 @@ protected:
 
   const MaterialProperty<Real> & _bond_response;
   const MaterialProperty<Real> & _bond_drdT;
+
+  AuxiliarySystem & _aux;
+
+  MooseVariable * _bond_status_var;
+
+  PeridynamicMesh & _pdmesh;
 };
 
 #endif //HEATCONDUCTIONPD_H

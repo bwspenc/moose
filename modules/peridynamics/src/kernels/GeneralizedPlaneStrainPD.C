@@ -18,6 +18,7 @@ InputParameters validParams<GeneralizedPlaneStrainPD>()
   params.addClassDescription("BPD Generalized Plane Strain kernel");
   params.addRequiredCoupledVar("displacements", "The coupled variables for displacement (disp_x and disp_y)");
   params.addCoupledVar("temp", "The coupled variable for temperature");
+  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -29,9 +30,11 @@ GeneralizedPlaneStrainPD::GeneralizedPlaneStrainPD(const InputParameters & param
   _shape_tensor(getMaterialProperty<RankTwoTensor>("shape_tensor")),
   _deformation_gradient(getMaterialProperty<RankTwoTensor>("deformation_gradient")),
   _stress(getMaterialProperty<RankTwoTensor>("stress")),
+  _aux(_fe_problem.getAuxiliarySystem()),
   _ndisp(coupledComponents("displacements")),
   _temp_coupled(isCoupled("temp")),
   _temp_var(_temp_coupled ? coupled("temp") : 0),
+  _bond_status_var(getVar("bond_status", 0)),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh))
 {
   if (_ndisp != 2)
@@ -85,7 +88,7 @@ GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
     bool active = false;
     for (unsigned int i = 0; i < _ndisp; ++i)
       if (jvar == _disp_var[i])
-      {   
+      {
         coupled_component = i;
         active = true;
       }
@@ -98,7 +101,7 @@ GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
 
     DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), jvar);
     if (active)
-    { 
+    {
       // nodal area for node i and j
       double nv_i = _pdmesh.volume(_current_elem->get_node(0)->id());
       double nv_j = _pdmesh.volume(_current_elem->get_node(1)->id());
@@ -121,7 +124,7 @@ GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
       }
       else if(coupled_component == 1)
       {
-        // derivative of strains w.r.t displacements for node i 
+        // derivative of strains w.r.t displacements for node i
         double dEidVi = nv_j * horizon_i / origin_vector.size() * ((origin_vector(0) * _shape_tensor[0](0, 0) + origin_vector(1) * _shape_tensor[0](1, 0)) * _deformation_gradient[0](1, 0) + (origin_vector(0) * _shape_tensor[0](0, 1) + origin_vector(1) * _shape_tensor[0](1, 1)) * _deformation_gradient[0](1, 1));
         double dEjdVj = - nv_i * horizon_j / origin_vector.size() * ((origin_vector(0) * _shape_tensor[1](0, 0) + origin_vector(1) * _shape_tensor[1](1, 0)) * _deformation_gradient[1](1, 0) + (origin_vector(0) * _shape_tensor[1](0, 1) + origin_vector(1) * _shape_tensor[1](1, 1)) * _deformation_gradient[1](1, 1));
 
@@ -132,7 +135,7 @@ GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
       }
       else if(coupled_component == 0)
       {
-        // derivative of strains w.r.t displacement u for node i and j 
+        // derivative of strains w.r.t displacement u for node i and j
         double dEidUi = nv_j * horizon_i / origin_vector.size() * ((origin_vector(0) * _shape_tensor[0](0, 0) + origin_vector(1) * _shape_tensor[0](1, 0)) * _deformation_gradient[0](0, 0) + (origin_vector(0) * _shape_tensor[0](0, 1) + origin_vector(1) * _shape_tensor[0](1, 1)) * _deformation_gradient[0](0, 1));
         double dEjdUj = - nv_i * horizon_j / origin_vector.size() * ((origin_vector(0) * _shape_tensor[1](0, 0) + origin_vector(1) * _shape_tensor[1](1, 0)) * _deformation_gradient[1](0, 0) + (origin_vector(0) * _shape_tensor[1](0, 1) + origin_vector(1) * _shape_tensor[1](1, 1)) * _deformation_gradient[1](0, 1));
 

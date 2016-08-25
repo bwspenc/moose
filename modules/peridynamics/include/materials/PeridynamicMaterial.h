@@ -25,7 +25,6 @@ public:
   PeridynamicMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void initQpStatefulProperties(){};
   virtual void computeProperties();
   virtual void computeQpStrain() = 0;
   virtual void computeQpForce() = 0;
@@ -37,10 +36,6 @@ protected:
   virtual Real computeBondCurrentLength(){return 0;}
 
   NonlinearSystem & _nsys;
-
-  const VariableValue & _bond_status;
-  const VariableValue & _bond_contact;
-  const VariableValue & _bond_contact_strain;
 
   PeridynamicMesh & _pdmesh;
 
@@ -57,7 +52,6 @@ protected:
 
   double _origin_length;
   double _current_length;
-  double _bond_sign;
 };
 
 #endif //PERIDYNAMICMATERIAL_H

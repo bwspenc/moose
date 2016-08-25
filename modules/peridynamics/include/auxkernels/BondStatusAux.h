@@ -27,8 +27,8 @@ protected:
   virtual Real computeValue();
 
   const MaterialProperty<Real> & _bond_elastic_strain;
+  const MaterialProperty<Real> & _bond_critical_strain;
 
-  const VariableValue & _bond_critical_strain;
   const VariableValue & _bond_status;
 };
 

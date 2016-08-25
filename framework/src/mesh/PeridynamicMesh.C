@@ -47,13 +47,13 @@ PeridynamicMesh::computeHorizon(double spacing)
 }
 
 void
-PeridynamicMesh::find_neighbor()
+PeridynamicMesh::findNodeNeighbor()
 {
 // TODO: use nanoflann class for efficient neighbor search
 //  // convert the data structure
 //  std::vector<Point> cloud(_total_nodes);
 //  for (unsigned int i = 0; i < _total_nodes; ++i)
-//    cloud[i] = _node[i].coord;
+//    cloud[i] = _pdnode[i].coord;
 
 //  // construct a kd-tree index
 //  typedef nanoflann::KDTreeSingleIndexAdaptor<
@@ -70,10 +70,10 @@ PeridynamicMesh::find_neighbor()
 
 //  for (unsigned int i = 0; i < _total_nodes; ++i)
 //  {
-//    unsigned int nMatches = index.radiusSearch(&_node[i].coord, search_dist, matches, params);
-//    _node[i].bond_num = nMatches;
+//    unsigned int nMatches = index.radiusSearch(&_pdnode[i].coord, search_dist, matches, params);
+//    _pdnode[i].bond_num = nMatches;
 //    for (unsigned int j = 0; j < nMatches; ++j)
-//      _neighbors[i].push_back(matches[j].first);
+//      _node_neighbors[i].push_back(matches[j].first);
 //  }
 
   for (unsigned int i = 0; i < _total_nodes; ++i)
@@ -81,20 +81,20 @@ PeridynamicMesh::find_neighbor()
     double dis = 0;
     for (unsigned int j = 0; j < _total_nodes; ++j)
     {
-      dis = std::sqrt(std::pow((_node[i].coord)(0) - (_node[j].coord)(0), 2) + std::pow((_node[i].coord)(1) - (_node[j].coord)(1), 2) + std::pow((_node[i].coord)(2) - (_node[j].coord)(2), 2));
-      if (dis <= 1.0001 * _node[i].horizon && j != i)
+      dis = std::sqrt(std::pow((_pdnode[i].coord)(0) - (_pdnode[j].coord)(0), 2) + std::pow((_pdnode[i].coord)(1) - (_pdnode[j].coord)(1), 2) + std::pow((_pdnode[i].coord)(2) - (_pdnode[j].coord)(2), 2));
+      if (dis <= 1.0001 * _pdnode[i].horizon && j != i)
       {
         // check whether j was already considered as a neighbor of i, if not, add j to i's neighborlist
-        if (std::find(_neighbors[i].begin(), _neighbors[i].end(), j) == _neighbors[i].end())
+        if (std::find(_node_neighbors[i].begin(), _node_neighbors[i].end(), j) == _node_neighbors[i].end())
         {
-          _neighbors[i].push_back(j);
-          _node[i].volumesum += _node[j].volume;
+          _node_neighbors[i].push_back(j);
+          _pdnode[i].volumesum += _pdnode[j].volume;
         }
         // check whether i was also considered as a neighbor of j, if not, add i to j's neighborlist
-        if (std::find(_neighbors[j].begin(), _neighbors[j].end(), i) == _neighbors[j].end())
+        if (std::find(_node_neighbors[j].begin(), _node_neighbors[j].end(), i) == _node_neighbors[j].end())
         {
-          _neighbors[j].push_back(i);
-          _node[j].volumesum += _node[i].volume;
+          _node_neighbors[j].push_back(i);
+          _pdnode[j].volumesum += _pdnode[i].volume;
         }
       }
     }
@@ -104,31 +104,37 @@ PeridynamicMesh::find_neighbor()
 std::vector<dof_id_type>
 PeridynamicMesh::neighbors(dof_id_type node_id)
 {
-  return _neighbors[node_id];
+  return _node_neighbors[node_id];
+}
+
+std::vector<dof_id_type>
+PeridynamicMesh::bonds(dof_id_type node_id)
+{
+  return _node_bonds[node_id];
 }
 
 Point
 PeridynamicMesh::coord(dof_id_type node_id)
 {
-  return _node[node_id].coord;
+  return _pdnode[node_id].coord;
 }
 
 double
 PeridynamicMesh::volume(dof_id_type node_id)
 {
-  return _node[node_id].volume;
+  return _pdnode[node_id].volume;
 }
 
 double
 PeridynamicMesh::volumesum(dof_id_type node_id)
 {
-  return _node[node_id].volumesum;
+  return _pdnode[node_id].volumesum;
 }
 
 unsigned int
 PeridynamicMesh::n_neighbors(dof_id_type node_id)
 {
-  return _neighbors[node_id].size();
+  return _node_neighbors[node_id].size();
 }
 
 int
@@ -140,13 +146,13 @@ PeridynamicMesh::dim()
 double
 PeridynamicMesh::mesh_spacing(dof_id_type node_id)
 {
-  return _node[node_id].mesh_spacing;
+  return _pdnode[node_id].mesh_spacing;
 }
 
 double
 PeridynamicMesh::horizon(dof_id_type node_id)
 {
-  return _node[node_id].horizon;
+  return _pdnode[node_id].horizon;
 }
 
 unsigned int
@@ -160,4 +166,3 @@ PeridynamicMesh::total_bonds()
 {
   return _total_bonds;
 }
-

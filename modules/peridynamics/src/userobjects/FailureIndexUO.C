@@ -23,7 +23,7 @@ FailureIndexUO::FailureIndexUO(const InputParameters & parameters) :
   ElementUserObject(parameters),
   _aux(_fe_problem.getAuxiliarySystem()),
   _intact_bonds_var(getVar("intact_bonds", 0)),
-  _bond_status(coupledValue("bond_status"))
+  _bond_status_var(getVar("bond_status", 0))
 {
 }
 
@@ -38,18 +38,22 @@ FailureIndexUO::initialize()
 void
 FailureIndexUO::execute()
 {
+  NumericVector<Number> & sln = _aux.solution();
+  long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+  unsigned int bond_status = sln(bs_dof);
+
   long int ib_dof0 = _current_elem->get_node(0)->dof_number(_aux.number(), _intact_bonds_var->number(), 0);
   long int ib_dof1 = _current_elem->get_node(1)->dof_number(_aux.number(), _intact_bonds_var->number(), 0);
 
-  if (std::abs(_bond_status[0] - 1.0) < 0.01)
+  if (std::abs(bond_status - 1.0) < 0.01)
   {
-    _aux.solution().add(ib_dof0, 1.0);
-    _aux.solution().add(ib_dof1, 1.0);
+    sln.add(ib_dof0, 1.0);
+    sln.add(ib_dof1, 1.0);
   }
   else
   {
-    _aux.solution().add(ib_dof0, 0.0);
-    _aux.solution().add(ib_dof1, 0.0);
+    sln.add(ib_dof0, 0.0);
+    sln.add(ib_dof1, 0.0);
   }
 }
 

@@ -10,6 +10,7 @@
 #define STRESSDIVERGENCEBPD_H
 
 #include "Kernel.h"
+#include "PeridynamicMesh.h"
 
 class StressDivergenceBPD;
 
@@ -36,6 +37,8 @@ protected:
   const MaterialProperty<Real> & _bond_dfdT;
 
 private:
+  AuxiliarySystem & _aux;
+
   const unsigned int _component;
 
   unsigned int _ndisp;
@@ -46,6 +49,14 @@ private:
 
   const bool _strain_zz_coupled;
   const unsigned int _strain_zz_var;
+
+  const VariableValue & _bond_status;
+
+  MooseVariable * _bond_status_var;
+
+//  SystemBase & _aux;
+
+  PeridynamicMesh & _pdmesh;
 
   const std::vector<RealGradient> * _orientation;
 };

@@ -49,8 +49,8 @@ HeatSourcePD::computeResidual()
   _local_re.resize(re.size());
   _local_re.zero();
 
-  _local_re(0) = -_power_density * nv0 / tb0;
-  _local_re(1) = -_power_density * nv1 / tb1;
+  _local_re(0) = - _power_density * nv0 / tb0;
+  _local_re(1) = - _power_density * nv1 / tb1;
 
   re += _local_re;
 

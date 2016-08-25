@@ -38,11 +38,17 @@ protected:
   const MaterialProperty<RankTwoTensor> & _stress;
 
 private:
+  AuxiliarySystem & _aux;
+
   unsigned int _ndisp;
+
   const bool _temp_coupled;
 
   std::vector<unsigned int> _disp_var;
+
   const unsigned int _temp_var;
+
+  MooseVariable * _bond_status_var;
 
   PeridynamicMesh & _pdmesh;
 };

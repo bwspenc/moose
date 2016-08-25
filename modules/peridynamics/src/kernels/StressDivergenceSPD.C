@@ -23,6 +23,7 @@ InputParameters validParams<StressDivergenceSPD>()
   params.addRequiredCoupledVar("displacements", "The displacement variables");
   params.addCoupledVar("temp", "The temperature variable");
   params.addCoupledVar("strain_zz", "The strain_zz variable");
+  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -37,6 +38,7 @@ StressDivergenceSPD::StressDivergenceSPD(const InputParameters & parameters) :
   _bond_dfdE_i_j(getMaterialProperty<Real>("bond_dfdE_i_j")),
   _bond_dfdT_ij(getMaterialProperty<Real>("bond_dfdT_ij")),
   _bond_dfdT_i_j(getMaterialProperty<Real>("bond_dfdT_i_j")),
+  _aux(_fe_problem.getAuxiliarySystem()),
   _nsys(_fe_problem.getNonlinearSystem()),
   _component(getParam<unsigned int>("component")),
   _ndisp(coupledComponents("displacements")),
@@ -44,6 +46,7 @@ StressDivergenceSPD::StressDivergenceSPD(const InputParameters & parameters) :
   _temp_var(_temp_coupled ? coupled("temp") : 0),
   _strain_zz_coupled(isCoupled("strain_zz")),
   _strain_zz_var(_strain_zz_coupled ? coupled("strain_zz") : 0),
+  _bond_status_var(getVar("bond_status", 0)),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh)),
   _pddim(_pdmesh.dim()),
   _orientation(NULL)

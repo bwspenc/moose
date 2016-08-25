@@ -24,7 +24,7 @@ public:
   virtual ~FailureIndexAux() {}
 
 protected:
-  const FailureIndexUO * const _failure_index;
+  const FailureIndexUO * const _failure_index_uo;
   virtual Real computeValue();
 };
 

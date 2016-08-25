@@ -31,6 +31,8 @@ InputParameters validParams<MechanicPDMaterial>()
 MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters) :
   PeridynamicMaterial(parameters),
   _bond_elastic_strain(declareProperty<Real>("bond_elastic_strain")),
+  _bond_critical_strain(declareProperty<Real>("bond_critical_strain")),
+  _bond_critical_strain_old(declarePropertyOld<Real>("bond_critical_strain")),
   _elasticity_tensor(declareProperty<RankFourTensor>("elasticity_tensor")),
   _thermal_expansion(declareProperty<Real>("thermal_expansion")),
   _shape_tensor(declareProperty<RankTwoTensor>("shape_tensor")),
@@ -61,10 +63,10 @@ MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters) :
   else // plane strain case
   {
     _bulk_modulus = _youngs_modulus / 2.0 / (1.0 + _poissons_ratio) / (1.0 - 2.0 * _poissons_ratio);
-    if (isParamValid("strain_zz")) // generalized plane strain case
-      _alpha = getParam<Real>("thermal_expansion_coeff");
-    else // regular plane strain case
-      _alpha = (1.0 + _poissons_ratio) * getParam<Real>("thermal_expansion_coeff");
+   if (isParamValid("strain_zz")) // generalized plane strain
+     _alpha = getParam<Real>("thermal_expansion_coeff");
+   else
+     _alpha = (1.0 + _poissons_ratio) * getParam<Real>("thermal_expansion_coeff");
   }
 
   // construct elasticity tensor
@@ -72,6 +74,29 @@ MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters) :
   iso_const[0] = _youngs_modulus * _poissons_ratio / ((1.0 + _poissons_ratio) * (1.0 - 2.0 * _poissons_ratio));
   iso_const[1] = _youngs_modulus / (2.0 * (1.0 + _poissons_ratio));
   _Cijkl.fillFromInputVector(iso_const, RankFourTensor::symmetric_isotropic);
+
+  setRandomResetFrequency(EXEC_INITIAL);
+}
+
+void
+MechanicPDMaterial::initQpStatefulProperties()
+{
+  // Generate randomized critical stretch by Box-Muller method: randomized_critical_strain = small_random_numb    er + _input_critical_strain
+//  double val = std::sqrt(2.0 * _Gc / _kappa / std::pow(_pddim, 2) / _current_elem_volume);
+//  double val = std::sqrt(8.0 * 3.1415926 * _Gc / 27.0 / _E / 0.17697842); //3x
+//  double val = std::sqrt(8.0 * 3.1415926 * _Gc / 27.0 / _E / 0.235971227); //4x
+//  double val = std::sqrt(8.0 * 3.1415926 * _Gc / 27.0 / _E / 0.294964033); //5x
+//  double val = 0.000446185; // 3x irregular
+//  double val = 0.000389091; // 4x irregular
+//  double val = 0.00034595; // 5x irregular
+//  double val = 0.000592505; // 3x regular
+//  double val = 0.000464875; // 4x regular
+//  double val = 0.00038582; // 5x regular
+//  double val = 0.000300093; // 3x irregular 3D
+//  double val = 0.000233381; // 5x irregular 3D
+
+  _bond_critical_strain_old[_qp] = (std::sqrt(- 2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * 0.05 + 1.0) * 0.00034595;
+  _bond_critical_strain[_qp] = _bond_critical_strain_old[_qp];
 }
 
 void
@@ -149,7 +174,7 @@ MechanicPDMaterial::computeElasticStrainTensor()
     for (unsigned int l = 0; l < _pddim; ++l)
     {
       origin_vector(l) = _pdmesh.coord(neighbors_i[k])(l) - _pdmesh.coord(node_i->id())(l);
-      current_vector(l) = origin_vector(l) + sol(node_k->dof_number(_nsys.number(), _disp_var[l]->number(), 0)) - sol(node_i->dof_number(_nsys.number(), _disp_var[l]->number(), 0)); 
+      current_vector(l) = origin_vector(l) + sol(node_k->dof_number(_nsys.number(), _disp_var[l]->number(), 0)) - sol(node_i->dof_number(_nsys.number(), _disp_var[l]->number(), 0));
     }
     double origin_length = origin_vector.norm();
     for (unsigned int m = 0; m < _pddim; ++m)
@@ -174,6 +199,7 @@ MechanicPDMaterial::computeElasticStrainTensor()
   {
     _strain_zz_i = sol(_current_elem->get_node(0)->dof_number(_nsys.number(), _strain_zz_var->number(), 0));
     _strain[0](2, 2) = _strain_zz_i;
+    _strain_zz_i += - _alpha * (_temp_i - _temp_ref);
   }
   else
     _strain_zz_i = 0;
@@ -221,6 +247,7 @@ MechanicPDMaterial::computeElasticStrainTensor()
   {
     _strain_zz_j = sol(_current_elem->get_node(1)->dof_number(_nsys.number(), _strain_zz_var->number(), 0));
     _strain[1](2, 2) = _strain_zz_j;
+    _strain_zz_j += - _alpha * (_temp_j - _temp_ref);
   }
   else
     _strain_zz_j = 0;

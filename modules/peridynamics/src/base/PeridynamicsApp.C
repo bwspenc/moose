@@ -17,12 +17,10 @@
 #include "PeridynamicsAction.h"
 
 // AuxKernels
-#include "BondCriticalStrainAux.h"
-#include "BondContactStrainAux.h"
-#include "BondContactAux.h"
-#include "BondStatusAux.h"
 #include "FailureIndexAux.h"
 #include "NodalRankTwoAux.h"
+#include "BondStatusAux.h"
+#include "RadialDisplacementAux.h"
 
 // UserObjects
 #include "FailureIndexUO.h"
@@ -81,12 +79,10 @@ extern "C" void PeridynamicsApp__registerObjects(Factory & factory) { Peridynami
 void
 PeridynamicsApp::registerObjects(Factory & factory)
 {
-  registerAux(BondCriticalStrainAux);
-  registerAux(BondContactAux);
-  registerAux(BondContactStrainAux);
-  registerAux(BondStatusAux);
   registerAux(FailureIndexAux);
   registerAux(NodalRankTwoAux);
+  registerAux(BondStatusAux);
+  registerAux(RadialDisplacementAux);
 
   registerMaterial(CThermalPDMaterial);
   registerMaterial(VThermalPDMaterial);

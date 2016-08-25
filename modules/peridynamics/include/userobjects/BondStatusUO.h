@@ -6,22 +6,21 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef DILATATIONUO_H
-#define DILATATIONUO_H
+#ifndef BONDSTATUSUO_H
+#define BONDSTATUSUO_H
 
 #include "ElementUserObject.h"
-#include "PeridynamicMesh.h"
 
-class DilatationUO;
+class BondStatusUO;
 
 template<>
-InputParameters validParams<DilatationUO>();
+InputParameters validParams<BondStatusUO>();
 
-class DilatationUO : public ElementUserObject
+class BondStatusUO : public ElementUserObject
 {
 public:
-  DilatationUO(const InputParameters & parameters);
-  virtual ~DilatationUO() {}
+  BondStatusUO(const InputParameters & parameters);
+  virtual ~BondStatusUO() {}
 
   virtual void initialize();
   virtual void execute();
@@ -31,20 +30,10 @@ public:
 protected:
   AuxiliarySystem & _aux;
 
-  PeridynamicMesh & _pdmesh;
-  const unsigned int _pddim;
+  const MaterialProperty<Real> & _bond_elastic_strain;
+  const MaterialProperty<Real> & _bond_critical_strain;
 
-  const Real _temp_ref;
-  const VariableValue & _temp;
-
-  MooseVariable * _nodal_dila_var;
-
-  std::vector<MooseVariable *> _disp_var;
-
-  const VariableValue & _bond_status;
-  const VariableValue & _bond_contact;
-
-  double _alpha;
+  MooseVariable * _bond_status_var;
 };
 
-#endif // DILATATIONUO_H
+#endif // BONDSTATUSUO_H

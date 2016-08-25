@@ -80,23 +80,23 @@ GeneratedMeshPD::buildMesh()
 //  double val = 0;
 //  for (unsigned int i = 0; i < _total_nodes; ++i)
 //  {
-//    if ((_node[i].coord)(1) < -0.0001)
+//    if ((_pdnode[i].coord)(1) < -0.0001)
 //    {
 //      double voli = 0;
-//      for(unsigned int k = 0; k < _neighbors[i].size(); ++k)
-//        voli += _node[_neighbors[i][k]].volume;
+//      for(unsigned int k = 0; k < _node_neighbors[i].size(); ++k)
+//        voli += _pdnode[_node_neighbors[i][k]].volume;
 
-//      for(unsigned int j = 0; j < _neighbors[i].size(); ++j)
+//      for(unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
 //      {
-//        if ((_node[_neighbors[i][j]].coord)(1) > 0.0001)
+//        if ((_pdnode[_node_neighbors[i][j]].coord)(1) > 0.0001)
 //        {
 //          double volj = 0;
-//          for(unsigned int k = 0; k < _neighbors[_neighbors[i][j]].size(); ++k)
-//            volj += _node[_neighbors[_neighbors[i][j]][k]].volume;
-//          double dx = (_node[i].coord)(0) - (_node[_neighbors[i][j]].coord)(0);
-//          double dy = (_node[i].coord)(1) - (_node[_neighbors[i][j]].coord)(1);
+//          for(unsigned int k = 0; k < _node_neighbors[_node_neighbors[i][j]].size(); ++k)
+//            volj += _pdnode[_node_neighbors[_node_neighbors[i][j]][k]].volume;
+//          double dx = (_pdnode[i].coord)(0) - (_pdnode[_node_neighbors[i][j]].coord)(0);
+//          double dy = (_pdnode[i].coord)(1) - (_pdnode[_node_neighbors[i][j]].coord)(1);
 //          double cosij = dy / std::sqrt(dx * dx + dy * dy);
-//          val += _node[i].volume * _node[_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
+//          val += _pdnode[i].volume * _pdnode[_node_neighbors[i][j]].volume * (1 / voli + 1 / volj) * cosij * cosij;
 //        }
 //      }
 //    }
@@ -121,8 +121,9 @@ GeneratedMeshPD::build2DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
   double horizon = PeridynamicMesh::computeHorizon(spacing);
   unsigned int ny = static_cast<int> ((_ymax - _ymin) / spacing);
   _total_nodes = _nx * ny;
-  _node = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
-  _neighbors.resize(_total_nodes);
+  _pdnode = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
+  _node_neighbors.resize(_total_nodes);
+  _node_bonds.resize(_total_nodes);
   mesh.reserve_nodes(_total_nodes);
 
   // define nodal coordinates
@@ -132,38 +133,44 @@ GeneratedMeshPD::build2DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
       X = _xmin + i * spacing + spacing / 2;
       Y = _ymin + j * spacing + spacing / 2;
       mesh.add_point(Point(X, Y, 0.0), k);
-      _node[k].coord = Point(X, Y, 0.0);
-      _node[k].mesh_spacing = spacing;
-      _node[k].horizon = horizon;
-      _node[k].volume = spacing * spacing;
-      _node[k].volumesum = 0.0;
+      _pdnode[k].coord = Point(X, Y, 0.0);
+      _pdnode[k].mesh_spacing = spacing;
+      _pdnode[k].horizon = horizon;
+      _pdnode[k].volume = spacing * spacing;
+      _pdnode[k].volumesum = 0.0;
       ++k;
     }
 
   // search node neighbor
-  PeridynamicMesh::find_neighbor();
+  PeridynamicMesh::findNodeNeighbor();
 
   // generate PD mesh
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    _total_bonds += _neighbors[i].size();
+    _total_bonds += _node_neighbors[i].size();
 
   _total_bonds /= 2;
   mesh.reserve_elem(_total_bonds);
+  k = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    for (unsigned int j = 0; j < _neighbors[i].size(); ++j)
-      if (_neighbors[i][j] > i)
+    for (unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
+      if (_node_neighbors[i][j] > i)
       {
         Elem* elem = mesh.add_elem(new Edge2);
+        elem->set_id() = k;
         elem->set_node(0) = mesh.node_ptr(i);
-        elem->set_node(1) = mesh.node_ptr(_neighbors[i][j]);
+        elem->set_node(1) = mesh.node_ptr(_node_neighbors[i][j]);
         elem->subdomain_id() = 0;
+        // build the bond list for each node
+        _node_bonds[i].push_back(k);
+        _node_bonds[_node_neighbors[i][j]].push_back(k);
+        ++k;
       }
 
   // define boundary nodeset
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
-    X = (_node[i].coord)(0);
-    Y = (_node[i].coord)(1);
+    X = (_pdnode[i].coord)(0);
+    Y = (_pdnode[i].coord)(1);
     if (X < _xmin + spacing)
       boundary_info.add_node(mesh.node_ptr(i), 0);
     if (X > _xmax - spacing)
@@ -200,8 +207,9 @@ GeneratedMeshPD::build2DCircular(UnstructuredMesh & mesh, BoundaryInfo & boundar
       if (X * X + Y * Y < _R * _R)
         ++_total_nodes;
     }
-  _node = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
-  _neighbors.resize(_total_nodes);
+  _pdnode = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
+  _node_neighbors.resize(_total_nodes);
+  _node_bonds.resize(_total_nodes);
   mesh.reserve_nodes(_total_nodes);
 
   // define nodal coordinates
@@ -213,39 +221,45 @@ GeneratedMeshPD::build2DCircular(UnstructuredMesh & mesh, BoundaryInfo & boundar
       if (X * X + Y * Y < _R * _R)
       {
         mesh.add_point(Point(X, Y, 0.0), k);
-        _node[k].coord = Point(X, Y, 0.0);
-        _node[k].mesh_spacing = spacing;
-        _node[k].horizon = horizon;
-        _node[k].volume = spacing * spacing;
-        _node[k].volumesum = 0.0;
+        _pdnode[k].coord = Point(X, Y, 0.0);
+        _pdnode[k].mesh_spacing = spacing;
+        _pdnode[k].horizon = horizon;
+        _pdnode[k].volume = spacing * spacing;
+        _pdnode[k].volumesum = 0.0;
         ++k;
       }
     }
 
   // search node neighbor
-  PeridynamicMesh::find_neighbor();
+  PeridynamicMesh::findNodeNeighbor();
 
   // generate PD mesh
   for(unsigned int i = 0; i < _total_nodes; ++i)
-    _total_bonds += _neighbors[i].size();
+    _total_bonds += _node_neighbors[i].size();
 
   _total_bonds /= 2;
   mesh.reserve_elem(_total_bonds);
+  k = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    for (unsigned int j = 0; j < _neighbors[i].size(); ++j)
-      if (_neighbors[i][j] > i)
+    for (unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
+      if (_node_neighbors[i][j] > i)
       {
         Elem* elem = mesh.add_elem(new Edge2);
+        elem->set_id() = k;
         elem->set_node(0) = mesh.node_ptr(i);
-        elem->set_node(1) = mesh.node_ptr(_neighbors[i][j]);
+        elem->set_node(1) = mesh.node_ptr(_node_neighbors[i][j]);
         elem->subdomain_id() = 0;
+        // build the bond list for each node
+        _node_bonds[i].push_back(k);
+        _node_bonds[_node_neighbors[i][j]].push_back(k);
+        ++k;
       }
 
   // define boundary nodeset
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
-    X = (_node[i].coord)(0);
-    Y = (_node[i].coord)(1);
+    X = (_pdnode[i].coord)(0);
+    Y = (_pdnode[i].coord)(1);
     double dis = std::sqrt(X * X + Y * Y);
     if (dis > _R - spacing)
       boundary_info.add_node(mesh.node_ptr(i), 0);
@@ -280,8 +294,9 @@ GeneratedMeshPD::build3DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
   unsigned int ny = static_cast<int> ((_ymax - _ymin) / spacing);
   unsigned int nz = static_cast<int> ((_zmax - _zmin) / spacing);
   _total_nodes = _nx * ny * nz;
-  _node = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
-  _neighbors.resize(_total_nodes);
+  _pdnode = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
+  _node_neighbors.resize(_total_nodes);
+  _node_bonds.resize(_total_nodes);
   mesh.reserve_nodes(_total_nodes);
 
   // define nodal coordinates
@@ -293,39 +308,45 @@ GeneratedMeshPD::build3DRectangular(UnstructuredMesh & mesh, BoundaryInfo & boun
         Y = _ymin + j * spacing + spacing / 2;
         Z = _zmin + n * spacing + spacing / 2;
         mesh.add_point(Point(X, Y, Z), k);
-        _node[k].coord = Point(X, Y, Z);
-        _node[k].mesh_spacing = spacing;
-        _node[k].horizon = horizon;
-        _node[k].volume = spacing * spacing * spacing;
-        _node[k].volumesum = 0.0;
+        _pdnode[k].coord = Point(X, Y, Z);
+        _pdnode[k].mesh_spacing = spacing;
+        _pdnode[k].horizon = horizon;
+        _pdnode[k].volume = spacing * spacing * spacing;
+        _pdnode[k].volumesum = 0.0;
         ++k;
       }
 
   // search node neighbor
-  PeridynamicMesh::find_neighbor();
+  PeridynamicMesh::findNodeNeighbor();
 
   // generate PD mesh
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    _total_bonds += _neighbors[i].size();
+    _total_bonds += _node_neighbors[i].size();
 
   _total_bonds /= 2;
   mesh.reserve_elem(_total_bonds);
+  k = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    for (unsigned int j = 0; j < _neighbors[i].size(); ++j)
-      if (_neighbors[i][j] > i)
+    for (unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
+      if (_node_neighbors[i][j] > i)
       {
         Elem* elem = mesh.add_elem (new Edge2);
+        elem->set_id() = k;
         elem->set_node(0) = mesh.node_ptr(i);
-        elem->set_node(1) = mesh.node_ptr(_neighbors[i][j]);
+        elem->set_node(1) = mesh.node_ptr(_node_neighbors[i][j]);
         elem->subdomain_id() = 0;
+        // build the bond list for each node
+        _node_bonds[i].push_back(k);
+        _node_bonds[_node_neighbors[i][j]].push_back(k);
+        ++k;
       }
 
   // define boundary nodeset
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
-    X = (_node[i].coord)(0);
-    Y = (_node[i].coord)(1);
-    Z = (_node[i].coord)(2);
+    X = (_pdnode[i].coord)(0);
+    Y = (_pdnode[i].coord)(1);
+    Z = (_pdnode[i].coord)(2);
     if (Y < _ymin + spacing)
       boundary_info.add_node(mesh.node_ptr(i), 0);
     if (Y > _ymax - spacing)
@@ -371,8 +392,9 @@ GeneratedMeshPD::build3DCylindrical(UnstructuredMesh & mesh, BoundaryInfo & boun
         if (X * X + Y * Y < _R * _R)
           ++_total_nodes;
       }
-  _node = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
-  _neighbors.resize(_total_nodes);
+  _pdnode = (struct pd_node*) malloc(_total_nodes * sizeof(struct pd_node));
+  _node_neighbors.resize(_total_nodes);
+  _node_bonds.resize(_total_nodes);
   mesh.reserve_nodes(_total_nodes);
 
   // define nodal coordinates
@@ -386,40 +408,46 @@ GeneratedMeshPD::build3DCylindrical(UnstructuredMesh & mesh, BoundaryInfo & boun
         if (X * X + Y * Y < _R * _R)
         {
           mesh.add_point(Point(X, Y, Z), k);
-          _node[k].coord = Point(X, Y, Z);
-          _node[k].mesh_spacing = spacing;
-          _node[k].horizon = horizon;
-          _node[k].volume = spacing * spacing * spacing;
-          _node[k].volumesum = 0.0;
+          _pdnode[k].coord = Point(X, Y, Z);
+          _pdnode[k].mesh_spacing = spacing;
+          _pdnode[k].horizon = horizon;
+          _pdnode[k].volume = spacing * spacing * spacing;
+          _pdnode[k].volumesum = 0.0;
           ++k;
         }
       }
 
-  // earch node neighbor
-  PeridynamicMesh::find_neighbor();
+  // search node neighbor
+  PeridynamicMesh::findNodeNeighbor();
 
   // generate PD mesh
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    _total_bonds += _neighbors[i].size();
+    _total_bonds += _node_neighbors[i].size();
 
   _total_bonds /= 2;
   mesh.reserve_elem(_total_bonds);
+  k = 0;
   for (unsigned int i = 0; i < _total_nodes; ++i)
-    for (unsigned int j = 0; j < _neighbors[i].size(); ++j)
-      if (_neighbors[i][j] > i)
+    for (unsigned int j = 0; j < _node_neighbors[i].size(); ++j)
+      if (_node_neighbors[i][j] > i)
       {
         Elem* elem = mesh.add_elem(new Edge2);
+        elem->set_id() = k;
         elem->set_node(0) = mesh.node_ptr(i);
-        elem->set_node(1) = mesh.node_ptr(_neighbors[i][j]);
+        elem->set_node(1) = mesh.node_ptr(_node_neighbors[i][j]);
         elem->subdomain_id() = 0;
+        // build the bond list for each node
+        _node_bonds[i].push_back(k);
+        _node_bonds[_node_neighbors[i][j]].push_back(k);
+        ++k;
       }
 
   // define boundary nodeset
   for (unsigned int i = 0; i < _total_nodes; ++i)
   {
-    X = (_node[i].coord)(0);
-    Y = (_node[i].coord)(1);
-    Z = (_node[i].coord)(2);
+    X = (_pdnode[i].coord)(0);
+    Y = (_pdnode[i].coord)(1);
+    Z = (_pdnode[i].coord)(2);
     double dis = std::sqrt(X * X + Y * Y);
     if (dis > _R - spacing)
       boundary_info.add_node(mesh.node_ptr(i), 0);
