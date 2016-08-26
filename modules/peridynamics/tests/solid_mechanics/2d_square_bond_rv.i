@@ -7,8 +7,6 @@
 [GlobalParams]
   displacements = 'disp_x disp_y'
   bond_status = bond_status
-  bond_contact = bond_contact
-  bond_contact_strain = bond_contact_strain
 []
 
 [Mesh]
@@ -28,21 +26,6 @@
 
 [AuxVariables]
   [./bond_status]
-    order = CONSTANT
-    family = MONOMIAL
-    initial_condition = 1.0
-  [../]
-  [./bond_contact]
-    order = CONSTANT
-    family = MONOMIAL
-    initial_condition = 0.0
-  [../]
-  [./bond_critical_strain]
-    order = CONSTANT
-    family = MONOMIAL
-    initial_condition = 1.0
-  [../]
-  [./bond_contact_strain]
     order = CONSTANT
     family = MONOMIAL
     initial_condition = 1.0
@@ -85,7 +68,15 @@
 []
 
 [Kernels]
-  [./Peridynamics]
+  [./solid_x]
+    type = StressDivergenceBPD
+    variable = disp_x
+    component = 0
+  [../]
+  [./solid_y]
+    type = StressDivergenceBPD
+    variable = disp_y
+    component = 1
   [../]
 []
 

@@ -16,16 +16,13 @@ template<>
 InputParameters validParams<PeridynamicMaterial>()
 {
   InputParameters params = validParams<Material>();
-  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
   return params;
 }
 
 PeridynamicMaterial::PeridynamicMaterial(const InputParameters & parameters) :
   Material(parameters),
   _aux(_fe_problem.getAuxiliarySystem()),
-  _aux_sln(_aux.solution()),
   _nsys(_fe_problem.getNonlinearSystem()),
-  _bond_status_var(getVar("bond_status", 0)),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh)),
   _pddim(_pdmesh.dim())
 {

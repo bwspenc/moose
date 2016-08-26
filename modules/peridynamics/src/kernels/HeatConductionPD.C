@@ -14,7 +14,7 @@ template<>
 InputParameters validParams<HeatConductionPD>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
+  params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -24,8 +24,8 @@ HeatConductionPD::HeatConductionPD(const InputParameters & parameters) :
   _bond_response(getMaterialProperty<Real>("bond_response")),
   _bond_drdT(getMaterialProperty<Real>("bond_drdT")),
   _aux(_fe_problem.getAuxiliarySystem()),
-  _aux_sln(_aux.solution()),
-  _bond_status_var(getVar("bond_status", 0)),
+  _aux_sln(*_aux.currentSolution()),
+  _bond_status_var(&_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("bond_status"))),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh))
 {
 }

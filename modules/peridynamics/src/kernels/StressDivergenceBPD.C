@@ -21,7 +21,7 @@ InputParameters validParams<StressDivergenceBPD>()
   params.addRequiredCoupledVar("displacements", "Coupled variable for the displacements");
   params.addCoupledVar("temp", "Coupled variable for the temperature");
   params.addCoupledVar("strain_zz", "Coupled variable for the strain_zz");
-  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
+  params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -33,14 +33,14 @@ StressDivergenceBPD::StressDivergenceBPD(const InputParameters & parameters) :
   _bond_dfdE(getMaterialProperty<Real>("bond_dfdE")),
   _bond_dfdT(getMaterialProperty<Real>("bond_dfdT")),
   _aux(_fe_problem.getAuxiliarySystem()),
-  _aux_sln(_aux.solution()),
+  _aux_sln(*_aux.currentSolution()),
   _component(getParam<unsigned int>("component")),
   _ndisp(coupledComponents("displacements")),
   _temp_coupled(isCoupled("temp")),
   _temp_var(_temp_coupled ? coupled("temp") : 0),
   _strain_zz_coupled(isCoupled("strain_zz")),
   _strain_zz_var(_strain_zz_coupled ? coupled("strain_zz") : 0),
-  _bond_status_var(getVar("bond_status", 0)),
+  _bond_status_var(&_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("bond_status"))),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh)),
   _orientation(NULL)
 {

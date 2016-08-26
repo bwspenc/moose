@@ -40,7 +40,7 @@ protected:
 private:
   AuxiliarySystem & _aux;
 
-  NumericVector<Number> & _aux_sln;
+  const NumericVector<Number> & _aux_sln;
 
   unsigned int _ndisp;
 

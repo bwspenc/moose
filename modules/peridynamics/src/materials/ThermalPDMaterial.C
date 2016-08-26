@@ -52,7 +52,7 @@ ThermalPDMaterial::computeQpForce()
 void
 ThermalPDMaterial::computeNodalTemp()
 {
-  const NumericVector<Number> & sol = *_nsys.currentSolution();
-  _temp_i = sol(_current_elem->get_node(0)->dof_number(_nsys.number(), _temp_var->number(), 0));
-  _temp_j = sol(_current_elem->get_node(1)->dof_number(_nsys.number(), _temp_var->number(), 0));
+  const NumericVector<Number> & nsys_sln = *_nsys.currentSolution();
+  _temp_i = nsys_sln(_current_elem->get_node(0)->dof_number(_nsys.number(), _temp_var->number(), 0));
+  _temp_j = nsys_sln(_current_elem->get_node(1)->dof_number(_nsys.number(), _temp_var->number(), 0));
 }

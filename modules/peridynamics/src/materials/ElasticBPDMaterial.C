@@ -30,9 +30,17 @@ ElasticBPDMaterial::computeQpForce()
 {
   double Cij = computeBondModulus();
 
-  _bond_force[_qp] = Cij * (_bond_elastic_strain[_qp] + _poissons_ratio * (_strain_zz_i + _strain_zz_j) / 2.0) * _nv_i * _nv_j;
+  // residuals
+  if (_has_strain_zz)
+    _bond_force[_qp] = Cij * (_bond_elastic_strain[_qp] + _poissons_ratio * (_strain_zz_i - _alpha * (_temp_i - _temp_ref) + _strain_zz_j - _alpha * (_temp_j - _temp_ref)) / 2.0) * _nv_i * _nv_j;
+  else
+    _bond_force[_qp] = Cij * _bond_elastic_strain[_qp] * _nv_i * _nv_j;
 
+  // derivatives of residuals
   _bond_dfdU[_qp] = Cij / _origin_length * _nv_i * _nv_j;
   _bond_dfdE[_qp] = Cij * _poissons_ratio / 2.0 * _nv_i * _nv_j;
-  _bond_dfdT[_qp] = - Cij * (1.0 + _poissons_ratio) * _alpha / 2.0 * _nv_i * _nv_j;
+  if (_has_strain_zz)
+    _bond_dfdT[_qp] = - Cij * (1.0 + _poissons_ratio) * _alpha / 2.0 * _nv_i * _nv_j;
+  else
+    _bond_dfdT[_qp] = - Cij * _alpha / 2.0 * _nv_i * _nv_j;
 }

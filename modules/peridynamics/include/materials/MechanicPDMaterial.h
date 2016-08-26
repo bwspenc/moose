@@ -45,8 +45,13 @@ protected:
   const Real _youngs_modulus;
   const Real _poissons_ratio;
 
+  bool _has_strain_zz;
   MooseVariable * _strain_zz_var;
+
   MooseVariable * _temp_var;
+
+  MooseVariable * _bond_status_var;
+
   const Real _temp_ref;
 
   std::vector<MooseVariable *> _disp_var;

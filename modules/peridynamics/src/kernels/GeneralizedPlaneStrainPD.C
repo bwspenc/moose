@@ -18,7 +18,7 @@ InputParameters validParams<GeneralizedPlaneStrainPD>()
   params.addClassDescription("BPD Generalized Plane Strain kernel");
   params.addRequiredCoupledVar("displacements", "The coupled variables for displacement (disp_x and disp_y)");
   params.addCoupledVar("temp", "The coupled variable for temperature");
-  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
+  params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -31,11 +31,11 @@ GeneralizedPlaneStrainPD::GeneralizedPlaneStrainPD(const InputParameters & param
   _deformation_gradient(getMaterialProperty<RankTwoTensor>("deformation_gradient")),
   _stress(getMaterialProperty<RankTwoTensor>("stress")),
   _aux(_fe_problem.getAuxiliarySystem()),
-  _aux_sln(_aux.solution()),
+  _aux_sln(*_aux.currentSolution()),
   _ndisp(coupledComponents("displacements")),
   _temp_coupled(isCoupled("temp")),
   _temp_var(_temp_coupled ? coupled("temp") : 0),
-  _bond_status_var(getVar("bond_status", 0)),
+  _bond_status_var(&_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("bond_status"))),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh))
 {
   if (_ndisp != 2)

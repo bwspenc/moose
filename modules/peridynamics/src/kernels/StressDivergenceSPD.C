@@ -23,7 +23,7 @@ InputParameters validParams<StressDivergenceSPD>()
   params.addRequiredCoupledVar("displacements", "The displacement variables");
   params.addCoupledVar("temp", "The temperature variable");
   params.addCoupledVar("strain_zz", "The strain_zz variable");
-  params.addCoupledVar("bond_status", "Auxiliary variable for failure status of each bond");
+  params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for failure status of each bond");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -39,7 +39,7 @@ StressDivergenceSPD::StressDivergenceSPD(const InputParameters & parameters) :
   _bond_dfdT_ij(getMaterialProperty<Real>("bond_dfdT_ij")),
   _bond_dfdT_i_j(getMaterialProperty<Real>("bond_dfdT_i_j")),
   _aux(_fe_problem.getAuxiliarySystem()),
-  _aux_sln(_aux.solution()),
+  _aux_sln(*_aux.currentSolution()),
   _nsys(_fe_problem.getNonlinearSystem()),
   _component(getParam<unsigned int>("component")),
   _ndisp(coupledComponents("displacements")),
@@ -47,7 +47,7 @@ StressDivergenceSPD::StressDivergenceSPD(const InputParameters & parameters) :
   _temp_var(_temp_coupled ? coupled("temp") : 0),
   _strain_zz_coupled(isCoupled("strain_zz")),
   _strain_zz_var(_strain_zz_coupled ? coupled("strain_zz") : 0),
-  _bond_status_var(getVar("bond_status", 0)),
+  _bond_status_var(&_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("bond_status"))),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh)),
   _pddim(_pdmesh.dim()),
   _orientation(NULL)
@@ -98,7 +98,7 @@ StressDivergenceSPD::computeResidual()
   }
 
   // NONLOCAL residual contribution
-  const NumericVector<Number> & sol = *_nsys.currentSolution();
+  const NumericVector<Number> & nsys_sln = *_nsys.currentSolution();
   std::vector<dof_id_type> dof(2), neighbors_i, bonds_i, neighbors_j, bonds_j;
 
   // calculation of residual contribution to node_i's neighbors
@@ -117,7 +117,7 @@ StressDivergenceSPD::computeResidual()
     for (unsigned int j = 0; j < _pddim; ++j)
     {
       origin_length += std::pow(_pdmesh.coord(node_i)(j) - _pdmesh.coord(neighbors_i[k])(j), 2);
-      ori_ik(j) = _pdmesh.coord(neighbors_i[k])(j) + sol(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_i)(j) - sol(nd_i->dof_number(_nsys.number(), j, 0));
+      ori_ik(j) = _pdmesh.coord(neighbors_i[k])(j) + nsys_sln(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_i)(j) - nsys_sln(nd_i->dof_number(_nsys.number(), j, 0));
     }
     origin_length = std::sqrt(origin_length);
     ori_ik /= ori_ik.size();
@@ -127,7 +127,7 @@ StressDivergenceSPD::computeResidual()
     dof_id_type bs_dof_ik = elem_k->dof_number(_aux.number(), _bond_status_var->number(), 0);
     Number bond_status_ik = _aux_sln(bs_dof_ik);
 
-    _local_re(0) = - _bond_force_i_j[0] * vol_k / origin_length * ori_ik(_component) * bond_status_ik;
+    _local_re(0) = - _bond_force_i_j[0] * vol_k / origin_length * ori_ik(_component) * bond_status_ik * bond_status_ij;
     _local_re(1) = - _local_re(0);
 
     // cache the residual contribution to node_i and its neighbor k using their global dof indices
@@ -157,7 +157,7 @@ StressDivergenceSPD::computeResidual()
     for (unsigned int j = 0; j < _pddim; ++j)
     {
       origin_length += std::pow(_pdmesh.coord(neighbors_j[k])(j) - _pdmesh.coord(node_j)(j), 2);
-      ori_jk(j) = _pdmesh.coord(neighbors_j[k])(j) + sol(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_j)(j) - sol(nd_j->dof_number(_nsys.number(), j, 0));
+      ori_jk(j) = _pdmesh.coord(neighbors_j[k])(j) + nsys_sln(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_j)(j) - nsys_sln(nd_j->dof_number(_nsys.number(), j, 0));
     }
     origin_length = std::sqrt(origin_length);
     ori_jk /= ori_jk.size();
@@ -167,7 +167,7 @@ StressDivergenceSPD::computeResidual()
     dof_id_type bs_dof_jk = elem_k->dof_number(_aux.number(), _bond_status_var->number(), 0);
     Number bond_status_jk = _aux_sln(bs_dof_jk);
 
-    _local_re(0) = _bond_force_i_j[1] * vol_k / origin_length * ori_jk(_component) * bond_status_jk;
+    _local_re(0) = _bond_force_i_j[1] * vol_k / origin_length * ori_jk(_component) * bond_status_jk * bond_status_ij;
     _local_re(1) = - _local_re(0);
 
     // cache the residual contribution to node_j and its neighbor k using their global dof indices
@@ -347,7 +347,7 @@ StressDivergenceSPD::computeFullJacobian()
   }
 
   // NONLOCAL jacobian contribution
-  const NumericVector<Number> & sol = *_nsys.currentSolution();
+  const NumericVector<Number> & nsys_sln = *_nsys.currentSolution();
   std::vector<dof_id_type> dof(2), neighbors_i, bonds_i, neighbors_j, bonds_j;
 
   // calculation of jacobian contribution to node_i's neighbors
@@ -366,7 +366,7 @@ StressDivergenceSPD::computeFullJacobian()
     for (unsigned int j = 0; j < _pddim; ++j)
     {
       origin_length += std::pow(_pdmesh.coord(node_i)(j) - _pdmesh.coord(neighbors_i[k])(j), 2);
-      ori_ik(j) = _pdmesh.coord(neighbors_i[k])(j) + sol(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_i)(j) - sol(nd_i->dof_number(_nsys.number(), j, 0));
+      ori_ik(j) = _pdmesh.coord(neighbors_i[k])(j) + nsys_sln(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_i)(j) - nsys_sln(nd_i->dof_number(_nsys.number(), j, 0));
     }
     origin_length = std::sqrt(origin_length);
     current_length = ori_ik.size();
@@ -383,7 +383,7 @@ StressDivergenceSPD::computeFullJacobian()
     _local_ke.zero();
     for (unsigned int i = 0; i < _test.size(); ++i)
       for (unsigned int j = 0; j < _phi.size(); ++j)
-        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem1 / origin_length * vol_k * bond_status_ik;
+        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem1 / origin_length * vol_k * bond_status_ik * bond_status_ij;
 
     _assembly.cacheJacobianBlock(_local_ke, dof, dof_ij, 1.0);
 
@@ -402,7 +402,7 @@ StressDivergenceSPD::computeFullJacobian()
     _local_ke.zero();
     for (unsigned int i = 0; i < _test.size(); ++i)
       for (unsigned int j = 0; j < _phi.size(); ++j)
-        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem2 / origin_length * vol_k * bond_status_ik;
+        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem2 / origin_length * vol_k * bond_status_ik * bond_status_ij;
 
     _assembly.cacheJacobianBlock(_local_ke, dof, dof, 1.0);
 
@@ -435,7 +435,7 @@ StressDivergenceSPD::computeFullJacobian()
     for (unsigned int j = 0; j < _pddim; ++j)
     {
       origin_length += std::pow(_pdmesh.coord(node_j)(j) - _pdmesh.coord(neighbors_j[k])(j), 2);
-      ori_jk(j) = _pdmesh.coord(neighbors_j[k])(j) + sol(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_j)(j) - sol(nd_j->dof_number(_nsys.number(), j, 0));
+      ori_jk(j) = _pdmesh.coord(neighbors_j[k])(j) + nsys_sln(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_j)(j) - nsys_sln(nd_j->dof_number(_nsys.number(), j, 0));
     }
     origin_length = std::sqrt(origin_length);
     current_length = ori_jk.size();
@@ -452,7 +452,7 @@ StressDivergenceSPD::computeFullJacobian()
     _local_ke.zero();
     for (unsigned int i = 0; i < _test.size(); ++i)
       for (unsigned int j = 0; j < _phi.size(); ++j)
-        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem1 / origin_length * vol_k * bond_status_jk;
+        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem1 / origin_length * vol_k * bond_status_jk * bond_status_ij;
 
     _assembly.cacheJacobianBlock(_local_ke, dof, dof_ij, 1.0);
 
@@ -471,7 +471,7 @@ StressDivergenceSPD::computeFullJacobian()
     _local_ke.zero();
     for (unsigned int i = 0; i < _test.size(); ++i)
       for (unsigned int j = 0; j < _phi.size(); ++j)
-        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem2 / origin_length * vol_k * bond_status_jk;
+        _local_ke(i, j) += (i == j ? 1 : -1) * stiff_elem2 / origin_length * vol_k * bond_status_jk * bond_status_ij;
 
     _assembly.cacheJacobianBlock(_local_ke, dof, dof, 1.0);
 
@@ -567,7 +567,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
       _assembly.cacheJacobianBlock(_local_ke, dof_ij, dof_ij_jvar, 1.0);
 
       // NONLOCAL jacobian contribution
-      const NumericVector<Number> & sol = *_nsys.currentSolution();
+      const NumericVector<Number> & nsys_sln = *_nsys.currentSolution();
       std::vector<dof_id_type> dof(2), dof_jvar(2), neighbors_i, bonds_i, neighbors_j, bonds_j;
 
       // calculation of jacobian contribution to node_i's neighbors
@@ -588,7 +588,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
         for (unsigned int j = 0; j < _pddim; ++j)
         {
           origin_length += std::pow(_pdmesh.coord(node_i)(j) - _pdmesh.coord(neighbors_i[k])(j), 2);
-          ori_ik(j) = _pdmesh.coord(neighbors_i[k])(j) + sol(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_i)(j) - sol(nd_i->dof_number(_nsys.number(), j, 0));
+          ori_ik(j) = _pdmesh.coord(neighbors_i[k])(j) + nsys_sln(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_i)(j) - nsys_sln(nd_i->dof_number(_nsys.number(), j, 0));
         }
         origin_length = std::sqrt(origin_length);
         current_length = ori_ik.size();
@@ -605,15 +605,15 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
         {
           off_stiff_elem1 = ori_ik(_component) * _bond_dfdT_i_j[0];
           off_stiff_elem2 = 0;
-          _local_ke(0, 0) += - off_stiff_elem1 / origin_length * vol_k * bond_status_ik;
-          _local_ke(1, 0) += off_stiff_elem1 / origin_length * vol_k * bond_status_ik;
+          _local_ke(0, 0) += - off_stiff_elem1 / origin_length * vol_k * bond_status_ik * bond_status_ij;
+          _local_ke(1, 0) += off_stiff_elem1 / origin_length * vol_k * bond_status_ik * bond_status_ij;
         }
         else if (coupled_component == 4)
         {
           off_stiff_elem1 = ori_ik(_component) * _bond_dfdE_i_j[0];
           off_stiff_elem2 = 0;
-          _local_ke(0, 0) += - off_stiff_elem1 / origin_length * vol_k * bond_status_ik;
-          _local_ke(1, 0) += off_stiff_elem1 / origin_length * vol_k * bond_status_ik;
+          _local_ke(0, 0) += - off_stiff_elem1 / origin_length * vol_k * bond_status_ik * bond_status_ij;
+          _local_ke(1, 0) += off_stiff_elem1 / origin_length * vol_k * bond_status_ik * bond_status_ij;
         }
         else
         {
@@ -621,7 +621,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
           off_stiff_elem2 = - _bond_force_i_j[0] * ori_ik(_component) * ori_ik(coupled_component) / current_length;
           for (unsigned int i = 0; i < _test.size(); ++i)
             for (unsigned int j = 0; j < _phi.size(); ++j)
-              _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem1 / origin_length * vol_k * bond_status_ik;
+              _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem1 / origin_length * vol_k * bond_status_ik * bond_status_ij;
         }
 
         _assembly.cacheJacobianBlock(_local_ke, dof, dof_ij_jvar, 1.0);
@@ -629,7 +629,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
         _local_ke.zero();
         for (unsigned int i = 0; i < _test.size(); ++i)
           for (unsigned int j = 0; j < _phi.size(); ++j)
-            _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem2 / origin_length * vol_k * bond_status_ik;
+            _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem2 / origin_length * vol_k * bond_status_ik * bond_status_ij;
 
         _assembly.cacheJacobianBlock(_local_ke, dof, dof_jvar, 1.0);
       }
@@ -652,7 +652,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
         for (unsigned int j = 0; j < _pddim; ++j)
         {
           origin_length += std::pow(_pdmesh.coord(node_j)(j) - _pdmesh.coord(neighbors_j[k])(j), 2);
-          ori_jk(j) = _pdmesh.coord(neighbors_j[k])(j) + sol(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_j)(j) - sol(nd_j->dof_number(_nsys.number(), j, 0));
+          ori_jk(j) = _pdmesh.coord(neighbors_j[k])(j) + nsys_sln(nd_k->dof_number(_nsys.number(), j, 0)) - _pdmesh.coord(node_j)(j) - nsys_sln(nd_j->dof_number(_nsys.number(), j, 0));
         }
         origin_length = std::sqrt(origin_length);
         current_length = ori_jk.size();
@@ -669,15 +669,15 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
         {
           off_stiff_elem1 = ori_jk(_component) * _bond_dfdT_i_j[1];
           off_stiff_elem2 = 0;
-          _local_ke(0, 1) += off_stiff_elem1 / origin_length * vol_k * bond_status_jk;
-          _local_ke(1, 1) += - off_stiff_elem1 / origin_length * vol_k * bond_status_jk;
+          _local_ke(0, 1) += off_stiff_elem1 / origin_length * vol_k * bond_status_jk * bond_status_ij;
+          _local_ke(1, 1) += - off_stiff_elem1 / origin_length * vol_k * bond_status_jk * bond_status_ij;
         }
         else if (coupled_component == 4)
         {
           off_stiff_elem1 = ori_jk(_component) * _bond_dfdE_i_j[1];
           off_stiff_elem2 = 0;
-          _local_ke(0, 1) += off_stiff_elem1 / origin_length * vol_k * bond_status_jk;
-          _local_ke(1, 1) += - off_stiff_elem1 / origin_length * vol_k * bond_status_jk;
+          _local_ke(0, 1) += off_stiff_elem1 / origin_length * vol_k * bond_status_jk * bond_status_ij;
+          _local_ke(1, 1) += - off_stiff_elem1 / origin_length * vol_k * bond_status_jk * bond_status_ij;
         }
         else
         {
@@ -685,7 +685,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
           off_stiff_elem2 = - _bond_force_i_j[1] * ori_jk(_component) * ori_jk(coupled_component) / current_length;
           for (unsigned int i = 0; i < _test.size(); ++i)
             for (unsigned int j = 0; j < _phi.size(); ++j)
-              _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem1 / origin_length * vol_k * bond_status_jk;
+              _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem1 / origin_length * vol_k * bond_status_jk * bond_status_ij;
         }
 
         _assembly.cacheJacobianBlock(_local_ke, dof, dof_ij_jvar, 1.0);
@@ -693,7 +693,7 @@ StressDivergenceSPD::computeFullOffDiagJacobian(unsigned int jvar)
         _local_ke.zero();
         for (unsigned int i = 0; i < _test.size(); ++i)
           for (unsigned int j = 0; j < _phi.size(); ++j)
-            _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem2 / origin_length * vol_k * bond_status_jk;
+            _local_ke(i, j) += (i == j ? 1 : -1) * off_stiff_elem2 / origin_length * vol_k * bond_status_jk * bond_status_ij;
 
         _assembly.cacheJacobianBlock(_local_ke, dof, dof_jvar, 1.0);
       }
