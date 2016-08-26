@@ -33,13 +33,13 @@ StressDivergenceBPD::StressDivergenceBPD(const InputParameters & parameters) :
   _bond_dfdE(getMaterialProperty<Real>("bond_dfdE")),
   _bond_dfdT(getMaterialProperty<Real>("bond_dfdT")),
   _aux(_fe_problem.getAuxiliarySystem()),
+  _aux_sln(_aux.solution()),
   _component(getParam<unsigned int>("component")),
   _ndisp(coupledComponents("displacements")),
   _temp_coupled(isCoupled("temp")),
   _temp_var(_temp_coupled ? coupled("temp") : 0),
   _strain_zz_coupled(isCoupled("strain_zz")),
   _strain_zz_var(_strain_zz_coupled ? coupled("strain_zz") : 0),
-  _bond_status(coupledValue("bond_status")),
   _bond_status_var(getVar("bond_status", 0)),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh)),
   _orientation(NULL)
@@ -57,11 +57,9 @@ StressDivergenceBPD::initialSetup()
 void
 StressDivergenceBPD::computeResidual()
 {
-  NumericVector<Number> & sln = _aux.solution();
+  // bond status for bond ij
   dof_id_type bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
-  unsigned int bond_status = sln(bs_dof);
-
-//std::cout<< _bond_status[0] <<" : " << bond_status << std::endl;
+  Number bond_status = _aux_sln(bs_dof);
 
   DenseVector<Number> & re = _assembly.residualBlock(_var.number());
   mooseAssert(re.size() == 2, "Truss element has only two nodes");
@@ -86,9 +84,8 @@ StressDivergenceBPD::computeResidual()
 void
 StressDivergenceBPD::computeJacobian()
 {
-  NumericVector<Number> & sln = _aux.solution();
-  long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
-  unsigned int bond_status = sln(bs_dof);
+  dof_id_type bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+  Number bond_status = _aux_sln(bs_dof);
 
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), _var.number());
   _local_ke.resize(ke.m(), ke.n());
@@ -147,9 +144,8 @@ StressDivergenceBPD::computeOffDiagJacobian(unsigned int jvar)
       active = true;
     }
 
-    NumericVector<Number> & sln = _aux.solution();
-    long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
-    unsigned int bond_status = sln(bs_dof);
+    dof_id_type bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+    Number bond_status = _aux_sln(bs_dof);
 
     DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), jvar);
     if (active)

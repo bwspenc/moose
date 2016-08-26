@@ -39,6 +39,8 @@ protected:
 private:
   AuxiliarySystem & _aux;
 
+  NumericVector<Number> & _aux_sln;
+
   const unsigned int _component;
 
   unsigned int _ndisp;
@@ -50,11 +52,7 @@ private:
   const bool _strain_zz_coupled;
   const unsigned int _strain_zz_var;
 
-  const VariableValue & _bond_status;
-
   MooseVariable * _bond_status_var;
-
-//  SystemBase & _aux;
 
   PeridynamicMesh & _pdmesh;
 

@@ -35,7 +35,13 @@ protected:
   virtual Real computeBondModulus(){return 0;}
   virtual Real computeBondCurrentLength(){return 0;}
 
+  AuxiliarySystem & _aux;
+
+  NumericVector<Number> & _aux_sln;
+
   NonlinearSystem & _nsys;
+
+  MooseVariable * _bond_status_var;
 
   PeridynamicMesh & _pdmesh;
 

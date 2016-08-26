@@ -40,6 +40,8 @@ protected:
 private:
   AuxiliarySystem & _aux;
 
+  NumericVector<Number> & _aux_sln;
+
   unsigned int _ndisp;
 
   const bool _temp_coupled;

@@ -148,8 +148,13 @@ MechanicPDMaterial::computeElasticStrainTensor()
 
   Node * node_i = _current_elem->get_node(0);
   Node * node_j = _current_elem->get_node(1);
-  std::vector<dof_id_type> neighbors_i = _pdmesh.neighbors(node_i->id());
-  std::vector<dof_id_type> neighbors_j = _pdmesh.neighbors(node_j->id());
+
+  std::vector<dof_id_type> neighbors_i, bonds_i, neighbors_j, bonds_j;
+
+  neighbors_i = _pdmesh.neighbors(node_i->id());
+  bonds_i = _pdmesh.bonds(node_i->id());
+  neighbors_j = _pdmesh.neighbors(node_j->id());
+  bonds_j = _pdmesh.bonds(node_j->id());
 
   RankTwoTensor delta;
   delta.zero();
@@ -177,11 +182,17 @@ MechanicPDMaterial::computeElasticStrainTensor()
       current_vector(l) = origin_vector(l) + sol(node_k->dof_number(_nsys.number(), _disp_var[l]->number(), 0)) - sol(node_i->dof_number(_nsys.number(), _disp_var[l]->number(), 0));
     }
     double origin_length = origin_vector.norm();
+
+   // bond status for bond ik
+    Elem * elem_k = _mesh.elemPtr(bonds_i[k]);
+    dof_id_type bs_dof_ik = elem_k->dof_number(_aux.number(), _bond_status_var->number(), 0);
+    Number bond_status_ik = _aux_sln(bs_dof_ik);
+
     for (unsigned int m = 0; m < _pddim; ++m)
       for (unsigned int n = 0; n < _pddim; ++n)
       {
-        _shape_tensor[0](m, n) += vol_k * _horizon_i / origin_length * origin_vector(m) * origin_vector(n);
-        current_shape_i(m, n) += vol_k * _horizon_i / origin_length * current_vector(m) * origin_vector(n);
+        _shape_tensor[0](m, n) += vol_k * _horizon_i / origin_length * origin_vector(m) * origin_vector(n) * bond_status_ik;
+        current_shape_i(m, n) += vol_k * _horizon_i / origin_length * current_vector(m) * origin_vector(n) * bond_status_ik;
       }
   }
 
@@ -226,11 +237,17 @@ MechanicPDMaterial::computeElasticStrainTensor()
       current_vector(l) = origin_vector(l) + sol(node_k->dof_number(_nsys.number(), _disp_var[l]->number(), 0)) - sol(node_j->dof_number(_nsys.number(), _disp_var[l]->number(), 0));
     }
     double origin_length = origin_vector.norm();
+
+   // bond status for bond jk
+    Elem * elem_k = _mesh.elemPtr(bonds_j[k]);
+    dof_id_type bs_dof_jk = elem_k->dof_number(_aux.number(), _bond_status_var->number(), 0);
+    Number bond_status_jk = _aux_sln(bs_dof_jk);
+
     for (unsigned int m = 0; m < _pddim; ++m)
       for (unsigned int n = 0; n < _pddim; ++n)
       {
-        _shape_tensor[1](m, n) += vol_k * _horizon_j / origin_length * origin_vector(m) * origin_vector(n);
-        current_shape_j(m, n) += vol_k * _horizon_j / origin_length * current_vector(m) * origin_vector(n);
+        _shape_tensor[1](m, n) += vol_k * _horizon_j / origin_length * origin_vector(m) * origin_vector(n) * bond_status_jk;
+        current_shape_j(m, n) += vol_k * _horizon_j / origin_length * current_vector(m) * origin_vector(n) * bond_status_jk;
       }
   }
 

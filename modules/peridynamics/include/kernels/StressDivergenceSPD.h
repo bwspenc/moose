@@ -47,6 +47,8 @@ protected:
 private:
   AuxiliarySystem & _aux;
 
+  NumericVector<Number> & _aux_sln;
+
   NonlinearSystem & _nsys;
 
   const unsigned int _component;

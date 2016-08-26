@@ -34,6 +34,8 @@ protected:
 
   AuxiliarySystem & _aux;
 
+  NumericVector<Number> & _aux_sln;
+
   MooseVariable * _bond_status_var;
 
   PeridynamicMesh & _pdmesh;

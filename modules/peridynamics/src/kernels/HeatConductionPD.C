@@ -24,6 +24,7 @@ HeatConductionPD::HeatConductionPD(const InputParameters & parameters) :
   _bond_response(getMaterialProperty<Real>("bond_response")),
   _bond_drdT(getMaterialProperty<Real>("bond_drdT")),
   _aux(_fe_problem.getAuxiliarySystem()),
+  _aux_sln(_aux.solution()),
   _bond_status_var(getVar("bond_status", 0)),
   _pdmesh(dynamic_cast<PeridynamicMesh &>(_mesh))
 {
@@ -36,9 +37,8 @@ HeatConductionPD::~HeatConductionPD()
 void
 HeatConductionPD::computeResidual()
 {
-  NumericVector<Number> & sln = _aux.solution();
-  long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
-  unsigned int bond_status = sln(bs_dof);
+  dof_id_type bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+  Number bond_status = _aux_sln(bs_dof);
 
   DenseVector<Number> & re = _assembly.residualBlock(_var.number());
   _local_re.resize(re.size());
@@ -60,9 +60,8 @@ HeatConductionPD::computeResidual()
 void
 HeatConductionPD::computeJacobian()
 {
-  NumericVector<Number> & sln = _aux.solution();
-  long int bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
-  unsigned int bond_status = sln(bs_dof);
+  dof_id_type bs_dof = _current_elem->dof_number(_aux.number(), _bond_status_var->number(), 0);
+  Number bond_status = _aux_sln(bs_dof);
 
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), _var.number());
   _local_ke.resize(ke.m(), ke.n());

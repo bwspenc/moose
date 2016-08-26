@@ -31,6 +31,8 @@ public:
 protected:
   AuxiliarySystem & _aux;
 
+  NumericVector<Number> & _aux_sln;
+
   MooseVariable * _intact_bonds_var;
 
   MooseVariable * _bond_status_var;
