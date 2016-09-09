@@ -7,12 +7,12 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "GeneralizedPlaneStrainPD.h"
+#include "GeneralizedPlaneStrainPDDOF.h"
 #include "Material.h"
 #include "Assembly.h"
 
 template<>
-InputParameters validParams<GeneralizedPlaneStrainPD>()
+InputParameters validParams<GeneralizedPlaneStrainPDDOF>()
 {
   InputParameters params = validParams<Kernel>();
   params.addClassDescription("BPD Generalized Plane Strain kernel");
@@ -23,10 +23,10 @@ InputParameters validParams<GeneralizedPlaneStrainPD>()
   return params;
 }
 
-GeneralizedPlaneStrainPD::GeneralizedPlaneStrainPD(const InputParameters & parameters) :
+GeneralizedPlaneStrainPDDOF::GeneralizedPlaneStrainPDDOF(const InputParameters & parameters) :
   Kernel(parameters),
-  _Cijkl(getMaterialProperty<RankFourTensor>("elasticity_tensor")),
   _alpha(getMaterialProperty<Real>("thermal_expansion")),
+  _Cijkl(getMaterialProperty<RankFourTensor>("elasticity_tensor")),
   _shape_tensor(getMaterialProperty<RankTwoTensor>("shape_tensor")),
   _deformation_gradient(getMaterialProperty<RankTwoTensor>("deformation_gradient")),
   _stress(getMaterialProperty<RankTwoTensor>("stress")),
@@ -45,7 +45,7 @@ GeneralizedPlaneStrainPD::GeneralizedPlaneStrainPD(const InputParameters & param
 }
 
 void
-GeneralizedPlaneStrainPD::computeResidual()
+GeneralizedPlaneStrainPDDOF::computeResidual()
 {
   DenseVector<Number> & re = _assembly.residualBlock(_var.number());
 
@@ -62,7 +62,7 @@ GeneralizedPlaneStrainPD::computeResidual()
 }
 
 void
-GeneralizedPlaneStrainPD::computeJacobian()
+GeneralizedPlaneStrainPDDOF::computeJacobian()
 {
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), _var.number());
 
@@ -74,12 +74,12 @@ GeneralizedPlaneStrainPD::computeJacobian()
   unsigned int nn_i = _pdmesh.neighbors(_current_elem->get_node(0)->id()).size();
   unsigned int nn_j = _pdmesh.neighbors(_current_elem->get_node(1)->id()).size();
 
-  ke(0, 0) += - _Cijkl[0](0, 0, 0, 0) * nv_i / nn_i;
-  ke(1, 1) += - _Cijkl[0](0, 0, 0, 0) * nv_j / nn_j;
+  ke(0, 0) += - _Cijkl[0](2, 2, 2, 2) * nv_i / nn_i;
+  ke(1, 1) += - _Cijkl[0](2, 2, 2, 2) * nv_j / nn_j;
 }
 
 void
-GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
+GeneralizedPlaneStrainPDDOF::computeOffDiagJacobian(unsigned int jvar)
 {
   if (jvar == _var.number())
     computeJacobian();
@@ -124,19 +124,19 @@ GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
       double off_stiff_elem;
       if(coupled_component == 2)
       {
-        ke(0, 0) += _alpha[0] * (2.0 * _Cijkl[0](0, 0, 1, 1) + _Cijkl[0](0, 0, 0, 0)) * nv_i / nn_i;
-        ke(1, 1) += _alpha[0] * (2.0 * _Cijkl[0](0, 0, 1, 1) + _Cijkl[0](0, 0, 0, 0)) * nv_j / nn_j;
+        ke(0, 0) += _alpha[0] * (_Cijkl[0](2, 2, 0, 0) + _Cijkl[0](2, 2, 1, 1) + _Cijkl[0](2, 2, 2, 2)) * nv_i / nn_i;
+        ke(1, 1) += _alpha[0] * (_Cijkl[0](2, 2, 0, 0) + _Cijkl[0](2, 2, 1, 1) + _Cijkl[0](2, 2, 2, 2)) * nv_j / nn_j;
       }
       else if(coupled_component == 1)
       {
-        // derivative of strains w.r.t displacements for node i
+        // derivative of strains w.r.t displacement v for node i and j
         double dEidVi = nv_j * horizon_i / origin_vector.size() * ((origin_vector(0) * _shape_tensor[0](0, 0) + origin_vector(1) * _shape_tensor[0](1, 0)) * _deformation_gradient[0](1, 0) + (origin_vector(0) * _shape_tensor[0](0, 1) + origin_vector(1) * _shape_tensor[0](1, 1)) * _deformation_gradient[0](1, 1));
         double dEjdVj = - nv_i * horizon_j / origin_vector.size() * ((origin_vector(0) * _shape_tensor[1](0, 0) + origin_vector(1) * _shape_tensor[1](1, 0)) * _deformation_gradient[1](1, 0) + (origin_vector(0) * _shape_tensor[1](0, 1) + origin_vector(1) * _shape_tensor[1](1, 1)) * _deformation_gradient[1](1, 1));
 
-        ke(0, 0) += _Cijkl[0](0, 0, 1, 1) * dEidVi * nv_i * bond_status;
-        ke(0, 1) += - _Cijkl[0](0, 0, 1, 1) * dEidVi * nv_i * bond_status;
-        ke(1, 0) += - _Cijkl[0](0, 0, 1, 1) * dEjdVj * nv_j * bond_status;
-        ke(1, 1) += _Cijkl[0](0, 0, 1, 1) * dEjdVj * nv_j * bond_status;
+        ke(0, 0) += _Cijkl[0](2, 2, 1, 1) * dEidVi * nv_i * bond_status;
+        ke(0, 1) += - _Cijkl[0](2, 2, 1, 1) * dEidVi * nv_i * bond_status;
+        ke(1, 0) += - _Cijkl[0](2, 2, 1, 1) * dEjdVj * nv_j * bond_status;
+        ke(1, 1) += _Cijkl[0](2, 2, 1, 1) * dEjdVj * nv_j * bond_status;
       }
       else if(coupled_component == 0)
       {
@@ -144,10 +144,10 @@ GeneralizedPlaneStrainPD::computeOffDiagJacobian(unsigned int jvar)
         double dEidUi = nv_j * horizon_i / origin_vector.size() * ((origin_vector(0) * _shape_tensor[0](0, 0) + origin_vector(1) * _shape_tensor[0](1, 0)) * _deformation_gradient[0](0, 0) + (origin_vector(0) * _shape_tensor[0](0, 1) + origin_vector(1) * _shape_tensor[0](1, 1)) * _deformation_gradient[0](0, 1));
         double dEjdUj = - nv_i * horizon_j / origin_vector.size() * ((origin_vector(0) * _shape_tensor[1](0, 0) + origin_vector(1) * _shape_tensor[1](1, 0)) * _deformation_gradient[1](0, 0) + (origin_vector(0) * _shape_tensor[1](0, 1) + origin_vector(1) * _shape_tensor[1](1, 1)) * _deformation_gradient[1](0, 1));
 
-        ke(0, 0) += _Cijkl[0](0, 0, 1, 1) * dEidUi * nv_i * bond_status;
-        ke(0, 1) += - _Cijkl[0](0, 0, 1, 1) * dEidUi * nv_i * bond_status;
-        ke(1, 0) += - _Cijkl[0](0, 0, 1, 1) * dEjdUj * nv_j * bond_status;
-        ke(1, 1) += _Cijkl[0](0, 0, 1, 1) * dEjdUj * nv_j * bond_status;
+        ke(0, 0) += _Cijkl[0](2, 2, 0, 0) * dEidUi * nv_i * bond_status;
+        ke(0, 1) += - _Cijkl[0](2, 2, 0, 0) * dEidUi * nv_i * bond_status;
+        ke(1, 0) += - _Cijkl[0](2, 2, 0, 0) * dEjdUj * nv_j * bond_status;
+        ke(1, 1) += _Cijkl[0](2, 2, 0, 0) * dEjdUj * nv_j * bond_status;
       }
     }
   }

@@ -20,7 +20,6 @@ InputParameters validParams<HeatConductionPD>();
 class HeatConductionPD : public Kernel
 {
 public:
-
   HeatConductionPD(const InputParameters & parameters);
   virtual ~HeatConductionPD();
 

@@ -41,15 +41,22 @@ protected:
   MaterialProperty<RankTwoTensor> & _elastic_strain;
   MaterialProperty<RankTwoTensor> & _strain;
   MaterialProperty<RankTwoTensor> & _stress;
+  MaterialProperty<Real> & _bond_force_ij;
+  MaterialProperty<Real> & _bond_force_i_j;
+  MaterialProperty<Real> & _bond_dfdU_ij;
+  MaterialProperty<Real> & _bond_dfdU_i_j;
+  MaterialProperty<Real> & _bond_dfdE_ij;
+  MaterialProperty<Real> & _bond_dfdE_i_j;
+  MaterialProperty<Real> & _bond_dfdT_ij;
+  MaterialProperty<Real> & _bond_dfdT_i_j;
 
   const Real _youngs_modulus;
   const Real _poissons_ratio;
 
-  bool _has_strain_zz;
-  MooseVariable * _strain_zz_var;
+  bool _strain_zz_coupled;
+  VariableValue & _strain_zz;
 
   MooseVariable * _temp_var;
-
   MooseVariable * _bond_status_var;
 
   const Real _temp_ref;
@@ -61,9 +68,6 @@ protected:
   double _bulk_modulus;
 
   RankFourTensor _Cijkl;
-
-  double _strain_zz_i;
-  double _strain_zz_j;
 };
 
 #endif //MECHANICPDMATERIAL_H

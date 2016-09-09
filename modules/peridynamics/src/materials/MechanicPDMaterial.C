@@ -21,7 +21,7 @@ InputParameters validParams<MechanicPDMaterial>()
   params.addParam<std::string>("plane_stress", "Plane stress problem or not");
   params.addRequiredParam<Real>("youngs_modulus", "Young's modulus");
   params.addRequiredParam<Real>("poissons_ratio", "Poisson's ratio");
-  params.addParam<NonlinearVariableName>("strain_zz", "Variable containing the out-of-plane strain");
+  params.addCoupledVar("strain_zz", "Variable containing the out-of-plane strain");
   params.addParam<NonlinearVariableName>("temp", "Variable containing the temperature");
   params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for failure status of each bond");
   params.addParam<Real>("temp_ref", 273, "Reference temperature in K");
@@ -41,10 +41,18 @@ MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters) :
   _elastic_strain(declareProperty<RankTwoTensor>("elastic_strain")),
   _strain(declareProperty<RankTwoTensor>("strain")),
   _stress(declareProperty<RankTwoTensor>("stress")),
+  _bond_force_ij(declareProperty<Real>("bond_force_ij")),
+  _bond_force_i_j(declareProperty<Real>("bond_force_i_j")),
+  _bond_dfdU_ij(declareProperty<Real>("bond_dfdU_ij")),
+  _bond_dfdU_i_j(declareProperty<Real>("bond_dfdU_i_j")),
+  _bond_dfdE_ij(declareProperty<Real>("bond_dfdE_ij")),
+  _bond_dfdE_i_j(declareProperty<Real>("bond_dfdE_i_j")),
+  _bond_dfdT_ij(declareProperty<Real>("bond_dfdT_ij")),
+  _bond_dfdT_i_j(declareProperty<Real>("bond_dfdT_i_j")),
   _youngs_modulus(getParam<Real>("youngs_modulus")),
   _poissons_ratio(getParam<Real>("poissons_ratio")),
-  _has_strain_zz(isParamValid("strain_zz")),
-  _strain_zz_var(_has_strain_zz ? &_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("strain_zz")) : NULL),
+  _strain_zz_coupled(isCoupledScalar("strain_zz")),
+  _strain_zz(coupledScalarValue("strain_zz")),
   _temp_var(isParamValid("temp") ? &_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("temp")) : NULL),
   _bond_status_var(&_fe_problem.getVariable(_tid, getParam<NonlinearVariableName>("bond_status"))),
   _temp_ref(getParam<Real>("temp_ref"))
@@ -61,15 +69,15 @@ MechanicPDMaterial::MechanicPDMaterial(const InputParameters & parameters) :
   if (_pddim == 3 || isParamValid("plane_stress"))
   {
     _bulk_modulus = _youngs_modulus / _pddim / (1.0 - (_pddim - 1.0) * _poissons_ratio);
-    _alpha = getParam<Real>("thermal_expansion_coeff");
+    _alpha = isParamValid("thermal_expansion_coeff") ? getParam<Real>("thermal_expansion_coeff") : 0;
   }
   else // plane strain case
   {
     _bulk_modulus = _youngs_modulus / 2.0 / (1.0 + _poissons_ratio) / (1.0 - 2.0 * _poissons_ratio);
-   if (_has_strain_zz) // generalized plane strain
-     _alpha = getParam<Real>("thermal_expansion_coeff");
+   if (_strain_zz_coupled) // generalized plane strain
+     _alpha = isParamValid("thermal_expansion_coeff") ? getParam<Real>("thermal_expansion_coeff") : 0;
    else
-     _alpha = (1.0 + _poissons_ratio) * getParam<Real>("thermal_expansion_coeff");
+     _alpha = isParamValid("thermal_expansion_coeff") ? (1.0 + _poissons_ratio) * getParam<Real>("thermal_expansion_coeff") : 0;
   }
 
   // construct elasticity tensor
@@ -98,7 +106,7 @@ MechanicPDMaterial::initQpStatefulProperties()
 //  double val = 0.000300093; // 3x irregular 3D
 //  double val = 0.000233381; // 5x irregular 3D
 
-  _bond_critical_strain_old[_qp] = (std::sqrt(- 2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * 0.05 + 1.0) * 0.000346;
+  _bond_critical_strain_old[_qp] = (std::sqrt(- 2.0 * std::log(getRandomReal())) * std::cos(2.0 * 3.14159265358 * getRandomReal()) * 0.05 + 1.0) * 0.00034595;
   _bond_critical_strain[_qp] = _bond_critical_strain_old[_qp];
 }
 
@@ -170,11 +178,9 @@ MechanicPDMaterial::computeElasticStrainTensor()
   current_shape_i.zero();
   _shape_tensor[0].zero();
   if (_pddim == 2)
-    _shape_tensor[0](2, 2) = current_shape_i(2, 2)  = 1;
+    _shape_tensor[0](2, 2) = current_shape_i(2, 2) = 1;
 
-  RealGradient origin_vector(3), current_vector(3);
-  origin_vector = 0;
-  current_vector = 0;
+  RealGradient origin_vector(_pddim), current_vector(_pddim);
 
   for (unsigned int k = 0; k < neighbors_i.size(); ++k)
   {
@@ -198,32 +204,27 @@ MechanicPDMaterial::computeElasticStrainTensor()
         _shape_tensor[0](m, n) += vol_k * _horizon_i / origin_length * origin_vector(m) * origin_vector(n) * bond_status_ik;
         current_shape_i(m, n) += vol_k * _horizon_i / origin_length * current_vector(m) * origin_vector(n) * bond_status_ik;
       }
-  }
+   }
 
-  if (std::abs(_shape_tensor[0].det()) > 1e-6)
-  {
+   if (std::abs(_shape_tensor[0].det()) > 1e-30)
+   {
     // inverse the origin shape tensor at node i
     _shape_tensor[0] = _shape_tensor[0].inverse();
     // calculate the deformation gradient tensor at node i
     _deformation_gradient[0] = current_shape_i * _shape_tensor[0];
-  }
-  else
-  {
-    _shape_tensor[0] = delta;
-    _deformation_gradient[0] = delta;
-  }
+   }
+   else
+   {
+     _shape_tensor[0] = delta;
+     _deformation_gradient[0] = delta;
+   }
 
   // the green-lagrange strain tensor at node i
   _strain[0] = (_deformation_gradient[0].transpose() * _deformation_gradient[0] - delta) / 2.0;
 
   // the elastic strain tensor at node i
-  if (_has_strain_zz)
-  {
-    _strain_zz_i = nsys_sln(_current_elem->get_node(0)->dof_number(_nsys.number(), _strain_zz_var->number(), 0));
-    _strain[0](2, 2) = _strain_zz_i;
-  }
-  else
-    _strain_zz_i = 0;
+  if (_strain_zz_coupled)
+    _strain[0](2, 2) = _strain_zz[0];
 
   // the elastic strain tensor at node j
   _elastic_strain[0] = _strain[0];
@@ -235,7 +236,7 @@ MechanicPDMaterial::computeElasticStrainTensor()
   current_shape_j.zero();
   _shape_tensor[1].zero();
   if (_pddim == 2)
-    _shape_tensor[1](2, 2) = current_shape_j(2, 2)  = 1;
+    _shape_tensor[1](2, 2) = current_shape_j(2, 2) = 1;
 
   for (unsigned int k = 0; k < neighbors_j.size(); ++k)
   {
@@ -259,31 +260,26 @@ MechanicPDMaterial::computeElasticStrainTensor()
         _shape_tensor[1](m, n) += vol_k * _horizon_j / origin_length * origin_vector(m) * origin_vector(n) * bond_status_jk;
         current_shape_j(m, n) += vol_k * _horizon_j / origin_length * current_vector(m) * origin_vector(n) * bond_status_jk;
       }
-  }
+   }
 
-  if (std::abs(_shape_tensor[1].det()) > 1e-6)
-  {
+   if (std::abs(_shape_tensor[1].det()) > 1e-30)
+   {
     // inverse the origin shape tensor at node j
     _shape_tensor[1] = _shape_tensor[1].inverse();
     // calculate the deformation gradient tensor at node j
     _deformation_gradient[1] = current_shape_j * _shape_tensor[1];
-  }
-  else
-  {
-    _shape_tensor[1] = delta;
-    _deformation_gradient[1] = delta;
-  }
+   }
+   else
+   {
+     _shape_tensor[1] = delta;
+     _deformation_gradient[1] = delta;
+   }
 
   // the green-lagrange strain tensor at node j
   _strain[1] = (_deformation_gradient[1].transpose() * _deformation_gradient[1] - delta) / 2.0;
 
-  if (_has_strain_zz)
-  {
-    _strain_zz_j = nsys_sln(_current_elem->get_node(1)->dof_number(_nsys.number(), _strain_zz_var->number(), 0));
-    _strain[1](2, 2) = _strain_zz_j;
-  }
-  else
-    _strain_zz_j = 0;
+  if (_strain_zz_coupled)
+    _strain[1](2, 2) = _strain_zz[0];
 
   // the elastic strain tensor at node j
   _elastic_strain[1] = _strain[1];

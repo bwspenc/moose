@@ -1,33 +1,33 @@
 /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
-/*                      Peridynamics                            */
+/*                        Peridynamics                          */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef ELASTICSPDMATERIAL_H
-#define ELASTICSPDMATERIAL_H
 
-#include "MechanicPDMaterial.h"
+#ifndef GPSPDDIAG_H
+#define GPSPDDIAG_H
 
-class ElasticSPDMaterial;
+#include "ScalarKernel.h"
+#include "GPSPDUO.h"
+
+class GPSPDDiag;
 
 template<>
-InputParameters validParams<ElasticSPDMaterial>();
+InputParameters validParams<GPSPDDiag>();
 
-class ElasticSPDMaterial : public MechanicPDMaterial
+class GPSPDDiag : public ScalarKernel
 {
 public:
-  ElasticSPDMaterial(const InputParameters & parameters);
+  GPSPDDiag(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpForce();
+  virtual void reinit(){};
+  virtual void computeResidual();
+  virtual void computeJacobian();
 
-  double _a;
-  double _b;
-  double _d_i;
-  double _d_j;
+  const GPSPDUO & _gps_uo;
 };
-
-#endif //ELASTICSPDMATERIAL_H
+#endif //GPSPDDIAG_H

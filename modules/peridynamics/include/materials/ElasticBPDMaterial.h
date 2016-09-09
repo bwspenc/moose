@@ -23,11 +23,6 @@ public:
 
 protected:
   virtual void computeQpForce();
-
-  MaterialProperty<Real> & _bond_force;
-  MaterialProperty<Real> & _bond_dfdU;
-  MaterialProperty<Real> & _bond_dfdE;
-  MaterialProperty<Real> & _bond_dfdT;
 };
 
 #endif //ELASTICBPDMATERIAL_H

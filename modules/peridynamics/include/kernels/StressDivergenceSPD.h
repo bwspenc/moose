@@ -25,7 +25,6 @@ public:
 
 protected:
   virtual void initialSetup();
-
   virtual void computeResidual();
   virtual Real computeQpResidual() {return 0;}
   virtual void computeJacobian();
@@ -39,8 +38,6 @@ protected:
   const MaterialProperty<Real> & _bond_force_i_j;
   const MaterialProperty<Real> & _bond_dfdU_ij;
   const MaterialProperty<Real> & _bond_dfdU_i_j;
-  const MaterialProperty<Real> & _bond_dfdE_ij;
-  const MaterialProperty<Real> & _bond_dfdE_i_j;
   const MaterialProperty<Real> & _bond_dfdT_ij;
   const MaterialProperty<Real> & _bond_dfdT_i_j;
 
@@ -59,9 +56,6 @@ private:
 
   const bool _temp_coupled;
   const unsigned int _temp_var;
-
-  const bool _strain_zz_coupled;
-  const unsigned int _strain_zz_var;
 
   MooseVariable * _bond_status_var;
 

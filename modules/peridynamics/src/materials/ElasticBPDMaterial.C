@@ -17,11 +17,7 @@ InputParameters validParams<ElasticBPDMaterial>()
 }
 
 ElasticBPDMaterial::ElasticBPDMaterial(const InputParameters & parameters) :
-  MechanicPDMaterial(parameters),
-  _bond_force(declareProperty<Real>("bond_force")),
-  _bond_dfdU(declareProperty<Real>("bond_dfdU")),
-  _bond_dfdE(declareProperty<Real>("bond_dfdE")),
-  _bond_dfdT(declareProperty<Real>("bond_dfdT"))
+  MechanicPDMaterial(parameters)
 {
 }
 
@@ -31,16 +27,28 @@ ElasticBPDMaterial::computeQpForce()
   double Cij = computeBondModulus();
 
   // residuals
-  if (_has_strain_zz)
-    _bond_force[_qp] = Cij * (_bond_elastic_strain[_qp] + _poissons_ratio * (_strain_zz_i - _alpha * (_temp_i - _temp_ref) + _strain_zz_j - _alpha * (_temp_j - _temp_ref)) / 2.0) * _nv_i * _nv_j;
+  if (_strain_zz_coupled)
+    _bond_force_ij[_qp] = Cij * (_bond_elastic_strain[_qp] + _poissons_ratio * (_strain_zz[0] - _alpha * ((_temp_i + _temp_j) / 2.0 - _temp_ref))) * _nv_i * _nv_j;
   else
-    _bond_force[_qp] = Cij * _bond_elastic_strain[_qp] * _nv_i * _nv_j;
+    _bond_force_ij[_qp] = Cij * _bond_elastic_strain[_qp] * _nv_i * _nv_j;
+
+  _bond_force_i_j[0] = 0;
+  _bond_force_i_j[1] = 0;
 
   // derivatives of residuals
-  _bond_dfdU[_qp] = Cij / _origin_length * _nv_i * _nv_j;
-  _bond_dfdE[_qp] = Cij * _poissons_ratio / 2.0 * _nv_i * _nv_j;
-  if (_has_strain_zz)
-    _bond_dfdT[_qp] = - Cij * (1.0 + _poissons_ratio) * _alpha / 2.0 * _nv_i * _nv_j;
+  _bond_dfdU_ij[_qp] = Cij / _origin_length * _nv_i * _nv_j;
+  _bond_dfdU_i_j[0] = 0;
+  _bond_dfdU_i_j[1] = 0;
+
+  _bond_dfdE_ij[_qp] = Cij * _poissons_ratio * _nv_i * _nv_j;
+  _bond_dfdE_i_j[0] = 0;
+  _bond_dfdE_i_j[1] = 0;
+
+  if (_strain_zz_coupled)
+    _bond_dfdT_ij[_qp] = - Cij * (1.0 + _poissons_ratio) * _alpha / 2.0 * _nv_i * _nv_j;
   else
-    _bond_dfdT[_qp] = - Cij * _alpha / 2.0 * _nv_i * _nv_j;
+    _bond_dfdT_ij[_qp] = - Cij * _alpha / 2.0 * _nv_i * _nv_j;
+
+  _bond_dfdT_i_j[0] = 0;
+  _bond_dfdT_i_j[1] = 0;
 }

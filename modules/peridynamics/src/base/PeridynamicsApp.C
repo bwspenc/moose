@@ -24,6 +24,7 @@
 
 // UserObjects
 #include "FailureIndexUO.h"
+#include "GPSPDUO.h"
 
 // Materials
 #include "CElasticBPDMaterial.h"
@@ -36,9 +37,12 @@
 //Kernels
 #include "StressDivergenceBPD.h"
 #include "StressDivergenceSPD.h"
-#include "GeneralizedPlaneStrainPD.h"
+#include "GPSPDOffDiag.h"
 #include "HeatConductionPD.h"
 #include "HeatSourcePD.h"
+
+//ScalarKernels
+#include "GPSPDDiag.h"
 
 template<>
 InputParameters validParams<PeridynamicsApp>()
@@ -93,11 +97,14 @@ PeridynamicsApp::registerObjects(Factory & factory)
 
   registerKernel(StressDivergenceBPD);
   registerKernel(StressDivergenceSPD);
-  registerKernel(GeneralizedPlaneStrainPD);
+  registerKernel(GPSPDOffDiag);
   registerKernel(HeatConductionPD);
   registerKernel(HeatSourcePD);
 
+  registerScalarKernel(GPSPDDiag);
+
   registerUserObject(FailureIndexUO);
+  registerUserObject(GPSPDUO);
 }
 
 // External entry point for dynamic syntax association

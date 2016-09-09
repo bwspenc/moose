@@ -14,7 +14,7 @@ template<>
 InputParameters validParams<HeatConductionPD>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for failure status of each bond");
+  params.addRequiredParam<NonlinearVariableName>("bond_status", "Auxiliary variable for the bond failure status");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }

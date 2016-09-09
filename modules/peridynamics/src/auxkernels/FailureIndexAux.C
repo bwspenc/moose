@@ -13,7 +13,7 @@ template<>
 InputParameters validParams<FailureIndexAux>()
 {
   InputParameters params = validParams<AuxKernel>();
-  params.addRequiredParam<UserObjectName>("failure_index_uo","The name of the FailureIndex user object");
+  params.addRequiredParam<UserObjectName>("failure_index_uo", "The name of the FailureIndexUO UserObject");
   return params;
 }
 
