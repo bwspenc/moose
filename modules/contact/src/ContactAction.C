@@ -18,7 +18,7 @@ template<>
 InputParameters validParams<ContactAction>()
 {
   MooseEnum orders("CONSTANT FIRST SECOND THIRD FOURTH", "FIRST");
-  MooseEnum formulation("DEFAULT KINEMATIC PENALTY AUGMENTED_LAGRANGE", "DEFAULT");
+  MooseEnum formulation("DEFAULT KINEMATIC PENALTY AUGMENTED_LAGRANGE TANGENTIAL_PENALTY", "DEFAULT");
   MooseEnum system("DiracKernel Constraint", "DiracKernel");
 
   InputParameters params = validParams<Action>();
@@ -30,20 +30,21 @@ InputParameters validParams<ContactAction>()
   params.addParam<NonlinearVariableName>("disp_z", "", "The z displacement");
   params.addParam<Real>("penalty", 1e8, "The penalty to apply.  This can vary depending on the stiffness of your materials");
   params.addParam<Real>("friction_coefficient", 0, "The friction coefficient");
-  params.addParam<Real>("tension_release", 0.0, "Tension release threshold.  A node in contact will not be released if its tensile load is below this value.  Must be positive.");
+  params.addParam<Real>("tension_release", 0.0, "Tension release threshold.  A node in contact will not be released if its tensile load is below this value.  No tension release if negative.");
   params.addParam<std::string>("model", "frictionless", "The contact model to use");
   params.addParam<Real>("tangential_tolerance", "Tangential distance to extend edges of contact surfaces");
+  params.addParam<Real>("capture_tolerance", 0, "Normal distance from surface within which nodes are captured");
   params.addParam<Real>("normal_smoothing_distance", "Distance from edge in parametric coordinates over which to smooth contact normal");
   params.addParam<std::string>("normal_smoothing_method","Method to use to smooth normals (edge_based|nodal_normal_based)");
   params.addParam<MooseEnum>("order", orders, "The finite element order: FIRST, SECOND, etc.");
-  params.addParam<MooseEnum>("formulation", formulation, "The contact formulation: default, penalty, augmented_lagrange");
+  params.addParam<MooseEnum>("formulation", formulation, "The contact formulation: default, penalty, augmented_lagrange, tangential_penalty");
   params.addParam<MooseEnum>("system", system, "System to use for constraint enforcement.  Options are: " + system.getRawNames());
 
   return params;
 }
 
-ContactAction::ContactAction(const std::string & name, InputParameters params) :
-  Action(name, params),
+ContactAction::ContactAction(const InputParameters & params) :
+  Action(params),
   _master(getParam<BoundaryName>("master")),
   _slave(getParam<BoundaryName>("slave")),
   _disp_x(getParam<NonlinearVariableName>("disp_x")),
@@ -57,6 +58,13 @@ ContactAction::ContactAction(const std::string & name, InputParameters params) :
   _order(getParam<MooseEnum>("order")),
   _system(getParam<MooseEnum>("system"))
 {
+  if (_formulation == "tangential_penalty")
+  {
+    if (_system != "Constraint")
+      mooseError ("The 'tangential_penalty' formulation can only be used with the 'Constraint' system");
+    if (_model != "coulomb")
+      mooseError ("The 'tangential_penalty' formulation can only be used with the 'coulomb' model");
+  }
 }
 
 void
@@ -73,12 +81,8 @@ ContactAction::act()
   if (_disp_z != "")
     ++numdims;
 
-  std::string action_name = getShortName();
-
-  std::vector<NonlinearVariableName> vars;
-  vars.push_back(_disp_x);
-  vars.push_back(_disp_y);
-  vars.push_back(_disp_z);
+  std::string action_name = MooseUtils::shortName(name());
+  std::vector<NonlinearVariableName> vars = {_disp_x, _disp_y, _disp_z};
 
   if ( _current_task == "add_dirac_kernel" )
   {
@@ -89,9 +93,12 @@ ContactAction::act()
       InputParameters params = _factory.getValidParams("MechanicalContactConstraint");
 
       // Extract global params
-      _app.parser().extractParams(_name, params);
+      if (isParamValid("parser_syntax"))
+        _app.parser().extractParams(getParam<std::string>("parser_syntax"), params);
+      else
+        mooseError("The 'parser_syntax' parameter is not valid, which indicates that this actions was not created by the Parser, which is not currently supported.");
 
-      // Create master objects
+      // Create Constraint objects
       params.set<std::string>("model") = _model;
       params.set<std::string>("formulation") = _formulation;
       params.set<MooseEnum>("order") = _order;
@@ -101,10 +108,13 @@ ContactAction::act()
       params.set<Real>("friction_coefficient") = _friction_coefficient;
       params.set<Real>("tension_release") = _tension_release;
       params.addRequiredCoupledVar("nodal_area", "The nodal area");
-      params.set<std::vector<VariableName> >("nodal_area") = std::vector<VariableName>(1, "nodal_area_"+action_name);
+      params.set<std::vector<VariableName> >("nodal_area") = {"nodal_area_" + name()};
 
       if (isParamValid("tangential_tolerance"))
         params.set<Real>("tangential_tolerance") = getParam<Real>("tangential_tolerance");
+
+      if (isParamValid("capture_tolerance"))
+        params.set<Real>("capture_tolerance") = getParam<Real>("capture_tolerance");
 
       if (isParamValid("normal_smoothing_distance"))
         params.set<Real>("normal_smoothing_distance") = getParam<Real>("normal_smoothing_distance");
@@ -113,15 +123,15 @@ ContactAction::act()
         params.set<std::string>("normal_smoothing_method") = getParam<std::string>("normal_smoothing_method");
 
       params.addCoupledVar("disp_x", "The x displacement");
-      params.set<std::vector<VariableName> >("disp_x") = std::vector<VariableName>(1, _disp_x);
+      params.set<std::vector<VariableName> >("disp_x") = {_disp_x};
 
       params.addCoupledVar("disp_y", "The y displacement");
       if (numdims > 1)
-        params.set<std::vector<VariableName> >("disp_y") = std::vector<VariableName>(1, _disp_y);
+        params.set<std::vector<VariableName> >("disp_y") = {_disp_y};
 
       params.addCoupledVar("disp_z", "The z displacement");
       if (numdims == 3)
-        params.set<std::vector<VariableName> >("disp_z") = std::vector<VariableName>(1, _disp_z);
+        params.set<std::vector<VariableName> >("disp_z") = {_disp_z};
 
       params.set<bool>("use_displaced_mesh") = true;
 
@@ -131,7 +141,7 @@ ContactAction::act()
 
         params.set<unsigned int>("component") = i;
         params.set<NonlinearVariableName>("variable") = vars[i];
-        params.set<std::vector<VariableName> >("master_variable") = std::vector<VariableName>(1,vars[i]);
+        params.set<std::vector<VariableName> >("master_variable") = {vars[i]};
 
         _problem->addConstraint("MechanicalContactConstraint", name, params);
       }
@@ -143,7 +153,11 @@ ContactAction::act()
         InputParameters params = _factory.getValidParams("ContactMaster");
 
         // Extract global params
-        _app.parser().extractParams(_name, params);
+        if (isParamValid("parser_syntax"))
+          _app.parser().extractParams(getParam<std::string>("parser_syntax"), params);
+        else
+          mooseError("The 'parser_syntax' parameter is not valid, which indicates that this actions was not created by the Parser, which is not currently supported.");
+
 
         // Create master objects
         params.set<std::string>("model") = _model;
@@ -155,10 +169,13 @@ ContactAction::act()
         params.set<Real>("friction_coefficient") = _friction_coefficient;
         params.set<Real>("tension_release") = _tension_release;
         params.addRequiredCoupledVar("nodal_area", "The nodal area");
-        params.set<std::vector<VariableName> >("nodal_area") = std::vector<VariableName>(1, "nodal_area_"+action_name);
+        params.set<std::vector<VariableName> >("nodal_area") = {"nodal_area_" + name()};
 
         if (isParamValid("tangential_tolerance"))
           params.set<Real>("tangential_tolerance") = getParam<Real>("tangential_tolerance");
+
+        if (isParamValid("capture_tolerance"))
+          params.set<Real>("capture_tolerance") = getParam<Real>("capture_tolerance");
 
         if (isParamValid("normal_smoothing_distance"))
           params.set<Real>("normal_smoothing_distance") = getParam<Real>("normal_smoothing_distance");
@@ -167,15 +184,15 @@ ContactAction::act()
           params.set<std::string>("normal_smoothing_method") = getParam<std::string>("normal_smoothing_method");
 
         params.addCoupledVar("disp_x", "The x displacement");
-        params.set<std::vector<VariableName> >("disp_x") = std::vector<VariableName>(1, _disp_x);
+        params.set<std::vector<VariableName> >("disp_x") = {_disp_x};
 
         params.addCoupledVar("disp_y", "The y displacement");
         if (numdims > 1)
-          params.set<std::vector<VariableName> >("disp_y") = std::vector<VariableName>(1, _disp_y);
+          params.set<std::vector<VariableName> >("disp_y") = {_disp_y};
 
         params.addCoupledVar("disp_z", "The z displacement");
         if (numdims == 3)
-          params.set<std::vector<VariableName> >("disp_z") = std::vector<VariableName>(1, _disp_z);
+          params.set<std::vector<VariableName> >("disp_z") = {_disp_z};
 
         params.set<bool>("use_displaced_mesh") = true;
 
@@ -194,7 +211,10 @@ ContactAction::act()
         InputParameters params = _factory.getValidParams("SlaveConstraint");
 
         // Extract global params
-        _app.parser().extractParams(_name, params);
+        if (isParamValid("parser_syntax"))
+          _app.parser().extractParams(getParam<std::string>("parser_syntax"), params);
+        else
+          mooseError("The 'parser_syntax' parameter is not valid, which indicates that this actions was not created by the Parser, which is not currently supported.");
 
         // Create slave objects
         params.set<std::string>("model") = _model;
@@ -205,9 +225,12 @@ ContactAction::act()
         params.set<Real>("penalty") = _penalty;
         params.set<Real>("friction_coefficient") = _friction_coefficient;
         params.addRequiredCoupledVar("nodal_area", "The nodal area");
-        params.set<std::vector<VariableName> >("nodal_area") = std::vector<VariableName>(1, "nodal_area_"+action_name);
+        params.set<std::vector<VariableName> >("nodal_area") = {"nodal_area_" +name()};
         if (isParamValid("tangential_tolerance"))
           params.set<Real>("tangential_tolerance") = getParam<Real>("tangential_tolerance");
+
+        if (isParamValid("capture_tolerance"))
+          params.set<Real>("capture_tolerance") = getParam<Real>("capture_tolerance");
 
         if (isParamValid("normal_smoothing_distance"))
           params.set<Real>("normal_smoothing_distance") = getParam<Real>("normal_smoothing_distance");
@@ -216,15 +239,15 @@ ContactAction::act()
           params.set<std::string>("normal_smoothing_method") = getParam<std::string>("normal_smoothing_method");
 
         params.addCoupledVar("disp_x", "The x displacement");
-        params.set<std::vector<VariableName> >("disp_x") = std::vector<VariableName>(1, _disp_x);
+        params.set<std::vector<VariableName> >("disp_x") = {_disp_x};
 
         params.addCoupledVar("disp_y", "The y displacement");
         if (numdims > 1)
-          params.set<std::vector<VariableName> >("disp_y") = std::vector<VariableName>(1, _disp_y);
+          params.set<std::vector<VariableName> >("disp_y") = {_disp_y};
 
         params.addCoupledVar("disp_z", "The z displacement");
         if (numdims == 3)
-          params.set<std::vector<VariableName> >("disp_z") = std::vector<VariableName>(1, _disp_z);
+          params.set<std::vector<VariableName> >("disp_z") = {_disp_z};
 
         params.set<bool>("use_displaced_mesh") = true;
 

@@ -4,48 +4,37 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#include "NSStagnationTemperatureBC.h"
 
-// Full specialization of the validParams function for this object
+// Navier-Stokes includes
+#include "NSStagnationTemperatureBC.h"
+#include "NS.h"
+
+// FluidProperties includes
+#include "IdealGasFluidProperties.h"
+
 template<>
 InputParameters validParams<NSStagnationTemperatureBC>()
 {
-  // Initialize the params object from the base class
   InputParameters params = validParams<NSStagnationBC>();
-
-  // Required parameters
+  params.addRequiredCoupledVar(NS::temperature, "temperature");
   params.addRequiredParam<Real>("desired_stagnation_temperature", "");
-
   return params;
 }
 
-
-
-
-// Constructor, be sure to call the base class constructor first!
-NSStagnationTemperatureBC::NSStagnationTemperatureBC(const std::string & name, InputParameters parameters)
-    : NSStagnationBC(name, parameters),
-
-      // Required parameters
-      _desired_stagnation_temperature(getParam<Real>("desired_stagnation_temperature"))
-{}
-
-
-
-// Specialization of the computeQpResidual() function for this class.
-Real NSStagnationTemperatureBC::computeQpResidual()
+NSStagnationTemperatureBC::NSStagnationTemperatureBC(const InputParameters & parameters) :
+    NSStagnationBC(parameters),
+    _temperature(coupledValue(NS::temperature)),
+    _desired_stagnation_temperature(getParam<Real>("desired_stagnation_temperature"))
 {
-  // The velocity vector
-  RealVectorValue vel(_u_vel[_qp], _v_vel[_qp], _w_vel[_qp]);
+}
 
-  // Mach number, squared
-  Real M2 = vel.size_sq() / (_gamma * _R * _temperature[_qp]);
-
+Real
+NSStagnationTemperatureBC::computeQpResidual()
+{
   // T_0 = T*(1 + 0.5*(gam-1)*M^2)
-  Real computed_stagnation_temperature = _temperature[_qp] * (1. + 0.5*(_gamma-1.)*M2);
+  Real computed_stagnation_temperature = _temperature[_qp] * (1. + 0.5 * (_fp.gamma() - 1.) * _mach[_qp] * _mach[_qp]);
 
   // Return the difference between the current solution's stagnation temperature
   // and the desired.  The Dirichlet condition asserts that these should be equal.
   return computed_stagnation_temperature - _desired_stagnation_temperature;
 }
-

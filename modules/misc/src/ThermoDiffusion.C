@@ -19,8 +19,8 @@ InputParameters validParams< ThermoDiffusion >()
   return params;
 }
 
-ThermoDiffusion::ThermoDiffusion( const std::string & name, InputParameters parameters ) :
-    Kernel( name, parameters ),
+ThermoDiffusion::ThermoDiffusion( const InputParameters & parameters) :
+    Kernel(parameters),
     _temperature( coupledValue( "temp" ) ),
     _grad_temperature( coupledGradient( "temp" ) ),
     _mass_diffusivity( getMaterialProperty< Real >( getParam< std::string >( "mass_diffusivity" ) ) ),
@@ -69,3 +69,4 @@ ThermoDiffusion::computeQpOffDiagJacobian( unsigned int jvar )
   }
   return 0;
 }
+

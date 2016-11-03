@@ -12,12 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NumPicardIterations.h"
-
-#include "FEProblem.h"
-#include "SubProblem.h"
+#include "Transient.h"
 #include "MooseApp.h"
-#include <iostream>
 
 template<>
 InputParameters validParams<NumPicardIterations>()
@@ -26,8 +24,8 @@ InputParameters validParams<NumPicardIterations>()
   return params;
 }
 
-NumPicardIterations::NumPicardIterations(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+NumPicardIterations::NumPicardIterations(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _transient_executioner(NULL)
 {
 }
@@ -47,3 +45,4 @@ NumPicardIterations::getValue()
 {
   return _transient_executioner->numPicardIts();
 }
+

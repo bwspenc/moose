@@ -8,9 +8,9 @@
 # You may specify:
 #  - the "type" of Seff in the UserObjects block
 #  - the parameters of this Seff function in the UserObjects block
-#  - the "x" point (= porepressure) that you want to extract
+#  - the "x" point (which is porepressure) that you want to extract
 #       the Seff at, if you want a value at a particular point
-#  - the range of "x" values (= porepressure values) may be
+#  - the range of "x" values (which is porepressure values) may be
 #       changed in the Mesh block, below
 
 
@@ -42,7 +42,7 @@
 []
 
 ############################
-# You shouldn't need to change any of the stuff below
+# You should not need to change any of the stuff below
 ############################
 
 
@@ -89,7 +89,6 @@
 
 [Outputs]
   file_base = seff1
-  output_initial = true
   [./csv]
     type = CSV
   [../]

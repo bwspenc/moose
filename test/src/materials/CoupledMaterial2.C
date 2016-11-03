@@ -24,8 +24,8 @@ InputParameters validParams<CoupledMaterial2>()
 }
 
 
-CoupledMaterial2::CoupledMaterial2(const std::string & name, InputParameters parameters) :
-    Material(name, parameters),
+CoupledMaterial2::CoupledMaterial2(const InputParameters & parameters) :
+    Material(parameters),
     _mat_prop_name(getParam<MaterialPropertyName>("mat_prop")),
     _mat_prop(declareProperty<Real>(_mat_prop_name)),
     _coupled_mat_prop(getMaterialProperty<Real>("coupled_mat_prop1")),
@@ -34,8 +34,7 @@ CoupledMaterial2::CoupledMaterial2(const std::string & name, InputParameters par
 }
 
 void
-CoupledMaterial2::computeProperties()
+CoupledMaterial2::computeQpProperties()
 {
-  for (_qp = 0; _qp < _q_point.size(); ++_qp)
-    _mat_prop[_qp] = 4.0/_coupled_mat_prop[_qp]/_coupled_mat_prop2[_qp];       // This will produce a NaN if evaluated out of order
+  _mat_prop[_qp] = 4.0/_coupled_mat_prop[_qp]/_coupled_mat_prop2[_qp];       // This will produce a NaN if evaluated out of order
 }

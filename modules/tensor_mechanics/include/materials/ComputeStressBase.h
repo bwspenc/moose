@@ -9,7 +9,7 @@
 
 #include "Material.h"
 #include "RankTwoTensor.h"
-#include "ElasticityTensorR4.h"
+#include "RankFourTensor.h"
 #include "RotationTensor.h"
 #include "DerivativeMaterialInterface.h"
 
@@ -19,7 +19,7 @@
 class ComputeStressBase : public DerivativeMaterialInterface<Material>
 {
 public:
-  ComputeStressBase(const std:: string & name, InputParameters parameters);
+  ComputeStressBase(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();
@@ -28,10 +28,10 @@ protected:
 
   std::string _base_name;
 
-  const MaterialProperty<RankTwoTensor> & _total_strain;
+  const MaterialProperty<RankTwoTensor> & _mechanical_strain;
   MaterialProperty<RankTwoTensor> & _stress;
   MaterialProperty<RankTwoTensor> & _elastic_strain;
-  const MaterialProperty<ElasticityTensorR4> & _elasticity_tensor;
+  const MaterialProperty<RankFourTensor> & _elasticity_tensor;
 
   /// Extra stress tensor
   const MaterialProperty<RankTwoTensor> & _extra_stress;
@@ -40,7 +40,10 @@ protected:
   std::vector<Function *> _initial_stress;
 
   /// derivative of stress w.r.t. strain (_dstress_dstrain)
-  MaterialProperty<ElasticityTensorR4> & _Jacobian_mult;
+  MaterialProperty<RankFourTensor> & _Jacobian_mult;
+
+  /// Parameter which decides whether to store old stress. This is required for HHT time integration and Rayleigh damping
+  const bool _store_stress_old;
 };
 
 #endif //COMPUTESTRESSBASE_H

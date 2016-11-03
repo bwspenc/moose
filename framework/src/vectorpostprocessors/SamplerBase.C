@@ -12,8 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "SamplerBase.h"
 #include "IndirectSort.h"
+#include "VectorPostprocessor.h"
 
 template<>
 InputParameters validParams<SamplerBase>()
@@ -26,7 +28,7 @@ InputParameters validParams<SamplerBase>()
   return params;
 }
 
-SamplerBase::SamplerBase(const std::string & /*name*/, InputParameters parameters, VectorPostprocessor * vpp, const libMesh::Parallel::Communicator & comm) :
+SamplerBase::SamplerBase(const InputParameters & parameters, VectorPostprocessor * vpp, const libMesh::Parallel::Communicator & comm) :
     _sampler_params(parameters),
     _vpp(vpp),
     _comm(comm),
@@ -39,7 +41,7 @@ SamplerBase::SamplerBase(const std::string & /*name*/, InputParameters parameter
 }
 
 void
-SamplerBase::setupVariables(std::vector<std::string> variable_names)
+SamplerBase::setupVariables(const std::vector<std::string> & variable_names)
 {
   _variable_names = variable_names;
 

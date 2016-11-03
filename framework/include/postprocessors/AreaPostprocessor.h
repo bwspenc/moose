@@ -29,11 +29,12 @@ InputParameters validParams<AreaPostprocessor>();
 class AreaPostprocessor : public SideIntegralPostprocessor
 {
 public:
-  AreaPostprocessor(const std::string & name, InputParameters parameters);
-  virtual void threadJoin(const UserObject & y);
+  AreaPostprocessor(const InputParameters & parameters);
+
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
-  virtual Real computeQpIntegral();
+  virtual Real computeQpIntegral() override;
 
 };
 

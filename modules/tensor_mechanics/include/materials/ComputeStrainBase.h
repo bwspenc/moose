@@ -9,7 +9,7 @@
 
 #include "Material.h"
 #include "RankTwoTensor.h"
-#include "ElasticityTensorR4.h"
+#include "RankFourTensor.h"
 #include "RotationTensor.h"
 #include "DerivativeMaterialInterface.h"
 
@@ -19,27 +19,32 @@
 class ComputeStrainBase : public DerivativeMaterialInterface<Material>
 {
 public:
-  ComputeStrainBase(const std:: string & name, InputParameters parameters);
+  ComputeStrainBase(const InputParameters & parameters);
+  virtual ~ComputeStrainBase() {}
 
 protected:
   virtual void initQpStatefulProperties();
-  virtual void computeProperties() = 0;
 
-  VariableGradient & _grad_disp_x;
-  VariableGradient & _grad_disp_y;
-  VariableGradient & _grad_disp_z;
+  /// Coupled displacement variables
+  unsigned int _ndisp;
+  std::vector<const VariableValue *> _disp;
+  std::vector<const VariableGradient *> _grad_disp;
+  std::vector<const VariableGradient *> _grad_disp_old;
 
-  VariableGradient & _grad_disp_x_old;
-  VariableGradient & _grad_disp_y_old;
-  VariableGradient & _grad_disp_z_old;
-
-  VariableValue & _T;
+  const VariableValue & _T;
   const Real _T0;
   const Real _thermal_expansion_coeff;
+  bool _no_thermal_eigenstrains;
 
   std::string _base_name;
 
+  MaterialProperty<RankTwoTensor> & _mechanical_strain;
+
   MaterialProperty<RankTwoTensor> & _total_strain;
+
+  const bool _stateful_displacements;
+
+  bool _volumetric_locking_correction;
 };
 
 #endif //COMPUTESTRAINBASE_H

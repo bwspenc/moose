@@ -17,7 +17,10 @@
 #include "SystemBase.h"
 #include "Assembly.h"
 #include "MooseVariable.h"
+
+// libMesh includes
 #include "libmesh/fe_interface.h"
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<InitialCondition>()
@@ -33,13 +36,13 @@ InputParameters validParams<InitialCondition>()
   return params;
 }
 
-InitialCondition::InitialCondition(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
-    Coupleable(parameters, getParam<SystemBase *>("_sys")->getVariable(parameters.get<THREAD_ID>("_tid"), parameters.get<VariableName>("variable")).isNodal()),
-    FunctionInterface(parameters),
-    UserObjectInterface(parameters),
+InitialCondition::InitialCondition(const InputParameters & parameters) :
+    MooseObject(parameters),
+    Coupleable(this, getParam<SystemBase *>("_sys")->getVariable(parameters.get<THREAD_ID>("_tid"), parameters.get<VariableName>("variable")).isNodal()),
+    FunctionInterface(this),
+    UserObjectInterface(this),
     BlockRestrictable(parameters),
-    BoundaryRestrictable(parameters),
+    BoundaryRestrictable(parameters, true), // true for being nodal
     DependencyResolverInterface(),
     Restartable(parameters, "InitialConditions"),
     ZeroInterface(parameters),
@@ -58,9 +61,9 @@ InitialCondition::InitialCondition(const std::string & name, InputParameters par
   _supplied_vars.insert(getParam<VariableName>("variable"));
 
   std::map<std::string, std::vector<MooseVariable *> > coupled_vars = getCoupledVars();
-  for (std::map<std::string, std::vector<MooseVariable *> >::iterator it = coupled_vars.begin(); it != coupled_vars.end(); ++it)
-    for (std::vector<MooseVariable *>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-      _depend_vars.insert((*it2)->name());
+  for (const auto & it : coupled_vars)
+    for (const auto & var : it.second)
+      _depend_vars.insert(var->name());
 }
 
 InitialCondition::~InitialCondition()
@@ -111,12 +114,12 @@ InitialCondition::compute()
   // We cannot use the FE object in Assembly, since the following code is messing with the quadrature rules
   // for projections and would screw it up. However, if we implement projections from one mesh to another,
   // this code should use that implementation.
-  UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+  std::unique_ptr<FEBase> fe (FEBase::build(dim, fe_type));
 
   // Prepare variables for projection
-  UniquePtr<QBase> qrule     (fe_type.default_quadrature_rule(dim));
-  UniquePtr<QBase> qedgerule (fe_type.default_quadrature_rule(1));
-  UniquePtr<QBase> qsiderule (fe_type.default_quadrature_rule(dim-1));
+  std::unique_ptr<QBase> qrule     (fe_type.default_quadrature_rule(dim));
+  std::unique_ptr<QBase> qedgerule (fe_type.default_quadrature_rule(1));
+  std::unique_ptr<QBase> qsiderule (fe_type.default_quadrature_rule(dim-1));
 
   // The values of the shape functions at the quadrature points
   const std::vector<std::vector<Real> > & phi = fe->get_phi();
@@ -161,8 +164,6 @@ InitialCondition::compute()
   // hold those fixed and project faces, then
   // hold those fixed and project interiors
 
-  _fe_problem.sizeZeroes(n_nodes, _tid);
-
   // Interpolate node values first
   unsigned int current_dof = 0;
   for (unsigned int n = 0; n != n_nodes; ++n)
@@ -185,7 +186,7 @@ InitialCondition::compute()
     {
       libmesh_assert(nc == 1);
       _qp = n;
-      _current_node = _current_elem->get_node(n);
+      _current_node = _current_elem->node_ptr(n);
       Ue(current_dof) = value(*_current_node);
       dof_is_fixed[current_dof] = true;
       current_dof++;
@@ -194,7 +195,7 @@ InitialCondition::compute()
     else if (fe_type.family == HERMITE)
     {
       _qp = n;
-      _current_node = _current_elem->get_node(n);
+      _current_node = _current_elem->node_ptr(n);
       Ue(current_dof) = value(*_current_node);
       dof_is_fixed[current_dof] = true;
       current_dof++;
@@ -274,7 +275,7 @@ InitialCondition::compute()
     else if (cont == C_ONE)
     {
       libmesh_assert(nc == 1 + dim);
-      _current_node = _current_elem->get_node(n);
+      _current_node = _current_elem->node_ptr(n);
       Ue(current_dof) = value(*_current_node);
       dof_is_fixed[current_dof] = true;
       current_dof++;
@@ -319,7 +320,6 @@ InitialCondition::compute()
       fe->attach_quadrature_rule (qedgerule.get());
       fe->edge_reinit (_current_elem, e);
       const unsigned int n_qp = qedgerule->n_points();
-      _fe_problem.sizeZeroes(n_qp, _tid);
 
       // Loop over the quadrature points
       for (unsigned int qp = 0; qp < n_qp; qp++)
@@ -400,7 +400,6 @@ InitialCondition::compute()
       fe->attach_quadrature_rule (qsiderule.get());
       fe->reinit (_current_elem, s);
       const unsigned int n_qp = qsiderule->n_points();
-      _fe_problem.sizeZeroes(n_qp, _tid);
 
       // Loop over the quadrature points
       for (unsigned int qp = 0; qp < n_qp; qp++)
@@ -476,7 +475,6 @@ InitialCondition::compute()
     fe->attach_quadrature_rule (qrule.get());
     fe->reinit (_current_elem);
     const unsigned int n_qp = qrule->n_points();
-    _fe_problem.sizeZeroes(n_qp, _tid);
 
     // Loop over the quadrature points
     for (unsigned int qp=0; qp<n_qp; qp++)
@@ -557,8 +555,7 @@ InitialCondition::compute()
 //      if ((dof_indices[i] >= first) && (dof_indices[i] < last))
       {
         solution.set(dof_indices[i], Ue(i));
-        if (cont == C_ZERO)
-          _var.setNodalValue(Ue(i), i);
       }
+    _var.setNodalValue(Ue);
   }
 }

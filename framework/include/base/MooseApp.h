@@ -15,26 +15,33 @@
 #ifndef MOOSEAPP_H
 #define MOOSEAPP_H
 
-#include <iostream>
-#include <vector>
-#include <map>
-#include <set>
-
+// MOOSE includes
 #include "Moose.h"
 #include "Parser.h"
-#include "MooseSyntax.h"
 #include "ActionWarehouse.h"
-#include "SystemInfo.h"
 #include "Factory.h"
 #include "ActionFactory.h"
 #include "OutputWarehouse.h"
+#include "RestartableData.h"
+#include "ConsoleStreamInterface.h"
 
 // libMesh includes
 #include "libmesh/parallel_object.h"
 
+// C++ includes
+#include <list>
+#include <map>
+#include <set>
+
+// Forward declarations
 class Executioner;
 class MooseApp;
-class RecoverBaseAction;
+class Backup;
+class FEProblem;
+class MeshModifier;
+class InputParameterWarehouse;
+class SystemInfo;
+class CommandLine;
 
 template<>
 InputParameters validParams<MooseApp>();
@@ -49,7 +56,9 @@ InputParameters validParams<MooseApp>();
  *
  * Each application should register its own objects and register its own special syntax
  */
-class MooseApp : public libMesh::ParallelObject
+class MooseApp :
+  public ConsoleStreamInterface,
+  public libMesh::ParallelObject
 {
 public:
   virtual ~MooseApp();
@@ -129,6 +138,12 @@ public:
   void setOutputPosition(Point p);
 
   /**
+   * Extract all possible checkpoint file names
+   * @param files A Set of checkpoint filenames to populate
+   */
+  std::list<std::string> getCheckpointFiles();
+
+  /**
    * Whether or not an output position has been set.
    * @return True if it has
    */
@@ -146,7 +161,7 @@ public:
    *
    * @param time The start time for the simulation.
    */
-  void setStartTime(const Real time) { _start_time_set = true; _start_time = time; }
+  void setStartTime(const Real time);
 
   /**
    * @return Whether or not a start time has been programmatically set using setStartTime()
@@ -202,9 +217,14 @@ public:
   bool & legacyUoInitializationDefault();
 
   /**
-   * Retrieve the Executioner for this App.
+   * Retrieve the Executioner for this App
    */
   Executioner * getExecutioner() { return _executioner.get(); }
+
+  /**
+   * Retrieve the Executioner shared pointer for this App
+   */
+  MooseSharedPointer<Executioner> & executioner() { return _executioner; }
 
   /**
    * Set a Boolean indicating whether this app will use a Nonlinear or Eigen System.
@@ -245,25 +265,35 @@ public:
   virtual void executeExecutioner();
 
   /**
-   * Returns true if the user specified --parallel-mesh on the command line and false
-   * otherwise.
+   * Returns true if the user specified --distributed-mesh (or
+   * --parallel-mesh, for backwards compatibility) on the command line
+   * and false otherwise.
    */
-  bool getParallelMeshOnCommandLine() const { return _parallel_mesh_on_command_line; }
+  bool getDistributedMeshOnCommandLine() const { return _distributed_mesh_on_command_line; }
+
+  /**
+   * Deprecated.  Call getDistributedMeshOnCommandLine() instead.
+   */
+  bool getParallelMeshOnCommandLine() const
+  {
+    mooseDeprecated("getParallelMeshOnCommandLine() is deprecated, call getDistributedMeshOnCommandLine() instead.");
+    return getDistributedMeshOnCommandLine();
+  }
 
   /**
    * Whether or not this is a "recover" calculation.
    */
-  bool isRecovering() const { return _recover; }
+  bool isRecovering() const;
 
   /**
-   * Whether or not this is a "recover" calculation.
+   * Whether or not this is a "restart" calculation.
    */
-  bool isRestarting() const { return _restart; }
+  bool isRestarting() const;
 
   /**
    * Return true if the recovery file base is set
    */
-  bool hasRecoverFileBase() { return !_recover_base.empty(); }
+  bool hasRecoverFileBase();
 
   /**
    * The file_base for the recovery file.
@@ -287,7 +317,7 @@ public:
    *
    * @see MultiApp TransientMultiApp OutputWarehouse
    */
-  void setOutputFileNumbers(std::map<std::string, unsigned int> numbers){ _output_file_numbers = numbers; }
+  void setOutputFileNumbers(std::map<std::string, unsigned int> numbers) { _output_file_numbers = numbers; }
 
   /**
    * Store a map of outputter names and file numbers
@@ -296,7 +326,7 @@ public:
    *
    * @see MultiApp TransientMultiApp
    */
-  std::map<std::string, unsigned int> & getOutputFileNumbers(){ return _output_file_numbers; }
+  std::map<std::string, unsigned int> & getOutputFileNumbers() { return _output_file_numbers; }
 
   /**
    * Return true if the output position has been set
@@ -304,20 +334,9 @@ public:
   bool hasOutputWarehouse(){ return _output_position_set; }
 
   /**
-   * The OutputWarehouse for this App
-   * @return Reference to the OutputWarehouse object
+   * Get the OutputWarehouse objects
    */
   OutputWarehouse & getOutputWarehouse();
-
-  /**
-   * Set the OutputWarehouse object
-   * The CoupledExecutioner requires multiple OutputWarehouses, this allows the warehouses
-   * to be swapped out.
-   *
-   * If this function is called then getOutputWarehouse will return a reference to the
-   * _alternate_output_warehouse rather than _output_warehouse.
-   */
-  void setOutputWarehouse(OutputWarehouse * owh){ _alternate_output_warehouse = owh; }
 
   /**
    * Get SystemInfo object
@@ -354,7 +373,107 @@ public:
    */
   std::set<std::string> getLoadedLibraryPaths() const;
 
-protected:
+  /**
+   * Get the InputParameterWarehouse for MooseObjects
+   */
+  InputParameterWarehouse & getInputParameterWarehouse();
+
+  /*
+   * Register a piece of restartable data.  This is data that will get
+   * written / read to / from a restart file.
+   *
+   * @param name The full (unique) name.
+   * @param data The actual data object.
+   * @param tid The thread id of the object.  Use 0 if the object is not threaded.
+   */
+  virtual void registerRestartableData(std::string name, RestartableDataValue * data, THREAD_ID tid);
+
+  /**
+   * Return reference to the restatable data object
+   * @return A const reference to the restatable data object
+   */
+  const RestartableDatas & getRestartableData() { return _restartable_data; }
+
+  /**
+   * Return a reference to the recoverable data object
+   * @return A const reference to the recoverable data
+   */
+  std::set<std::string> & getRecoverableData() { return _recoverable_data; }
+
+  /**
+   * Create a Backup from the current App.  A Backup contains all the data necessary to be able
+   * to restore the state of an App.
+   */
+  MooseSharedPointer<Backup> backup();
+
+  /**
+   * Restore a Backup.  This sets the App's state.
+   *
+   * @param backup The Backup holding the data for the app
+   * @param for_restart Whether this restoration is explicitly for the first restoration of restart data
+   */
+  void restore(MooseSharedPointer<Backup> backup, bool for_restart = false);
+
+  /**
+   * Returns a string to be printed at the beginning of a simulation
+   */
+  virtual std::string header() const;
+
+  /**
+   * The MultiApp Level
+   * @return The current number of levels from the master app
+   */
+  unsigned int multiAppLevel() const { return _multiapp_level; }
+
+  /**
+   * Set the MultiApp Level
+   * @param level The level to assign to this app.
+   */
+  void setMultiAppLevel(const unsigned int level) { _multiapp_level = level; }
+
+  /**
+   * Whether or not this app is the ultimate master app. (ie level == 0)
+   */
+  bool isUltimateMaster() { return !_multiapp_level; }
+
+  /**
+   * Add a mesh modifier that will act on the meshes in the system
+   */
+  void addMeshModifier(const std::string & modifier_name, const std::string & name, InputParameters parameters);
+
+  /**
+   * Get a mesh modifer with its name
+   */
+  const MeshModifier & getMeshModifier(const std::string & name) const;
+
+  /**
+   * Clear all mesh modifers
+   */
+  void clearMeshModifiers();
+
+  /**
+   * Execute and clear the Mesh Modifiers data structure
+   */
+  void executeMeshModifiers();
+
+  ///@{
+  /**
+   * Sets the restart/recover flags
+   * @param state The state to set the flag to
+   */
+  void setRestart(const bool & value);
+  void setRecover(const bool & value);
+  ///@}
+
+  /**
+   * Whether or not this MooseApp has cached a Backup to use for restart / recovery
+   */
+  bool hasCachedBackup() { return _cached_backup.get(); }
+
+  /**
+   * Restore from a cached backup
+   */
+  void restoreCachedBackup();
 
   /**
    * Helper method for dynamic loading of objects
@@ -365,14 +484,25 @@ protected:
    * Recursively loads libraries and dependencies in the proper order to fully register a
    * MOOSE application that may have several dependencies. REQUIRES: dynamic linking loader support.
    */
-  //void loadLibraryAndDependencies(const std::string & library_filename, const std::string & registration_method_name, Factory * factory);
   void loadLibraryAndDependencies(const std::string & library_filename, const Parameters & params);
 
   /// Constructor is protected so that this object is constructed through the AppFactory object
-  MooseApp(const std::string & name, InputParameters parameters);
+  MooseApp(InputParameters parameters);
 
   /// Don't run the simulation, just complete all of the mesh preperation steps and exit
   virtual void meshOnly(std::string mesh_file_name);
+
+  /**
+   * NOTE: This is an internal function meant for MOOSE use only!
+   *
+   * Register a piece of recoverable data.  This is data that will get
+   * written / read to / from a restart file.
+   *
+   * However, this data will ONLY get read from the restart file during a RECOVERY operation!
+   *
+   * @param name The full (unique) name.
+   */
+  virtual void registerRecoverableData(std::string name);
 
   /// The name of this object
   std::string _name;
@@ -413,11 +543,11 @@ protected:
   /// Syntax of the input file
   Syntax _syntax;
 
-  /// An alternate OutputWarehouse object (required for CoupledExecutioner)
-  OutputWarehouse * _alternate_output_warehouse;
-
   /// OutputWarehouse object for this App
-  OutputWarehouse * _output_warehouse;
+  OutputWarehouse _output_warehouse;
+
+  /// Input parameter storage structure (this is a raw pointer so the destruction time can be explicitly controlled)
+  InputParameterWarehouse * _input_parameter_warehouse;
 
   /// The Factory responsible for building Actions
   ActionFactory _action_factory;
@@ -442,6 +572,7 @@ protected:
 
   Factory _factory;
 
+
   /// Indicates whether warnings or errors are displayed when overridden parameters are detected
   bool _error_overridden;
   bool _ready_to_exit;
@@ -449,8 +580,8 @@ protected:
   /// This variable indicates when a request has been made to restart from an Exodus file
   bool _initial_from_file;
 
-  /// This variable indicates that ParallelMesh should be used for the libMesh mesh underlying MooseMesh.
-  bool _parallel_mesh_on_command_line;
+  /// This variable indicates that DistributedMesh should be used for the libMesh mesh underlying MooseMesh.
+  bool _distributed_mesh_on_command_line;
 
   /// Whether or not this is a recovery run
   bool _recover;
@@ -481,20 +612,54 @@ protected:
 
 private:
 
+  /** Method for creating the minimum required actions for an application (no input file)
+   *
+   * Mimics the following input file:
+   *
+   * [Mesh]
+   *   type = GeneratedMesh
+   *   dim = 1
+   *   nx = 1
+   * []
+   *
+   * [Executioner]
+   *   type = Transient
+   *   num_steps = 1
+   *   dt = 1
+   * []
+   *
+   * [Problem]
+   *   solve = false
+   * []
+   *
+   * [Outputs]
+   *   console = false
+   * []
+   */
+  void createMinimalApp();
+
+  /// Where the restartable data is held (indexed on tid)
+  RestartableDatas _restartable_data;
+
+  /// Data names that will only be read from the restart file during RECOVERY
+  std::set<std::string> _recoverable_data;
+
   /// Enumeration for holding the valid types of dynamic registrations allowed
   enum RegistrationType { APPLICATION, OBJECT, SYNTAX };
 
-  ///@{
-  /**
-   * Sets the restart/recover flags
-   * @param state The state to set the flag to
-   */
-  void setRestart(const bool & value){ _restart = value; }
-  void setRecover(const bool & value){ _recover = value; }
-  ///@}
+  /// Level of multiapp, the master is level 0. This used by the Console to indent output
+  unsigned int _multiapp_level;
+
+  /// Holds the mesh modifiers until they have completed, then this structure is cleared
+  std::map<std::string, MooseSharedPointer<MeshModifier> > _mesh_modifiers;
+
+  /// Cache for a Backup to use for restart / recovery
+  MooseSharedPointer<Backup> _cached_backup;
 
   // Allow FEProblem to set the recover/restart state, so make it a friend
   friend class FEProblem;
+  friend class Restartable;
+  friend class SubProblem;
 };
 
 template <typename T>

@@ -55,6 +55,10 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
+  [./density]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
 
 [] # AuxVariables
 
@@ -93,6 +97,11 @@
     tensor = stress
     variable = stress_zz
     index = 2
+  [../]
+  [./density]
+    type = MaterialRealAux
+    property = density
+    variable = density
   [../]
 
 [] # AuxKernels
@@ -174,8 +183,5 @@
 [] # Executioner
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 [] # Outputs

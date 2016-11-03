@@ -15,13 +15,13 @@
 #ifndef RESURRECTOR_H
 #define RESURRECTOR_H
 
-#include "Moose.h"
-#include "MaterialPropertyIO.h"
+// MOOSE includes
 #include "RestartableDataIO.h"
 
+// C++ includes
 #include <string>
-#include <list>
 
+// Forward declarations
 class FEProblem;
 
 /**
@@ -33,7 +33,7 @@ class Resurrector
 {
 public:
   Resurrector(FEProblem & fe_problem);
-  virtual ~Resurrector();
+  virtual ~Resurrector() = default;
 
   /**
    * Set the file base name from which we will restart
@@ -46,8 +46,6 @@ public:
    */
   void restartFromFile();
 
-  void restartStatefulMaterialProps();
-
   void restartRestartableData();
 
 protected:
@@ -57,9 +55,6 @@ protected:
 
   /// name of the file that we restart from
   std::string _restart_file_base;
-
-  /// Stateful material property output
-  MaterialPropertyIO _mat;
 
   /// Restartable Data
   RestartableDataIO _restartable;

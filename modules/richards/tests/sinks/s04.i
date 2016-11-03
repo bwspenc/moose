@@ -36,7 +36,7 @@
   [./SeffVG]
     type = RichardsSeff1VG
     m = 0.5
-    al = 1 # same deal with PETSc's "constant state"
+    al = 1
   [../]
   [./RelPermPower]
     type = RichardsRelPermPower
@@ -71,20 +71,23 @@
   [./area_left]
     type = AreaPostprocessor
     boundary = left
+    execute_on = initial
   [../]
   [./area_right]
     type = AreaPostprocessor
     boundary = right
+    execute_on = initial
   [../]
   [./mass_fin]
     type = RichardsMass
     variable = pressure
-    execute_on = timestep_end
+    execute_on = 'initial timestep_end'
   [../]
   [./p0]
     type = PointValue
     point = '0 0 0'
     variable = pressure
+    execute_on = 'initial timestep_end'
   [../]
 []
 
@@ -134,7 +137,6 @@
   [./andy]
     type = SMP
     full = true
-    #petsc_options = '-snes_test_display'
     petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it'
     petsc_options_value = 'bcgs bjacobi 1E-12 1E-10 10000'
   [../]
@@ -149,11 +151,5 @@
 
 [Outputs]
   file_base = s04
-  output_initial = true
   csv = true
-  print_perf_log = true
-[]
-
-[Problem]
-  use_legacy_uo_initialization = true
 []

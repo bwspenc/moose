@@ -31,10 +31,9 @@ class CrackDataSampler :
 public:
   /**
     * Class constructor
-    * @param name The name of the object
     * @param parameters The input parameters
     */
-  CrackDataSampler(const std::string & name, InputParameters parameters);
+  CrackDataSampler(const InputParameters & parameters);
 
   /**
    * Destructor
@@ -52,7 +51,6 @@ public:
   virtual void execute();
 
   virtual void finalize();
-  virtual void threadJoin(const SamplerBase &);
 
 protected:
   const CrackFrontDefinition * const _crack_front_definition;

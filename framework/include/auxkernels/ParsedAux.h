@@ -33,21 +33,20 @@ class ParsedAux :
   public FunctionParserUtils
 {
 public:
-  ParsedAux(const std::string & name, InputParameters parameters);
-  virtual ~ParsedAux();
+  ParsedAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   /// function expression
   std::string _function;
 
   /// coupled variables
   unsigned int _nargs;
-  std::vector<VariableValue *> _args;
+  std::vector<const VariableValue *> _args;
 
   /// function parser object for the resudual and on-diagonal Jacobian
-  ADFunction * _func_F;
+  ADFunctionPtr _func_F;
 };
 
 #endif /* PARSEDAUX_H */

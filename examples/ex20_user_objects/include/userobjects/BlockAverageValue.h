@@ -32,7 +32,7 @@ InputParameters validParams<BlockAverageValue>();
 class BlockAverageValue : public ElementIntegralVariablePostprocessor
 {
 public:
-  BlockAverageValue(const std::string & name, InputParameters parameters);
+  BlockAverageValue(const InputParameters & parameters);
 
   /**
    * Given a block ID return the average value for a variable on that block
@@ -48,24 +48,24 @@ public:
   /**
    * This is called before execute so you can reset any internal data.
    */
-  virtual void initialize();
+  virtual void initialize() override;
 
   /**
    * Called on every "object" (like every element or node).
    * In this case, it is called at every quadrature point on every element.
    */
-  virtual void execute();
+  virtual void execute() override;
 
   /**
    * Called when using threading.  You need to combine the data from "y"
    * into _this_ object.
    */
-  virtual void threadJoin(const UserObject & y);
+  virtual void threadJoin(const UserObject & y) override;
 
   /**
    * Called _once_ after execute has been called all all "objects".
    */
-  virtual void finalize();
+  virtual void finalize() override;
 
 protected:
   // This map will hold the partial sums for each block

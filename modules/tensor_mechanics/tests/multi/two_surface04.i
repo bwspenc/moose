@@ -39,9 +39,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -263,9 +261,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./multi]
     type = ComputeMultiPlasticityStress
@@ -274,7 +270,7 @@
     plastic_models = 'simple1 simple2'
     max_NR_iterations = 2
     min_stepsize = 1
-    debug_fspb = 1
+    debug_fspb = crash
     debug_jac_at_stress = '10 0 0 0 10 0 0 0 10'
     debug_jac_at_pm = '1 1'
     debug_jac_at_intnl = '1 1'
@@ -294,12 +290,8 @@
 
 [Outputs]
   file_base = two_surface04
-  output_initial = true
   exodus = false
-  print_linear_residuals = true
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
-  [../]
+    [../]
 []

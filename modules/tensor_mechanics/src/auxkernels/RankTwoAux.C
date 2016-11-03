@@ -5,6 +5,7 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 #include "RankTwoAux.h"
+#include "RankTwoScalarTools.h"
 
 template<>
 InputParameters validParams<RankTwoAux>()
@@ -17,8 +18,8 @@ InputParameters validParams<RankTwoAux>()
   return params;
 }
 
-RankTwoAux::RankTwoAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+RankTwoAux::RankTwoAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _tensor(getMaterialProperty<RankTwoTensor>("rank_two_tensor")),
     _i(getParam<unsigned int>("index_i")),
     _j(getParam<unsigned int>("index_j"))
@@ -28,5 +29,5 @@ RankTwoAux::RankTwoAux(const std::string & name, InputParameters parameters) :
 Real
 RankTwoAux::computeValue()
 {
-  return _tensor[_qp](_i, _j);
+  return RankTwoScalarTools::component(_tensor[_qp], _i, _j);
 }

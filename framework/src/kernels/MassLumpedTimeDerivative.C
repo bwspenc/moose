@@ -13,6 +13,10 @@
 /****************************************************************/
 
 #include "MassLumpedTimeDerivative.h"
+#include "Assembly.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<MassLumpedTimeDerivative>()
@@ -21,8 +25,8 @@ InputParameters validParams<MassLumpedTimeDerivative>()
   return params;
 }
 
-MassLumpedTimeDerivative::MassLumpedTimeDerivative(const std::string & name, InputParameters parameters) :
-    TimeKernel(name, parameters),
+MassLumpedTimeDerivative::MassLumpedTimeDerivative(const InputParameters & parameters) :
+    TimeKernel(parameters),
     _u_dot_nodal(_var.nodalValueDot())
 {
 }
@@ -48,3 +52,4 @@ MassLumpedTimeDerivative::computeJacobian()
     for (_qp = 0; _qp < _qrule->n_points(); _qp++)
       ke(_i, _i) += _JxW[_qp] * _coord[_qp] * computeQpJacobian();
 }
+

@@ -12,7 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NearestNodeDistanceAux.h"
+#include "NearestNodeLocator.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<NearestNodeDistanceAux>()
@@ -23,16 +26,12 @@ InputParameters validParams<NearestNodeDistanceAux>()
   return params;
 }
 
-NearestNodeDistanceAux::NearestNodeDistanceAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+NearestNodeDistanceAux::NearestNodeDistanceAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _nearest_node(_nodal ? getNearestNodeLocator(parameters.get<BoundaryName>("paired_boundary"), boundaryNames()[0]) : getQuadratureNearestNodeLocator(parameters.get<BoundaryName>("paired_boundary"), boundaryNames()[0]))
 {
   if (boundaryNames().size() > 1)
     mooseError("NearestNodeDistanceAux can only be used with one boundary at a time!");
-}
-
-NearestNodeDistanceAux::~NearestNodeDistanceAux()
-{
 }
 
 Real

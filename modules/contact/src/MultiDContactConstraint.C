@@ -5,13 +5,15 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
+// MOOSE includes
 #include "MultiDContactConstraint.h"
-
 #include "SystemBase.h"
 #include "PenetrationLocator.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/string_to_enum.h"
+#include "libmesh/sparse_matrix.h"
 
 template<>
 InputParameters validParams<MultiDContactConstraint>()
@@ -33,8 +35,8 @@ InputParameters validParams<MultiDContactConstraint>()
   return params;
 }
 
-MultiDContactConstraint::MultiDContactConstraint(const std::string & name, InputParameters parameters) :
-    NodeFaceConstraint(name, parameters),
+MultiDContactConstraint::MultiDContactConstraint(const InputParameters & parameters) :
+    NodeFaceConstraint(parameters),
     _residual_copy(_sys.residualGhosted()),
     _jacobian_update(getParam<bool>("jacobian_update")),
     _component(getParam<unsigned int>("component")),
@@ -170,7 +172,7 @@ MultiDContactConstraint::computeQpResidual(Moose::ConstraintType type)
     res_vec(i) = _residual_copy(dof_number);
   }
 
-  const RealVectorValue distance_vec(_mesh.node(node->id()) - pinfo->_closest_point);
+  const RealVectorValue distance_vec(_mesh.nodeRef(node->id()) - pinfo->_closest_point);
   const RealVectorValue pen_force(_penalty * distance_vec);
   Real resid = 0;
 
@@ -276,3 +278,4 @@ MultiDContactConstraint::computeQpJacobian(Moose::ConstraintJacobianType type)
   }
   return 0;
 }
+

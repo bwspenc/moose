@@ -32,11 +32,8 @@ public:
     USE_MOOSE_NAMES, USE_PARAM_NAMES
   };
 
-  ParsedMaterialHelper(const std::string & name,
-                       InputParameters parameters,
+  ParsedMaterialHelper(const InputParameters & parameters,
                        VariableNameMappingMode map_mode);
-
-  virtual ~ParsedMaterialHelper();
 
   void functionParse(const std::string & function_expression);
   void functionParse(const std::string & function_expression,
@@ -59,13 +56,16 @@ protected:
   virtual void functionsOptimize();
 
   /// The undiffed free energy function parser object.
-  ADFunction * _func_F;
+  ADFunctionPtr _func_F;
 
   /// variable names used in the expression (depends on the map_mode)
   std::vector<std::string> _variable_names;
 
+  /// convenience typedef for the material property descriptors
+  typedef std::vector<FunctionMaterialPropertyDescriptor> MatPropDescriptorList;
+
   /// Material property descriptors (obtained by parsing _mat_prop_expressions)
-  std::vector<FunctionMaterialPropertyDescriptor> _mat_prop_descriptors;
+  MatPropDescriptorList _mat_prop_descriptors;
 
   /// Tolerance values for all arguments (to protect from log(0)).
   std::vector<Real> _tol;

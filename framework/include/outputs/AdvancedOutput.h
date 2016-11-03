@@ -16,19 +16,18 @@
 #define ADVANCEDOUTPUT_H
 
 // MOOSE includes
-#include "OversampleOutput.h"
-#include "MooseObject.h"
-#include "Restartable.h"
+#include "AdvancedOutputUtils.h" // OutputDataWarehouse
 #include "MooseTypes.h"
-#include "MooseMesh.h"
-#include "MeshChangedInterface.h"
-#include "MooseApp.h"
-#include "AdvancedOutputUtils.h"
+#include "FEProblem.h"
+#include "UserObject.h"
 
-// libMesh
-#include "libmesh/equation_systems.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/mesh_function.h"
+// Forward declarations
+class OutputWarehouse;
+class FileOutput;
+class OversampleOutput;
+class PetscOutput;
+class Console;
+class TransientMultiApp;
 
 /**
  * Based class for output objects
@@ -51,10 +50,9 @@ public:
    *
    * The constructor performs all of the necessary initialization of the various
    * output lists required for the various output types.
-   * @param name The name of the output object
    * @param parameters The InputParameters for the object
    */
-  AdvancedOutput(const std::string & name, InputParameters & parameters);
+  AdvancedOutput(const InputParameters & parameters);
 
   /**
    * Class destructor
@@ -181,9 +179,9 @@ public:
   static InputParameters enableOutputTypes(const std::string & names = std::string());
 
   /**
-   * Get the current advanced 'output_on' selections for display
+   * Get the current advanced 'execute_on' selections for display
    */
-  const OutputOnWarehouse & advancedOutputOn() const;
+  const OutputOnWarehouse & advancedExecuteOn() const;
 
 protected:
 
@@ -266,7 +264,7 @@ private:
 
   /**
    * Initialize the possible execution types
-   * @param name The name of the supplied MultiMoose enum from the _output_on std::map (e.g., scalars)
+   * @param name The name of the supplied MultiMoose enum from the _execute_on std::map (e.g., scalars)
    * @param input The MultiMooseEnum for output type flags to initialize
    */
   void initExecutionTypes(const std::string & name, MultiMooseEnum & input);
@@ -281,12 +279,12 @@ private:
 
   /**
    * Helper function for initAvailableLists, templated on warehouse type and postprocessor_type
-   * @param output_data Reference to OutputData struct to initialize
+   * @param execute_data_name Name of the OutputData struct to initialize
    * @param warehouse Reference to the postprocessor or vector postprocessor warehouse
    */
-  template <typename warehouse_type, typename postprocessor_type>
+  template <typename postprocessor_type>
   void
-  initPostprocessorOrVectorPostprocessorLists(const std::string & output_data_name, warehouse_type & warehouse);
+  initPostprocessorOrVectorPostprocessorLists(const std::string & execute_data_name);
 
   /**
    * Initializes the list of items to be output using the available, show, and hide lists
@@ -327,10 +325,10 @@ private:
   static MultiMooseEnum getOutputTypes();
 
   /// Storage structures for the various output types
-  OutputDataWarehouse _output_data;
+  OutputDataWarehouse _execute_data;
 
   /// Storage for the last output time for the various output types, this is used to avoid duplicate output when using OUTPUT_FINAL flag
-  std::map<std::string, Real> _last_output_time;
+  std::map<std::string, Real> _last_execute_time;
 
   // Allow complete access
   friend class OutputWarehouse;
@@ -343,67 +341,68 @@ private:
 
 // Helper function for initAvailableLists, templated on warehouse type and postprocessor_type
 template <class T>
-template <typename warehouse_type, typename postprocessor_type>
+template <typename postprocessor_type>
 void
-AdvancedOutput<T>::initPostprocessorOrVectorPostprocessorLists(const std::string & output_data_name, warehouse_type & warehouse)
+AdvancedOutput<T>::initPostprocessorOrVectorPostprocessorLists(const std::string & execute_data_name)
 {
 
-  // Convience reference to the OutputData being operated on (should used "postprocessors" or "vector_postprocessors")
-  OutputData & output_data = _output_data[output_data_name];
+  // Get the UserObjectWarhouse
+  const ExecuteMooseObjectWarehouse<UserObject> & warehouse = T::_problem_ptr->getUserObjects();
+
+  // Convenience reference to the OutputData being operated on (should used "postprocessors" or "vector_postprocessors")
+  OutputData & execute_data = _execute_data[execute_data_name];
 
   // Build the input file parameter name (i.e. "output_postprocessors_on" or "output_vector_postprocessors_on")
   std::ostringstream oss;
-  oss << "output_" << output_data_name << "_on";
-  std::string output_on_name = oss.str();
+  oss << "execute_" << execute_data_name << "_on";
+  std::string execute_on_name = oss.str();
 
   // True if the postprocessors has been limited using 'outputs' parameter
   bool has_limited_pps = false;
 
   // Loop through each of the execution flags
-  for (unsigned int i = 0; i < Moose::exec_types.size(); i++)
+  const std::vector<MooseSharedPointer<UserObject> > & objects = warehouse.getActiveObjects();
+  for (std::vector<MooseSharedPointer<UserObject> >::const_iterator it = objects.begin(); it != objects.end(); ++ it)
   {
-    // Loop through each of the postprocessors
-    for (typename std::vector<postprocessor_type *>::const_iterator postprocessor_it = warehouse(Moose::exec_types[i])[0].all().begin();
-         postprocessor_it != warehouse(Moose::exec_types[i])[0].all().end();
-         ++postprocessor_it)
+    // Store the name in the available postprocessors, if it does not already exist in the list
+    MooseSharedPointer<postprocessor_type> pps = MooseSharedNamespace::dynamic_pointer_cast<postprocessor_type>(*it);
+    if (!pps)
+      continue;
+
+    execute_data.available.insert(pps->PPName());
+
+    // Extract the list of outputs
+    std::set<OutputName> pps_outputs = pps->getOutputs();
+
+    // Check that the outputs lists are valid
+    T::_app.getOutputWarehouse().checkOutputs(pps_outputs);
+
+    // Check that the output object allows postprocessor output,
+    // account for "all" keyword (if it is present assume "all" was desired)
+    if (pps_outputs.find(T::name()) != pps_outputs.end() || pps_outputs.find("all") != pps_outputs.end())
     {
-      // Store the name in the available postprocessors, if it does not already exist in the list
-      postprocessor_type *pps = *postprocessor_it;
-      output_data.available.insert(pps->PPName());
-
-      // Extract the list of outputs
-      std::set<OutputName> pps_outputs = pps->getOutputs();
-
-      // Check that the outputs lists are valid
-      T::_app.getOutputWarehouse().checkOutputs(pps_outputs);
-
-      // Check that the output object allows postprocessor output,
-      // account for "all" keyword (if it is present assume "all" was desired)
-      if ( pps_outputs.find(T::_name) != pps_outputs.end() || pps_outputs.find("all") != pps_outputs.end() )
-      {
-        if (!T::_advanced_output_on.contains("postprocessors") || (T::_advanced_output_on["postprocessors"].isValid() && T::_advanced_output_on["postprocessors"].contains("none")))
-          mooseWarning("Postprocessor '" << pps->PPName()
-                       << "' has requested to be output by the '" << T::_name
-                       << "' output, but postprocessor output is not support by this type of output object.");
-      }
-
-      // Set the flag state for postprocessors that utilize 'outputs' parameter
-      if (!pps_outputs.empty() && pps_outputs.find("all") == pps_outputs.end())
-        has_limited_pps = true;
+      if (!T::_advanced_execute_on.contains(execute_data_name) ||
+          (T::_advanced_execute_on[execute_data_name].isValid() && T::_advanced_execute_on[execute_data_name].contains("none")))
+        mooseWarning("Postprocessor '" << pps->PPName()
+                     << "' has requested to be output by the '" << T::name()
+                     << "' output, but postprocessor output is not support by this type of output object.");
     }
+
+    // Set the flag state for postprocessors that utilize 'outputs' parameter
+    if (!pps_outputs.empty() && pps_outputs.find("all") == pps_outputs.end())
+      has_limited_pps = true;
   }
 
   // Produce the warning when 'outputs' is used, but postprocessor output is disabled
-  if (has_limited_pps && T::isParamValid(output_on_name))
+  if (has_limited_pps && T::isParamValid(execute_on_name))
   {
-    const MultiMooseEnum & pp_on = T::template getParam<MultiMooseEnum>(output_on_name);
+    const MultiMooseEnum & pp_on = T::template getParam<MultiMooseEnum>(execute_on_name);
     if (pp_on.contains("none"))
     {
-      if (output_on_name == "output_postprocessors_on")
-        mooseWarning("A Postprocessor utilizes the 'outputs' parameter; however, postprocessor output is disabled for the '" << T::_name << "' output object.");
-      else if (output_on_name == "output_postprocessors_on")
-        mooseWarning("A VectorPostprocessor utilizes the 'outputs' parameter; however, vector postprocessor output is disabled for the '" << T::_name << "' output object.");
-
+      if (execute_on_name == "execute_postprocessors_on")
+        mooseWarning("A Postprocessor utilizes the 'outputs' parameter; however, postprocessor output is disabled for the '" << T::name() << "' output object.");
+      else if (execute_on_name == "execute_vectorpostprocessors_on")
+        mooseWarning("A VectorPostprocessor utilizes the 'outputs' parameter; however, vector postprocessor output is disabled for the '" << T::name() << "' output object.");
     }
   }
 }

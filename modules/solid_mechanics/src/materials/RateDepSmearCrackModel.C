@@ -26,9 +26,8 @@ InputParameters validParams<RateDepSmearCrackModel>()
 
 }
 
-RateDepSmearCrackModel::RateDepSmearCrackModel(const std::string & name,
-                                               InputParameters parameters) :
-  ConstitutiveModel( name, parameters),
+RateDepSmearCrackModel::RateDepSmearCrackModel(const InputParameters & parameters) :
+  ConstitutiveModel(parameters),
   _ref_damage_rate(getParam<Real>("ref_damage_rate")),
   _nstate(getParam<unsigned int>("nstate")),
   _exponent(getParam<Real>("exponent")),
@@ -72,7 +71,7 @@ RateDepSmearCrackModel::initStatefulProperties( unsigned int n_points )
 }
 
 void
-RateDepSmearCrackModel::computeStress(const Elem & current_elem,
+RateDepSmearCrackModel::computeStress(const Elem & /*current_elem*/,
                                       unsigned qp, const SymmElasticityTensor & elasticityTensor,
                                       const SymmTensor & stress_old, SymmTensor & strain_increment,
                                       SymmTensor & stress_new)
@@ -88,7 +87,7 @@ RateDepSmearCrackModel::computeStress(const Elem & current_elem,
   solve( );
 
   if ( !_input_rndm_scale_var )
-    Real _rndm_scale_var = elasticityTensor.valueAtIndex(0);
+    _rndm_scale_var = elasticityTensor.valueAtIndex(0);
 
   if ( _nconv || _err_tol )
   {
@@ -115,7 +114,7 @@ RateDepSmearCrackModel::initVariables( )
   _dstress0 = _elasticity * _dstrain;
   _stress0 = _stress_undamaged_old[_qp] + _dstress0;
 
-  for ( int i = 0; i < _nstate; i++ )
+  for (unsigned int i = 0; i < _nstate; ++i)
   {
     _intvar_tmp[i] = _intvar_old[_qp][i];
     _intvar_old_tmp[i] = _intvar_old[_qp][i];
@@ -195,7 +194,7 @@ RateDepSmearCrackModel::getConvergeVar()
 void
 RateDepSmearCrackModel::postSolveVariables( )
 {
-  for ( int i = 0; i < _nstate; i++ )
+  for (unsigned int i = 0; i < _nstate; ++i)
     _intvar[_qp][i] = _intvar_tmp[i];
 }
 
@@ -214,7 +213,7 @@ RateDepSmearCrackModel::calcResidual()
   if ( _err_tol )
     return;
 
-  for ( int i = 0; i < _nstate; i++ )
+  for (unsigned int i = 0; i < _nstate; ++i)
     _resid[i] = _intvar_tmp[i] - _intvar_old_tmp[i] - _intvar_incr[i];
 }
 
@@ -259,3 +258,4 @@ RateDepSmearCrackModel::matrixInversion(std::vector<Real> & A, int n) const
 RateDepSmearCrackModel::~RateDepSmearCrackModel()
 {
 }
+

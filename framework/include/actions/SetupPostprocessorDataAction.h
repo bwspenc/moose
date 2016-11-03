@@ -37,20 +37,11 @@ public:
 
   /**
    * Class constructor
-   * @param name The name of the Postprocessor that this action is acting upon
    * @param params Input parameters for the action
    */
-  SetupPostprocessorDataAction(const std::string & name, InputParameters params);
+  SetupPostprocessorDataAction(InputParameters params);
 
-  /**
-   * Class destructor
-   */
-  virtual ~SetupPostprocessorDataAction();
-
-  /**
-   * Perform the initialization of the Post
-   */
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif //SETUPPOSTPROCESSORDATAACTION_H

@@ -17,20 +17,27 @@ template<>
 InputParameters validParams<StatefulTest>()
 {
   InputParameters params = validParams<Material>();
+  params.addCoupledVar("coupled", "Coupled Value to be used in initQpStatefulProperties()");
   return params;
 }
 
-StatefulTest::StatefulTest(const std::string & name, InputParameters parameters)
-  :Material(name, parameters),
-   _thermal_conductivity(declareProperty<Real>("thermal_conductivity")),
-   _thermal_conductivity_old(declarePropertyOld<Real>("thermal_conductivity")),
-   _thermal_conductivity_older(declarePropertyOlder<Real>("thermal_conductivity"))
-{}
+StatefulTest::StatefulTest(const InputParameters & parameters) :
+    Material(parameters),
+    _thermal_conductivity(declareProperty<Real>("thermal_conductivity")),
+    _thermal_conductivity_old(declarePropertyOld<Real>("thermal_conductivity")),
+    _thermal_conductivity_older(declarePropertyOlder<Real>("thermal_conductivity")),
+    _coupled_val(isParamValid("coupled") ? &coupledNodalValue("coupled") : nullptr)
+{
+}
 
 void
 StatefulTest::initQpStatefulProperties()
 {
-  _thermal_conductivity[_qp] = 1.0;
+  // Test of variable coupling in initQpStatefulProperties
+  if (_coupled_val)
+    _thermal_conductivity[_qp] = (*_coupled_val)[_qp];
+  else
+    _thermal_conductivity[_qp] = 1.0;
 }
 
 void

@@ -28,12 +28,12 @@ InputParameters validParams<PresetNodalBC>();
 class PresetNodalBC : public NodalBC
 {
 public:
-  PresetNodalBC(const std::string & name, InputParameters parameters);
+  PresetNodalBC(const InputParameters & parameters);
 
   void computeValue(NumericVector<Number> & current_solution);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
   virtual Real computeQpValue() = 0;
 
 };

@@ -22,7 +22,8 @@ InputParameters validParams<SideVectorPostprocessor>()
   return params;
 }
 
-SideVectorPostprocessor::SideVectorPostprocessor(const std::string & name, InputParameters parameters) :
-    SideUserObject(name, parameters),
-    VectorPostprocessor(name, parameters)
+SideVectorPostprocessor::SideVectorPostprocessor(const InputParameters & parameters) :
+    SideUserObject(parameters),
+    VectorPostprocessor(parameters)
 {}
+

@@ -16,22 +16,14 @@
 #define INTERNALSIDEINDICATOR_H
 
 // local includes
-#include "MooseArray.h"
 #include "Indicator.h"
 #include "NeighborCoupleable.h"
 #include "ScalarCoupleable.h"
-#include "MooseVariableInterface.h"
-#include "MooseVariableDependencyInterface.h"
+#include "NeighborMooseVariableInterface.h"
 
-#include "Assembly.h"
-#include "MooseVariable.h"
-
-class MooseMesh;
-class Problem;
-class SubProblem;
-
-//Forward Declarations
+// Forward Declarations
 class InternalSideIndicator;
+class MooseVariable;
 
 template<>
 InputParameters validParams<InternalSideIndicator>();
@@ -53,16 +45,14 @@ public:
    * Factory constructor initializes all internal references needed for indicator computation.
    *
    */
-  InternalSideIndicator(const std::string & name, InputParameters parameters);
-
-  virtual ~InternalSideIndicator();
+  InternalSideIndicator(const InputParameters & parameters);
 
   /**
    * Computes the indicator for the current side.
    */
-  virtual void computeIndicator();
+  virtual void computeIndicator() override;
 
-  virtual void finalize();
+  virtual void finalize() override;
 
 protected:
   MooseVariable & _field_var;
@@ -84,8 +74,6 @@ protected:
   const MooseArray<Real> & _JxW;
   const MooseArray<Real> & _coord;
 
-//  unsigned int _i, _j;
-
   BoundaryID _boundary_id;
 
   MooseVariable & _var;
@@ -93,18 +81,19 @@ protected:
   bool _scale_by_flux_faces;
 
   /// Holds the current solution at the current quadrature point on the face.
-  VariableValue & _u;
+  const VariableValue & _u;
 
   /// Holds the current solution gradient at the current quadrature point on the face.
-  VariableGradient & _grad_u;
+  const VariableGradient & _grad_u;
 
   /// Normal vectors at the quadrature points
   const MooseArray<Point>& _normals;
 
   /// Holds the current solution at the current quadrature point
-  VariableValue & _u_neighbor;
+  const VariableValue & _u_neighbor;
+
   /// Holds the current solution gradient at the current quadrature point
-  VariableGradient & _grad_u_neighbor;
+  const VariableGradient & _grad_u_neighbor;
 
   /**
    * The virtual function you will want to override to compute error contributions.

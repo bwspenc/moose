@@ -19,7 +19,7 @@ class SolidMechTempCoupleX : public SolidMechTempCouple
 {
 public:
 
-  SolidMechTempCoupleX(const std::string & name, InputParameters parameters);
+  SolidMechTempCoupleX(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

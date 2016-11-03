@@ -26,9 +26,15 @@
 
 // libMesh
 #include "libmesh/vector_value.h"
-#include "libmesh/point.h"
 
+// Forward declarations
 class Function;
+
+// libMesh forward declarations
+namespace libMesh
+{
+class Point;
+}
 
 template<>
 InputParameters validParams<Function>();
@@ -50,10 +56,9 @@ class Function :
 public:
   /**
    * Class constructor
-   * \param name The name of the function
    * \param parameters The input parameters for the function
    */
-  Function(const std::string & name, InputParameters parameters);
+  Function(const InputParameters & parameters);
 
   /**
    * Function destructor

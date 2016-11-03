@@ -53,8 +53,8 @@ InputParameters validParams<SetupMeshAction>()
   return params;
 }
 
-SetupMeshAction::SetupMeshAction(const std::string & name, InputParameters params) :
-    MooseObjectAction(name, params)
+SetupMeshAction::SetupMeshAction(InputParameters params) :
+    MooseObjectAction(params)
 {
 }
 
@@ -63,8 +63,8 @@ SetupMeshAction::setupMesh(MooseMesh *mesh)
 {
   std::vector<BoundaryName> ghosted_boundaries = getParam<std::vector<BoundaryName> >("ghosted_boundaries");
 
-  for (unsigned int i=0; i<ghosted_boundaries.size(); i++)
-    mesh->addGhostedBoundary(mesh->getBoundaryID(ghosted_boundaries[i]));
+  for (const auto & bnd_name : ghosted_boundaries)
+    mesh->addGhostedBoundary(mesh->getBoundaryID(bnd_name));
 
   mesh->setPatchSize(getParam<unsigned int>("patch_size"));
 
@@ -137,22 +137,29 @@ void
 SetupMeshAction::act()
 {
   // Create the mesh object and tell it to build itself
-  _mesh = MooseSharedNamespace::static_pointer_cast<MooseMesh>(_factory.create(_type, "mesh", _moose_object_pars));
-  _mesh->init();
-
-  if (isParamValid("displacements"))
+  if (_current_task == "setup_mesh")
   {
-    // Create the displaced mesh
-    _displaced_mesh = MooseSharedNamespace::static_pointer_cast<MooseMesh>(_factory.create(_type, "displaced_mesh", _moose_object_pars));
-    _displaced_mesh->init();
-
-    std::vector<std::string> displacements = getParam<std::vector<std::string> >("displacements");
-    if (displacements.size() != _displaced_mesh->dimension())
-      mooseError("Number of displacements and dimension of mesh MUST be the same!");
+    _mesh = _factory.create<MooseMesh>(_type, "mesh", _moose_object_pars);
+    if (isParamValid("displacements"))
+      _displaced_mesh = _factory.create<MooseMesh>(_type, "displaced_mesh", _moose_object_pars);
   }
+  else if (_current_task == "init_mesh")
+  {
+    _mesh->init();
 
-  setupMesh(_mesh.get());
+    if (isParamValid("displacements"))
+    {
+      // Initialize the displaced mesh
+      _displaced_mesh->init();
 
-  if (_displaced_mesh)
-    setupMesh(_displaced_mesh.get());
+      std::vector<std::string> displacements = getParam<std::vector<std::string> >("displacements");
+      if (displacements.size() < _displaced_mesh->dimension())
+        mooseError("Number of displacements must be greater than or equal to the dimension of the mesh!");
+    }
+
+    setupMesh(_mesh.get());
+
+    if (_displaced_mesh)
+      setupMesh(_displaced_mesh.get());
+  }
 }

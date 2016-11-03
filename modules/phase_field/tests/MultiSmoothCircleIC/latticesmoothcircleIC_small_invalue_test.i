@@ -57,10 +57,9 @@
 
 [Materials]
   [./constant]
-    type = PFMobility
-    block = 0
-    mob = 1.0
-    kappa = 1.5
+    type = GenericConstantMaterial
+    prop_names  = 'M kappa_c'
+    prop_values = '1.0 1.5'
   [../]
 []
 
@@ -83,8 +82,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

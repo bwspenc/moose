@@ -7,6 +7,7 @@
 
 
 #include "GradParsedFunction.h"
+#include "MooseParsedFunctionWrapper.h"
 
 template<>
 InputParameters validParams<GradParsedFunction>()
@@ -17,11 +18,11 @@ InputParameters validParams<GradParsedFunction>()
   return params;
 }
 
-GradParsedFunction::GradParsedFunction(const std::string & name, InputParameters parameters) :
-    MooseParsedFunction(name, parameters),
+GradParsedFunction::GradParsedFunction(const InputParameters & parameters) :
+    MooseParsedFunction(parameters),
     _direction(getParam<RealVectorValue>("direction"))
 {
-  _len = std::pow(_direction*_direction, 0.5);
+  _len = _direction.norm();
   if (_len == 0)
     mooseError("The direction in the GradParsedFunction must have positive length.");
   _direction /= 2.0; // note - so we can do central differences
@@ -30,5 +31,5 @@ GradParsedFunction::GradParsedFunction(const std::string & name, InputParameters
 Real
 GradParsedFunction::value(Real t, const Point & p)
 {
-  return (_function_ptr->evaluate<Real>(t, p + _direction) - _function_ptr->evaluate<Real>(t, p - _direction))/_len;
+  return (_function_ptr->evaluate<Real>(t, p + _direction) - _function_ptr->evaluate<Real>(t, p - _direction)) / _len;
 }

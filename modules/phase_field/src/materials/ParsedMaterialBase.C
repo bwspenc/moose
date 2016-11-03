@@ -31,8 +31,7 @@ InputParameters validParams<ParsedMaterialBase>()
   return params;
 }
 
-ParsedMaterialBase::ParsedMaterialBase(const std::string & /* name */,
-                                       InputParameters parameters)
+ParsedMaterialBase::ParsedMaterialBase(const InputParameters & parameters)
 {
   // get function expression
   _function = parameters.get<std::string>("function");

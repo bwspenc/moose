@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "MooseParsedVectorFunction.h"
+#include "MooseParsedFunctionWrapper.h"
 
 template<>
 InputParameters validParams<MooseParsedVectorFunction>()
@@ -25,9 +26,9 @@ InputParameters validParams<MooseParsedVectorFunction>()
   return params;
 }
 
-MooseParsedVectorFunction::MooseParsedVectorFunction(const std::string & name, InputParameters parameters) :
-    Function(name, parameters),
-    MooseParsedFunctionBase(name, parameters),
+MooseParsedVectorFunction::MooseParsedVectorFunction(const InputParameters & parameters) :
+    Function(parameters),
+    MooseParsedFunctionBase(parameters),
     _vector_value(verifyFunction(std::string("{") + getParam<std::string>("value_x") + "}{" +
                                  getParam<std::string>("value_y") + "}{" +
                                  getParam<std::string>("value_z") + "}")),
@@ -64,3 +65,4 @@ MooseParsedVectorFunction::initialSetup()
     _function_ptr = new MooseParsedFunctionWrapper(_pfb_feproblem, _vector_value, _vars, _vals, tid);
   }
 }
+

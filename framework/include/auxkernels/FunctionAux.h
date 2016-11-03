@@ -16,10 +16,10 @@
 #define FUNCTIONAUX_H
 
 #include "AuxKernel.h"
-#include "Function.h"
 
 //Forward Declarations
 class FunctionAux;
+class Function;
 
 template<>
 InputParameters validParams<FunctionAux>();
@@ -34,12 +34,10 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  FunctionAux(const std::string & name, InputParameters parameters);
-
-  virtual ~FunctionAux() {}
+  FunctionAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   /// Function being used to compute the value of this kernel
   Function & _func;

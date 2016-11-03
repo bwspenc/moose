@@ -16,36 +16,33 @@
 #define KERNELBASE_H
 
 #include "MooseObject.h"
+#include "BlockRestrictable.h"
 #include "SetupInterface.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
 #include "FunctionInterface.h"
 #include "UserObjectInterface.h"
 #include "TransientInterface.h"
+#include "PostprocessorInterface.h"
 #include "MaterialPropertyInterface.h"
 #include "RandomInterface.h"
-#include "PostprocessorInterface.h"
 #include "GeometricSearchInterface.h"
-#include "BlockRestrictable.h"
-#include "Assembly.h"
-#include "MooseVariable.h"
-#include "SubProblem.h"
-#include "MooseTypes.h"
 #include "Restartable.h"
 #include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
 
-// libMesh
-#include "libmesh/fe.h"
-#include "libmesh/quadrature.h"
-
 class MooseMesh;
-class Problem;
 class SubProblem;
 class KernelBase;
+class Assembly;
+class MooseVariable;
 
 template<>
 InputParameters validParams<KernelBase>();
 
+/**
+ * This is the common base class for the two main
+ * kernel types implemented in MOOSE, EigenKernel and Kernel.
+ */
 class KernelBase :
   public MooseObject,
   public BlockRestrictable,
@@ -63,7 +60,7 @@ class KernelBase :
   public MeshChangedInterface
 {
 public:
-  KernelBase(const std::string & name, InputParameters parameters);
+  KernelBase(const InputParameters & parameters);
 
   virtual ~KernelBase();
 
@@ -81,6 +78,18 @@ public:
    * @param jvar The number of the scalar variable
    */
   virtual void computeOffDiagJacobianScalar(unsigned int jvar) = 0;
+
+  /**
+   * Compute this Kernel's contribution to the diagonal Jacobian entries
+   * corresponding to nonlocal dofs of the variable
+   */
+  virtual void computeNonlocalJacobian() {}
+
+  /**
+   * Computes d-residual / d-jvar... corresponding to nonlocal dofs of the jvar
+   * and stores the result in nonlocal ke
+   */
+  virtual void computeNonlocalOffDiagJacobian(unsigned int /* jvar */) {}
 
   /// Returns the variable number that this Kernel operates on.
   MooseVariable & variable();

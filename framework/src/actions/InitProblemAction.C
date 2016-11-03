@@ -23,8 +23,8 @@ InputParameters validParams<InitProblemAction>()
 }
 
 
-InitProblemAction::InitProblemAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+InitProblemAction::InitProblemAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -36,3 +36,4 @@ InitProblemAction::act()
   else
     mooseError("Problem doesn't exist in InitProblemAction!");
 }
+

@@ -23,9 +23,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -235,9 +233,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./mc]
     type = ComputeMultiPlasticityStress
@@ -245,7 +241,7 @@
     ep_plastic_tolerance = 1E-10
     plastic_models = mc
     max_NR_iterations = 1000
-    debug_fspb = 1
+    debug_fspb = crash
   [../]
 []
 
@@ -260,7 +256,7 @@
 [Executioner]
   end_time = 0.5
   dt = 0.05
-  solve_type = PJFNK
+  solve_type = PJFNK  # cannot use NEWTON because we are using ComputeFiniteStrain, and hence the Jacobian contributions will not be correct, even though ComputeMultiPlasticityStress will compute the correct consistent tangent operator for small strains
   type = Transient
 
   line_search = 'none'
@@ -277,12 +273,8 @@
 
 [Outputs]
   file_base = uni_axial1
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
-  [../]
+    [../]
 []

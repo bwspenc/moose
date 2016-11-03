@@ -32,24 +32,21 @@ InputParameters validParams<FileMesh>()
   return params;
 }
 
-FileMesh::FileMesh(const std::string & name, InputParameters parameters) :
-    MooseMesh(name, parameters),
-    _file_name(getParam<MeshFileName>("file")),
-    _exreader(NULL)
+FileMesh::FileMesh(const InputParameters & parameters) :
+    MooseMesh(parameters),
+    _file_name(getParam<MeshFileName>("file"))
 {
   getMesh().set_mesh_dimension(getParam<MooseEnum>("dim"));
 }
 
 FileMesh::FileMesh(const FileMesh & other_mesh) :
     MooseMesh(other_mesh),
-    _file_name(other_mesh._file_name),
-    _exreader(NULL)
+    _file_name(other_mesh._file_name)
 {
 }
 
 FileMesh::~FileMesh()
 {
-  delete _exreader;
 }
 
 MooseMesh &
@@ -63,15 +60,22 @@ FileMesh::buildMesh()
 {
   std::string _file_name = getParam<MeshFileName>("file");
 
-  Moose::setup_perf_log.push("Read Mesh","Setup");
+  Moose::perf_log.push("Read Mesh", "Setup");
   if (_is_nemesis)
   {
-    // Nemesis_IO only takes a reference to ParallelMesh, so we can't be quite so short here.
-    ParallelMesh& pmesh = cast_ref<ParallelMesh&>(getMesh());
+    // Nemesis_IO only takes a reference to DistributedMesh, so we can't be quite so short here.
+    DistributedMesh & pmesh = cast_ref<DistributedMesh &>(getMesh());
     Nemesis_IO(pmesh).read(_file_name);
 
     getMesh().allow_renumbering(false);
+
+    // Even if we want repartitioning when load balancing later, we'll
+    // begin with the default partitioning defined by the Nemesis
+    // file.
+    bool skip_partitioning_later = getMesh().skip_partitioning();
+    getMesh().skip_partitioning(true);
     getMesh().prepare_for_use();
+    getMesh().skip_partitioning(skip_partitioning_later);
   }
   else // not reading Nemesis files
   {
@@ -83,7 +87,7 @@ FileMesh::buildMesh()
 
     if (_app.setFileRestart() && (_file_name.rfind(".exd") < _file_name.size() || _file_name.rfind(".e") < _file_name.size()))
     {
-      _exreader = new ExodusII_IO(getMesh());
+      _exreader = libmesh_make_unique<ExodusII_IO>(getMesh());
       _exreader->read(_file_name);
 
       getMesh().allow_renumbering(false);
@@ -93,13 +97,13 @@ FileMesh::buildMesh()
       getMesh().read(_file_name);
   }
 
-  Moose::setup_perf_log.pop("Read Mesh","Setup");
+  Moose::perf_log.pop("Read Mesh", "Setup");
 }
 
 void
 FileMesh::read(const std::string & file_name)
 {
-  if (dynamic_cast<ParallelMesh *>(&getMesh()) && !_is_nemesis)
+  if (dynamic_cast<DistributedMesh *>(&getMesh()) && !_is_nemesis)
     getMesh().read(file_name, /*mesh_data=*/NULL, /*skip_renumber=*/false);
   else
     getMesh().read(file_name, /*mesh_data=*/NULL, /*skip_renumber=*/true);

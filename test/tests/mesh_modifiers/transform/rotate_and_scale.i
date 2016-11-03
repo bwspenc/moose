@@ -13,6 +13,7 @@
     type = Transform
     transform = SCALE
     vector_value = '1e2 1e2 1e2'
+    depends_on = rotate
   [../]
 []
 
@@ -54,8 +55,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

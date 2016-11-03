@@ -37,15 +37,13 @@ class OrientedBoxMarker :
   public OrientedBoxInterface
 {
 public:
-  OrientedBoxMarker(const std::string & name, InputParameters parameters);
-  virtual ~OrientedBoxMarker(){};
+  OrientedBoxMarker(const InputParameters & parameters);
 
 protected:
-  virtual MarkerValue computeElementMarker();
+  virtual MarkerValue computeElementMarker() override;
 
   MarkerValue _inside;
   MarkerValue _outside;
-
 };
 
 #endif /* ORIENTEDBOXMARKER_H */

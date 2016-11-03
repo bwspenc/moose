@@ -24,7 +24,7 @@ InputParameters validParams<RichardsRelPermPower>();
 class RichardsRelPermPower : public RichardsRelPerm
 {
 public:
-  RichardsRelPermPower(const std::string & name, InputParameters parameters);
+  RichardsRelPermPower(const InputParameters & parameters);
 
   /**
    * relative permeability as a function of effective saturation

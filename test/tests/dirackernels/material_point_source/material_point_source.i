@@ -34,6 +34,8 @@
     type = MaterialPointSource
     variable = u
     point = '0.2 0.3 0.0'
+    material_prop = 'matp'
+    prop_state = 'current'
   [../]
 []
 
@@ -75,8 +77,5 @@
 
 [Outputs]
   file_base = out
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

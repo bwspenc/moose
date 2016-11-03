@@ -16,8 +16,8 @@ InputParameters validParams<RobinBC>()
   return params;
 }
 
-RobinBC::RobinBC(const std::string & name, InputParameters parameters) :
-  IntegratedBC(name, parameters),
+RobinBC::RobinBC(const InputParameters & parameters) :
+  IntegratedBC(parameters),
   _value(parameters.get<Real>("value"))
 {
 }
@@ -27,4 +27,5 @@ RobinBC::computeQpResidual()
 {
   return (_grad_u[_qp])(1)*_test[_i][_qp] + _u[_qp] - _value;
 }
+
 

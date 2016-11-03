@@ -18,9 +18,7 @@
 []
 
 [GlobalParams]
-  disp_z = disp_z
-  disp_y = disp_y
-  disp_x = disp_x
+  displacements = 'disp_x disp_y disp_z'
 []
 
 
@@ -35,6 +33,7 @@
 
 [Kernels]
   [./TensorMechanics]
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./weight]
     type = BodyForce
@@ -182,16 +181,11 @@
 [Materials]
   [./elasticity_tensor]
     type = ComputeElasticityTensor
-    block = 0
     fill_method = symmetric_isotropic
-    C_ijkl = '0.4 0.4' # young's = 1, poisson = 0.25
+    C_ijkl = '0.4 0.4' # young = 1, poisson = 0.25
   [../]
   [./strain]
-    type = ComputeFiniteStrain
-    block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    type = ComputeIncrementalSmallStrain
   [../]
   [./mc]
     type = ComputeMultiPlasticityStress
@@ -201,7 +195,7 @@
     # the rest of this stuff is irrelevant for this test
     ep_plastic_tolerance = 1E-5
     plastic_models = mc
-    debug_fspb = 1
+    debug_fspb = crash
   [../]
 []
 
@@ -217,7 +211,7 @@
 [Executioner]
   end_time = 1.0
   dt = 1.0
-  solve_type = PJFNK
+  solve_type = NEWTON
   type = Transient
 
   nl_abs_tol = 1E-8
@@ -234,12 +228,5 @@
 
 [Outputs]
   file_base = gravity
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
-  [./csv]
-    type = CSV
-    interval = 1
-  [../]
 []

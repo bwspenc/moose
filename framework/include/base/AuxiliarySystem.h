@@ -15,21 +15,26 @@
 #ifndef AUXILIARYSYSTEM_H
 #define AUXILIARYSYSTEM_H
 
-#include <set>
+// MOOSE includes
 #include "SystemBase.h"
-#include "ExecStore.h"
-#include "AuxWarehouse.h"
-#include "TimeIntegrator.h"
+#include "ExecuteMooseObjectWarehouse.h"
 
 // libMesh include
-#include "libmesh/equation_systems.h"
 #include "libmesh/explicit_system.h"
 #include "libmesh/transient_system.h"
 
-#include "libmesh/numeric_vector.h"
-
+// Forward declarations
 class AuxKernel;
 class FEProblem;
+class TimeIntegrator;
+class AuxScalarKernel;
+class AuxKernel;
+
+// libMesh forward declarations
+namespace libMesh
+{
+template <typename T> class NumericVector;
+}
 
 /**
  * A system that holds auxiliary variables
@@ -45,8 +50,10 @@ public:
 
   virtual void initialSetup();
   virtual void timestepSetup();
+  virtual void subdomainSetup();
   virtual void residualSetup();
   virtual void jacobianSetup();
+  virtual void updateActive(THREAD_ID tid);
 
   virtual void addVariable(const std::string & var_name, const FEType & type, Real scale_factor, const std::set< SubdomainID > * const active_subdomains = NULL);
 
@@ -101,7 +108,7 @@ public:
    * @return a set of dependent user objects
    */
   std::set<std::string> getDependObjects(ExecFlagType type);
-
+  std::set<std::string> getDependObjects();
   /**
    * Adds a solution length vector to the system.
    *
@@ -148,7 +155,14 @@ protected:
   std::vector<std::map<std::string, MooseVariable *> > _nodal_vars;
   std::vector<std::map<std::string, MooseVariable *> > _elem_vars;
 
-  ExecStore<AuxWarehouse> _auxs;
+  // Storage for AuxScalarKernel objects
+  ExecuteMooseObjectWarehouse<AuxScalarKernel> _aux_scalar_storage;
+
+  // Storage for AuxKernel objects
+  ExecuteMooseObjectWarehouse<AuxKernel> _nodal_aux_storage;
+
+  // Storage for AuxKernel objects
+  ExecuteMooseObjectWarehouse<AuxKernel> _elemental_aux_storage;
 
   friend class AuxKernel;
   friend class ComputeNodalAuxVarsThread;
@@ -158,6 +172,10 @@ protected:
   friend class ComputeIndicatorThread;
   friend class ComputeMarkerThread;
   friend class FlagElementsThread;
+  friend class ComputeNodalKernelsThread;
+  friend class ComputeNodalKernelBcsThread;
+  friend class ComputeNodalKernelJacobiansThread;
+  friend class ComputeNodalKernelBCJacobiansThread;
 };
 
 #endif /* EXPLICITSYSTEM_H */

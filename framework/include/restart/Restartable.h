@@ -15,16 +15,18 @@
 #ifndef RESTARTABLE_H
 #define RESTARTABLE_H
 
-#include "InputParameters.h"
+// MOOSE includes
 #include "MooseTypes.h"
 #include "RestartableData.h"
 #include "ParallelUniqueId.h"
 
+// Forward declarations
 class PostprocessorData;
 class SubProblem;
+class InputParameters;
 
 /**
- * A  class for creating restricted objects
+ * A class for creating restricted objects
  * \see BlockRestartable BoundaryRestartable
  */
 class Restartable
@@ -35,8 +37,10 @@ public:
    * Populates the SubProblem and MooseMesh pointers
    * @param parameters The InputParameters for the object.
    * @param system_name The name of the MOOSE system.  ie "Kernel", "BCs", etc.  Should roughly correspond to the section in the input file so errors are easy to understand.
+   * @param subproblem An optional method for inputting the SubProblem object, this is used by FEProblem, othersize
+   * the SubProblem comes from the parameters
    */
-  Restartable(const InputParameters & parameters, std::string system_name);
+  Restartable(const InputParameters & parameters, std::string system_name, SubProblem * subproblem = NULL);
 
   /**
    * Constructor for objects that don't have "parameters"
@@ -51,7 +55,7 @@ public:
   /**
    * Emtpy destructor
    */
-  virtual ~Restartable();
+  virtual ~Restartable() = default;
 
 protected:
 
@@ -203,6 +207,7 @@ private:
   friend class FEProblem;
   friend class Transient;
   friend class TableOutput;
+  friend class TransientMultiApp;
 };
 
 template<typename T>

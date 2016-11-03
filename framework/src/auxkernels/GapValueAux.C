@@ -17,6 +17,7 @@
 #include "MooseMesh.h"
 #include "SystemBase.h"
 #include "MooseEnum.h"
+#include "PenetrationLocator.h"
 
 #include "libmesh/string_to_enum.h"
 
@@ -38,8 +39,8 @@ InputParameters validParams<GapValueAux>()
   return params;
 }
 
-GapValueAux::GapValueAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+GapValueAux::GapValueAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _penetration_locator(_nodal ?  getPenetrationLocator(parameters.get<BoundaryName>("paired_boundary"), boundaryNames()[0], Utility::string_to_enum<Order>(parameters.get<MooseEnum>("order"))) : getQuadraturePenetrationLocator(parameters.get<BoundaryName>("paired_boundary"), boundaryNames()[0], Utility::string_to_enum<Order>(parameters.get<MooseEnum>("order")))),
     _moose_var(_subproblem.getVariable(_tid, getParam<VariableName>("paired_variable"))),
     _serialized_solution(_moose_var.sys().currentSolution()),
@@ -55,17 +56,13 @@ GapValueAux::GapValueAux(const std::string & name, InputParameters parameters) :
   if (parameters.isParamValid("normal_smoothing_method"))
     _penetration_locator.setNormalSmoothingMethod(parameters.get<std::string>("normal_smoothing_method"));
 
-  Order pairedVarOrder(_moose_var.getOrder());
+  Order pairedVarOrder(_moose_var.order());
   Order gvaOrder(Utility::string_to_enum<Order>(parameters.get<MooseEnum>("order")));
   if (pairedVarOrder != gvaOrder && pairedVarOrder != CONSTANT)
     mooseError("ERROR: specified order for GapValueAux ("<<Utility::enum_to_string<Order>(gvaOrder)
                <<") does not match order for paired_variable \""<< _moose_var.name() << "\" ("
                <<Utility::enum_to_string<Order>(pairedVarOrder)<<")");
 
-}
-
-GapValueAux::~GapValueAux()
-{
 }
 
 Real

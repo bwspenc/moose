@@ -15,6 +15,7 @@
 #include "ApplyCoupledVariablesTestAction.h"
 #include "ActionFactory.h"
 #include "MooseObjectAction.h"
+#include "ActionWarehouse.h"
 
 template<>
 InputParameters validParams<ApplyCoupledVariablesTestAction>()
@@ -25,8 +26,8 @@ InputParameters validParams<ApplyCoupledVariablesTestAction>()
   return params;
 }
 
-ApplyCoupledVariablesTestAction::ApplyCoupledVariablesTestAction(const std::string & name, InputParameters params) :
-  Action(name, params)
+ApplyCoupledVariablesTestAction::ApplyCoupledVariablesTestAction(const InputParameters & params) :
+  Action(params)
 {
 }
 

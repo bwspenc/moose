@@ -44,13 +44,13 @@ public:
   /**
    * Constructor
    */
-  ImplicitODEy(const std::string & name, InputParameters parameters);
+  ImplicitODEy(const InputParameters & parameters);
 
 protected:
   /**
    * Responsible for computing the residual
    */
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   /**
    * Responsible for computing the diagonal block of the preconditioning matrix.
@@ -60,14 +60,14 @@ protected:
    * Note that this can be an approximation or linearization.  In this case it's
    * not because the Jacobian of this operator is easy to calculate.
    */
-  virtual Real computeQpJacobian();
+  virtual Real computeQpJacobian() override;
 
   /**
    * Responsible for computing the off-diagonal block of the preconditioning matrix.
    * This is essentially the partial derivative of the residual with respect to
    * the variable that is coupled into this kernel.
    */
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   /**
    * Needed for computing off-diagonal terms in Jacobian
@@ -77,7 +77,7 @@ protected:
   /**
    * Coupled scalar variable values
    */
-  VariableValue & _x;
+  const VariableValue & _x;
 };
 
 

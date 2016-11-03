@@ -19,7 +19,8 @@ InputParameters validParams<DomainIntegralAction>();
 class DomainIntegralAction : public Action
 {
 public:
-  DomainIntegralAction(const std::string & name, InputParameters params);
+  DomainIntegralAction(const InputParameters & params);
+
   ~DomainIntegralAction();
 
   virtual void act();
@@ -69,11 +70,13 @@ protected:
   VariableName _disp_x;
   VariableName _disp_y;
   VariableName _disp_z;
+  VariableName _temp;
   bool _convert_J_to_K;
   bool _has_symmetry_plane;
   unsigned int _symmetry_plane;
   MooseEnum _position_type;
   MooseEnum _q_function_type;
+  bool _get_equivalent_k;
   bool _use_displaced_mesh;
   std::vector<unsigned int> _ring_vec;
 };

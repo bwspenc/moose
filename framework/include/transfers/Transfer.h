@@ -18,18 +18,20 @@
 // Moose
 #include "ParallelUniqueId.h"
 #include "MooseObject.h"
-#include "InputParameters.h"
 #include "SetupInterface.h"
-#include "MooseEnum.h"
 #include "Restartable.h"
 
-// libMesh
-#include "libmesh/system.h"
-
+// Forward declarations
 class Transfer;
 class SubProblem;
 class FEProblem;
 class SystemBase;
+
+namespace libMesh
+{
+class System;
+class EquationSystems;
+}
 
 template<>
 InputParameters validParams<Transfer>();
@@ -46,8 +48,8 @@ class Transfer :
   public Restartable
 {
 public:
-  Transfer(const std::string & name, InputParameters parameters);
-  virtual ~Transfer() {}
+  Transfer(const InputParameters & parameters);
+  virtual ~Transfer() = default;
 
   /**
    * Execute the transfer.
@@ -60,7 +62,6 @@ public:
    */
   virtual void initialSetup() {}
 
-protected:
   /**
    * Small helper function for finding the system containing the variable.
    *
@@ -69,7 +70,9 @@ protected:
    * @param es The EquationSystems object to be searched.
    * @param var_name The name of the variable you are looking for.
    */
-  System * find_sys(EquationSystems & es, const std::string & var_name) const;
+  static System * find_sys(EquationSystems & es, const std::string & var_name);
+
+protected:
 
   SubProblem & _subproblem;
   FEProblem & _fe_problem;

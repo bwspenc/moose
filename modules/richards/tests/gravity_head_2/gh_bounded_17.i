@@ -136,6 +136,13 @@
   [../]
   [./seffwater]
   [../]
+
+  # the following "dummy" variable is simply used for exception testing RichardsMultiphaseProblem
+  # It is not part of the "gravity head" simulation
+  [./dummy_var]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
 []
 
 [AuxKernels]
@@ -180,7 +187,7 @@
   [../]
 
   [./mass_error_water]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_mass_error_w
   [../]
 
@@ -197,7 +204,7 @@
     outputs = none
   [../]
   [./error_water]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_error_water
   [../]
 []
@@ -244,18 +251,14 @@
   end_time = 1E6
   dt = 1E6
   dtmin = 1E6
+  line_search = bt
 
   nl_rel_tol = 1.e-6
   nl_max_its = 10
-  #[./TimeStepper]
-  #  type = FunctionDT
-  #  time_dt = '1E-2 1E-1 1E0 1E1 1E3 1E4 1E5 1E6 1E7'
-  #  time_t = '0 1E-1 1E0 1E1 1E2 1E3 1E4 1E5 1E6'
-  #[../]
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = gh_bounded_17
   csv = true
-  print_perf_log = true
 []

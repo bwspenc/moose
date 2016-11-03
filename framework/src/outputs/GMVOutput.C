@@ -16,6 +16,7 @@
 #include "GMVOutput.h"
 
 // libMesh includes
+#include "libmesh/equation_systems.h"
 #include "libmesh/gmv_io.h"
 
 template<>
@@ -35,8 +36,8 @@ InputParameters validParams<GMVOutput>()
   return params;
 }
 
-GMVOutput::GMVOutput(const std::string & name, InputParameters parameters) :
-    BasicOutput<OversampleOutput>(name, parameters),
+GMVOutput::GMVOutput(const InputParameters & parameters) :
+    BasicOutput<OversampleOutput>(parameters),
     _binary(getParam<bool>("binary"))
 {
 }

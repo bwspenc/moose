@@ -14,13 +14,16 @@ InputParameters validParams<ComputeLinearElasticStress>()
   return params;
 }
 
-ComputeLinearElasticStress::ComputeLinearElasticStress(const std::string & name,
-                                                 InputParameters parameters) :
-    ComputeStressBase(name, parameters),
-    _total_strain(getMaterialPropertyByName<RankTwoTensor>(_base_name + "total_strain")),
-    _is_finite_strain(hasMaterialProperty<RankTwoTensor>(_base_name + "strain_increment"))
+ComputeLinearElasticStress::ComputeLinearElasticStress(const InputParameters & parameters) :
+    ComputeStressBase(parameters),
+    _mechanical_strain(getMaterialPropertyByName<RankTwoTensor>(_base_name + "mechanical_strain"))
 {
-  if (_is_finite_strain)
+}
+
+void
+ComputeLinearElasticStress::initialSetup()
+{
+  if (hasMaterialProperty<RankTwoTensor>(_base_name + "strain_increment"))
     mooseError("This linear elastic stress calculation only works for small strains");
 }
 
@@ -28,11 +31,11 @@ void
 ComputeLinearElasticStress::computeQpStress()
 {
   // stress = C * e
-  _stress[_qp] = _elasticity_tensor[_qp]*_total_strain[_qp];
+  _stress[_qp] = _elasticity_tensor[_qp] * _mechanical_strain[_qp];
 
-  //Assign value for elastic strain, which is equal to the total strain
-  _elastic_strain[_qp] = _total_strain[_qp];
+  // Assign value for elastic strain, which is equal to the mechanical strain
+  _elastic_strain[_qp] = _mechanical_strain[_qp];
 
-  //Compute dstress_dstrain
+  // Compute dstress_dstrain
   _Jacobian_mult[_qp] = _elasticity_tensor[_qp];
 }

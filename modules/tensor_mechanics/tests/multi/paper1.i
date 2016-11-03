@@ -35,9 +35,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -259,9 +257,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./elastic_model]
     type = ComputeMultiPlasticityStress
@@ -294,14 +290,5 @@
 [Outputs]
   file_base = paper1
   exodus = false
-  output_on = 'initial timestep_end'
-  [./console]
-    type = Console
-    perf_log = true
-    linear_residuals = false
-  [../]
-  [./csv]
-    type = CSV
-    interval = 1
-  [../]
+  csv = true
 []

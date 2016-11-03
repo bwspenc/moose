@@ -24,11 +24,13 @@ InputParameters validParams<TensorMechanicsHardeningCutExponential>();
 class TensorMechanicsHardeningCutExponential : public TensorMechanicsHardeningModel
 {
  public:
-  TensorMechanicsHardeningCutExponential(const std::string & name, InputParameters parameters);
+  TensorMechanicsHardeningCutExponential(const InputParameters & parameters);
 
-  virtual Real value(const Real & intnl) const;
+  virtual Real value(Real intnl) const;
 
-  virtual Real derivative(const Real & intnl) const;
+  virtual Real derivative(Real intnl) const;
+
+  virtual std::string modelName() const;
 
  private:
 

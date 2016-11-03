@@ -21,8 +21,8 @@ InputParameters validParams<RichardsSeffPrimeAux>()
   return params;
 }
 
-RichardsSeffPrimeAux::RichardsSeffPrimeAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+RichardsSeffPrimeAux::RichardsSeffPrimeAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _seff_UO(getUserObject<RichardsSeff>("seff_UO")),
     _wrt1(getParam<int>("wrtnum"))
 {
@@ -44,3 +44,4 @@ RichardsSeffPrimeAux::computeValue()
   _seff_UO.dseff(_pressure_vals, _qp, _mat);
   return _mat[_wrt1];
 }
+

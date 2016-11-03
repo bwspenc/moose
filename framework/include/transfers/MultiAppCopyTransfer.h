@@ -17,7 +17,7 @@
 
 #include "MultiAppTransfer.h"
 
-class MooseVariable;
+// Forward declarations
 class MultiAppCopyTransfer;
 
 template<>
@@ -30,12 +30,11 @@ class MultiAppCopyTransfer :
   public MultiAppTransfer
 {
 public:
-  MultiAppCopyTransfer(const std::string & name, InputParameters parameters);
-  virtual ~MultiAppCopyTransfer() {}
+  MultiAppCopyTransfer(const InputParameters & parameters);
 
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
-  virtual void execute();
+  virtual void execute() override;
 
 protected:
   AuxVariableName _to_var_name;

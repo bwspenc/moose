@@ -25,9 +25,9 @@ InputParameters validParams<DetermineSystemType>();
 class DetermineSystemType : public MooseObjectAction
 {
 public:
-  DetermineSystemType(const std::string & name, InputParameters parameters);
+  DetermineSystemType(InputParameters parameters);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif /* DETERMINESYSTEMTYPE_H */

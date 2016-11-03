@@ -76,16 +76,14 @@
   type = Steady
 []
 
+[Debug]
+  show_material_props = true
+[]
+
 [Problem]
   solve = false
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  [./console]
-    type = Console
-    perf_log = false
-    output_on = 'initial timestep_end failed nonlinear'
-  [../]
 []

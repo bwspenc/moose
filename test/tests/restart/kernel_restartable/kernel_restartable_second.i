@@ -1,3 +1,16 @@
+###########################################################
+# This test exercises the restart system and verifies
+# correctness with parallel computation, but distributed
+# and with threading.
+#
+# See kernel_restartable.i
+#
+# @Requirement F1.60
+# @Requirement P1.10
+# @Requirement P1.20
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -40,7 +53,6 @@
 [Executioner]
   # Preconditioned JFNK (default)
   type = Transient
-  restart_file_base = kernel_restartable_restart_cp/0005
   num_steps = 5
   dt = 1e-2
   solve_type = PJFNK
@@ -49,8 +61,9 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
+[]
+
+[Problem]
+  restart_file_base = kernel_restartable_restart_cp/LATEST
 []

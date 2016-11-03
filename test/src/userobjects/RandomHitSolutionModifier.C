@@ -13,8 +13,8 @@
 /****************************************************************/
 
 #include "RandomHitSolutionModifier.h"
-
 #include "RandomHitUserObject.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<RandomHitSolutionModifier>()
@@ -26,8 +26,8 @@ InputParameters validParams<RandomHitSolutionModifier>()
   return params;
 }
 
-RandomHitSolutionModifier::RandomHitSolutionModifier(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
+RandomHitSolutionModifier::RandomHitSolutionModifier(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
     _random_hits(getUserObject<RandomHitUserObject>("random_hits")),
     _mesh(_subproblem.mesh()),
     _variable(_subproblem.getVariable(0, parameters.get<VariableName>("modify"))),
@@ -60,7 +60,7 @@ RandomHitSolutionModifier::execute()
       for (unsigned int n=0; n<elem->n_nodes(); n++)
       {
         Node * cur_node = elem->get_node(n);
-        Real cur_distance = (hit - *cur_node).size();
+        Real cur_distance = (hit - *cur_node).norm();
 
         if (cur_distance < closest_distance)
         {

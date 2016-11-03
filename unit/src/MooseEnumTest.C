@@ -16,6 +16,8 @@
 #include "MooseEnum.h"
 #include "MultiMooseEnum.h"
 
+#include <algorithm> // std::set_symmetric_difference
+
 CPPUNIT_TEST_SUITE_REGISTRATION( MooseEnumTest );
 
 void
@@ -132,6 +134,20 @@ MooseEnumTest::withNamesFromTest()
   CPPUNIT_ASSERT( mme1.contains("three") == false );
   CPPUNIT_ASSERT( mme1.contains("four") == false );
 
+  // compare against out-of-range value
+  try
+  {
+    if (me1 == "five")
+      // Unreachable
+      CPPUNIT_ASSERT( false );
+  }
+  catch(const std::exception & e)
+  {
+    std::string msg(e.what());
+
+    CPPUNIT_ASSERT( msg.find("Invalid string comparison") != std::string::npos );
+  }
+
   // set out-of-range values
   try
   {
@@ -178,6 +194,58 @@ MooseEnumTest::withNamesFromTest()
 }
 
 void
+MooseEnumTest::testDeprecate()
+{
+  // Intentionally misspelling
+  MooseEnum me1("one too three four", "too");
+
+  try
+  {
+    me1.deprecate("too", "two");
+
+    // Unreachable
+    CPPUNIT_ASSERT( false );
+  }
+  catch(const std::exception & e)
+  {
+    std::string msg(e.what());
+
+    CPPUNIT_ASSERT( msg.find("is deprecated, consider using") != std::string::npos );
+  }
+
+  me1 = "one";
+  try
+  {
+    me1 = "too";
+
+    // Unreachable
+    CPPUNIT_ASSERT( false );
+  }
+  catch(const std::exception & e)
+  {
+    std::string msg(e.what());
+    CPPUNIT_ASSERT( msg.find("is deprecated, consider using") != std::string::npos );
+  }
+
+  MultiMooseEnum mme1("one too three four");
+  mme1.deprecate("too", "two");
+
+  mme1.push_back("one");
+  try
+  {
+    me1 = "too";
+
+    // Unreachable
+    CPPUNIT_ASSERT( false );
+  }
+  catch(const std::exception & e)
+  {
+    std::string msg(e.what());
+    CPPUNIT_ASSERT( msg.find("is deprecated, consider using") != std::string::npos );
+  }
+}
+
+void
 MooseEnumTest::testErrors()
 {
   // Assign invalid item
@@ -185,6 +253,9 @@ MooseEnumTest::testErrors()
   {
     MultiMooseEnum error_check("one two three");
     error_check = "four";
+
+    // Unreachable
+    CPPUNIT_ASSERT( false );
   }
   catch(const std::exception & e)
   {
@@ -196,36 +267,13 @@ MooseEnumTest::testErrors()
   try
   {
     MultiMooseEnum error_check("one= 1 two three");
+
+    // Unreachable
+    CPPUNIT_ASSERT( false );
   }
   catch(const std::exception & e)
   {
     std::string msg(e.what());
     CPPUNIT_ASSERT( msg.find("You cannot place whitespace around the '=' character") != std::string::npos );
   }
-
-#ifdef DEBUG
-  // Out of bounds access
-  try
-  {
-    MultiMooseEnum error_check("one two three");
-    std::string invalid = error_check[3];
-  }
-  catch(const std::exception & e)
-  {
-    std::string msg(e.what());
-    CPPUNIT_ASSERT( msg.find("Access out of bounds") != std::string::npos );
-  }
-
-  // Out of bounds access
-  try
-  {
-    MultiMooseEnum error_check("one two three");
-    unsigned int invalid = error_check.get(3);
-  }
-  catch(const std::exception & e)
-  {
-    std::string msg(e.what());
-    CPPUNIT_ASSERT( msg.find("Access out of bounds") != std::string::npos );
-  }
-#endif
 }

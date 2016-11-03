@@ -22,7 +22,7 @@ class SharpInterfaceForcing : public Kernel
 {
 public:
 
-  SharpInterfaceForcing(const std::string & name, InputParameters parameters);
+  SharpInterfaceForcing(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

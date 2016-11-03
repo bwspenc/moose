@@ -14,22 +14,21 @@ InputParameters validParams<KKSPhaseConcentration>()
   params.addRequiredCoupledVar("ca", "Phase a concentration");
   params.addRequiredCoupledVar("c", "Real concentration");
   params.addRequiredCoupledVar("eta", "Phase a/b order parameter");
-  params.addParam<std::string>("h_name", "h", "Base name for the switching function h(eta)");
+  params.addParam<MaterialPropertyName>("h_name", "h", "Base name for the switching function h(eta)"); // TODO: everywhere else this is called just "h"
   return params;
 }
 
 // Phase interpolation func
-KKSPhaseConcentration::KKSPhaseConcentration(const std::string & name, InputParameters parameters) :
-    DerivativeMaterialInterface<Kernel>(name, parameters),
+KKSPhaseConcentration::KKSPhaseConcentration(const InputParameters & parameters) :
+    DerivativeMaterialInterface<Kernel>(parameters),
     _ca(coupledValue("ca")),
     _ca_var(coupled("ca")),
     _c(coupledValue("c")),
     _c_var(coupled("c")),
     _eta(coupledValue("eta")),
     _eta_var(coupled("eta")),
-    _h_name(getParam<std::string>("h_name")),
-    _prop_h(getMaterialProperty<Real>(_h_name)),
-    _prop_dh(getMaterialPropertyDerivative<Real>(_h_name, getVar("eta", 0)->name()))
+    _prop_h(getMaterialProperty<Real>("h_name")),
+    _prop_dh(getMaterialPropertyDerivative<Real>("h_name", getVar("eta", 0)->name()))
 {
 }
 
@@ -64,3 +63,4 @@ KKSPhaseConcentration::computeQpOffDiagJacobian(unsigned int jvar)
 
   return 0.0;
 }
+

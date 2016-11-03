@@ -2,8 +2,8 @@
   file = exodus_refined_restart_1.e
   uniform_refine = 1
   # Restart relies on the ExodusII_IO::copy_nodal_solution()
-  # functionality, which only works with SerialMesh.
-  distribution = serial
+  # functionality, which only works with ReplicatedMesh.
+  parallel_type = replicated
 []
 
 [Variables]
@@ -63,7 +63,5 @@
 
 [Outputs]
   file_base = exodus_refined_refined_restart_2
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

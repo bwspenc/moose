@@ -38,8 +38,8 @@ InputParameters validParams<ThermalContactMaterialsAction>()
   return params;
 }
 
-ThermalContactMaterialsAction::ThermalContactMaterialsAction( const std::string & name, InputParameters params ) :
-  Action(name, params)
+ThermalContactMaterialsAction::ThermalContactMaterialsAction( const InputParameters & params) :
+  Action(params)
 {
 }
 
@@ -57,23 +57,20 @@ ThermalContactMaterialsAction::act()
 
   InputParameters params = _factory.getValidParams(type);
   // Extract global params
-  _app.parser().extractParams(_name, params);
+  if (isParamValid("parser_syntax"))
+    _app.parser().extractParams(getParam<std::string>("parser_syntax"), params);
 
-  params.set<std::vector<VariableName> >("variable") = std::vector<VariableName>(1, getParam<NonlinearVariableName>("variable"));
+  params.set<std::vector<VariableName> >("variable") = {getParam<NonlinearVariableName>("variable")};
 
   if (!quadrature)
   {
-    params.set<std::vector<VariableName> >("gap_temp") = std::vector<VariableName>(1, ThermalContactAuxVarsAction::getGapValueName(_pars));
-    std::vector<VariableName> vars(1);
-    vars[0] = "penetration";
-    params.set<std::vector<VariableName> >("gap_distance") = vars;
+    params.set<std::vector<VariableName> >("gap_temp") = {ThermalContactAuxVarsAction::getGapValueName(_pars)};
+    params.set<std::vector<VariableName> >("gap_distance") = {"penetration"};
   }
   else
   {
     params.set<bool>("quadrature") = true;
-
     params.set<BoundaryName>("paired_boundary") = getParam<BoundaryName>("master");
-
     params.set<MooseEnum>("order") = getParam<MooseEnum>("order");
   }
 
@@ -84,7 +81,7 @@ ThermalContactMaterialsAction::act()
     params.set<FunctionName>("gap_conductivity_function") = getParam<FunctionName>("gap_conductivity_function");
 
   if (isParamValid("gap_conductivity_function_variable"))
-    params.set<std::vector<VariableName> >("gap_conductivity_function_variable") = std::vector<VariableName>(1, getParam<VariableName>("gap_conductivity_function_variable"));
+    params.set<std::vector<VariableName> >("gap_conductivity_function_variable") = {getParam<VariableName>("gap_conductivity_function_variable")};
 
   std::vector<BoundaryName> bnds(1, getParam<BoundaryName>("slave"));
   params.set<std::vector<BoundaryName> >("boundary") = bnds;
@@ -92,18 +89,19 @@ ThermalContactMaterialsAction::act()
 
   params.set<std::string>("conductivity_name") = getParam<std::string>("conductivity_name");
 
-  _problem->addMaterial(type, "gap_value_" + Moose::stringify(n), params);
+  std::string name;
+  name += _name + "_" + "gap_value_" + Moose::stringify(n);
+  _problem->addMaterial(type, name, params);
 
   if (quadrature)
   {
     params.set<BoundaryName>("paired_boundary") = getParam<BoundaryName>("slave");
-
-    std::vector<BoundaryName> bnds(1, getParam<BoundaryName>("master"));
-    params.set<std::vector<BoundaryName> >("boundary") = bnds;
-
+    params.set<std::vector<BoundaryName> >("boundary") = {getParam<BoundaryName>("master")};
     params.set<std::string>("conductivity_name") = getParam<std::string>("conductivity_master_name");
 
-    _problem->addMaterial(type, "gap_value_master_" + Moose::stringify(n), params);
+    std::string master_name;
+    master_name +=  _name + "_" + "gap_value_master_" + Moose::stringify(n);
+    _problem->addMaterial(type, master_name, params);
   }
 
   ++n;

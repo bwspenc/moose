@@ -17,25 +17,21 @@
 template<>
 InputParameters validParams<MaterialRealDenseMatrixAux>()
 {
-  InputParameters params = validParams<MaterialAuxBase<DenseMatrix<Real> > >();
+  InputParameters params = validParams<MaterialAuxBase<> >();
   params.addParam<unsigned int>("row", 0, "The row component to consider for this kernel");
   params.addParam<unsigned int>("column", 0, "The column component to consider for this kernel");
   return params;
 }
 
-MaterialRealDenseMatrixAux::MaterialRealDenseMatrixAux(const std::string & name, InputParameters parameters) :
-    MaterialAuxBase<DenseMatrix<Real> >(name, parameters),
+MaterialRealDenseMatrixAux::MaterialRealDenseMatrixAux(const InputParameters & parameters) :
+    MaterialAuxBase<DenseMatrix<Real> >(parameters),
     _row(getParam<unsigned int>("row")),
     _col(getParam<unsigned int>("column"))
 {
 }
 
-MaterialRealDenseMatrixAux::~MaterialRealDenseMatrixAux()
-{
-}
-
 Real
-MaterialRealDenseMatrixAux::computeValue()
+MaterialRealDenseMatrixAux::getRealValue()
 {
-  return _factor * _prop[_qp](_row, _col) + _offset;
+  return _prop[_qp](_row, _col);
 }

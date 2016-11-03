@@ -29,9 +29,8 @@ InputParameters validParams<RndBoundingBoxIC>()
   return params;
 }
 
-RndBoundingBoxIC::RndBoundingBoxIC(const std::string & name,
-                                   InputParameters parameters) :
-    InitialCondition(name, parameters),
+RndBoundingBoxIC::RndBoundingBoxIC(const InputParameters & parameters) :
+    InitialCondition(parameters),
     _x1(parameters.get<Real>("x1")),
     _y1(parameters.get<Real>("y1")),
     _z1(parameters.get<Real>("z1")),

@@ -27,15 +27,18 @@ InputParameters validParams<VarCouplingMaterial>();
 class VarCouplingMaterial : public Material
 {
 public:
-  VarCouplingMaterial(const std::string & name, InputParameters parameters);
+  VarCouplingMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
+  virtual void initQpStatefulProperties();
 
-  VariableValue & _var;
+  const VariableValue & _var;
   Real _base;
   Real _coef;
   MaterialProperty<Real> & _diffusion;
+  MaterialProperty<Real> * const _diffusion_old;
+
 };
 
 #endif //VARCOUPLINGMATERIAL_H

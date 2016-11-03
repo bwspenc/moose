@@ -17,11 +17,11 @@ InputParameters validParams<ComputeRotatedElasticityTensorBase>()
   return params;
 }
 
-ComputeRotatedElasticityTensorBase::ComputeRotatedElasticityTensorBase(const std::string & name,
-                                                 InputParameters parameters) :
-    ComputeElasticityTensorBase(name, parameters),
+ComputeRotatedElasticityTensorBase::ComputeRotatedElasticityTensorBase(const InputParameters & parameters) :
+    ComputeElasticityTensorBase(parameters),
     _Euler_angles(getParam<Real>("euler_angle_1"),
                   getParam<Real>("euler_angle_2"),
                   getParam<Real>("euler_angle_3"))
 {
 }
+

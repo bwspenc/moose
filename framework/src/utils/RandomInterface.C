@@ -32,7 +32,7 @@ RandomInterface::RandomInterface(const InputParameters & parameters, FEProblem &
     _random_data(NULL),
     _generator(NULL),
     _ri_problem(problem),
-    _ri_name(parameters.get<std::string>("name")),
+    _ri_name(parameters.get<std::string>("_object_name")),
     _master_seed(parameters.get<unsigned int>("seed")),
     _is_nodal(is_nodal),
     _reset_on(EXEC_LINEAR),
@@ -68,7 +68,7 @@ RandomInterface::getSeed(unsigned int id)
 }
 
 unsigned long
-RandomInterface::getRandomLong()
+RandomInterface::getRandomLong() const
 {
   mooseAssert(_generator, "Random Generator is NULL, did you call setRandomResetFrequency()?");
 
@@ -82,7 +82,7 @@ RandomInterface::getRandomLong()
 }
 
 Real
-RandomInterface::getRandomReal()
+RandomInterface::getRandomReal() const
 {
   mooseAssert(_generator, "Random Generator is NULL, did you call setRandomResetFrequency()?");
 

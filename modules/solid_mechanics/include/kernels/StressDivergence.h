@@ -22,15 +22,21 @@ class StressDivergence : public Kernel
 {
 public:
 
-  StressDivergence(const std::string & name, InputParameters parameters);
+  StressDivergence(const InputParameters & parameters);
 
 protected:
+  virtual void computeResidual();
+  virtual void computeJacobian();
+  virtual void computeOffDiagJacobian(unsigned int jvar);
+
   virtual Real computeQpResidual();
 
   virtual Real computeQpJacobian();
 
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
+  const MaterialProperty<SymmTensor> & _stress_older;
+  const MaterialProperty<SymmTensor> & _stress_old;
   const MaterialProperty<SymmTensor> & _stress;
   const MaterialProperty<SymmElasticityTensor> & _Jacobian_mult;
   const MaterialProperty<SymmTensor> & _d_stress_dT;
@@ -47,5 +53,10 @@ private:
   const unsigned int _ydisp_var;
   const unsigned int _zdisp_var;
   const unsigned int _temp_var;
+  const Real _zeta;
+  const Real _alpha;
+  std::vector<std::vector<Real> > _avg_grad_test;
+  std::vector<std::vector<Real> > _avg_grad_phi;
+  bool _volumetric_locking_correction;
 };
 #endif //STRESSDIVERGENCE_H

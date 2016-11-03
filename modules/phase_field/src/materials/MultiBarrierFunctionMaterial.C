@@ -13,14 +13,16 @@ InputParameters validParams<MultiBarrierFunctionMaterial>()
   params.addParam<std::string>("function_name", "g", "actual name for g(eta_i)");
   MooseEnum h_order("SIMPLE=0", "SIMPLE");
   params.addParam<MooseEnum>("g_order", h_order, "Polynomial order of the switching function h(eta)");
+  params.addParam<bool>("well_only", false, "Make the g zero in [0:1] so it only contributes to enforcing the eta range and not to the phase transformation berrier.");
   params.addRequiredCoupledVar("etas", "eta_i order parameters, one for each h");
   return params;
 }
 
-MultiBarrierFunctionMaterial::MultiBarrierFunctionMaterial(const std::string & name, InputParameters parameters) :
-    DerivativeMaterialInterface<Material>(name, parameters),
+MultiBarrierFunctionMaterial::MultiBarrierFunctionMaterial(const InputParameters & parameters) :
+    DerivativeMaterialInterface<Material>(parameters),
     _function_name(getParam<std::string>("function_name")),
     _g_order(getParam<MooseEnum>("g_order")),
+    _well_only(getParam<bool>("well_only")),
     _num_eta(coupledComponents("etas")),
     _eta(_num_eta),
     _prop_g(declareProperty<Real>(_function_name)),
@@ -30,7 +32,7 @@ MultiBarrierFunctionMaterial::MultiBarrierFunctionMaterial(const std::string & n
   // declare derivative properties, fetch eta values
   for (unsigned int i = 0; i < _num_eta; ++i)
   {
-    const std::string & eta_name = getVar("etas", i)->name();
+    const VariableName & eta_name = getVar("etas", i)->name();
     _prop_dg[i]  = &declarePropertyDerivative<Real>(_function_name, eta_name);
     _prop_d2g[i] = &declarePropertyDerivative<Real>(_function_name, eta_name, eta_name);
     _eta[i] = &coupledValue("etas", i);
@@ -45,6 +47,15 @@ MultiBarrierFunctionMaterial::computeQpProperties()
   for (unsigned int i = 0; i < _num_eta; ++i)
   {
     const Real n = (*_eta[i])[_qp];
+
+    if (_well_only && n >= 0.0 && n <= 1.0)
+    {
+      _prop_g[_qp] = 0.0;
+      (*_prop_dg[i])[_qp] = 0.0;
+      (*_prop_d2g[i])[_qp] = 0.0;
+      continue;
+    }
+
     switch (_g_order)
     {
       case 0: // SIMPLE

@@ -32,7 +32,7 @@ InputParameters validParams<CoupledDirichletBC>();
 class CoupledDirichletBC : public DirichletBC
 {
 public:
-  CoupledDirichletBC(const std::string & name, InputParameters parameters);
+  CoupledDirichletBC(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
@@ -40,7 +40,7 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   // The coupled variable
-  VariableValue & _v;
+  const VariableValue & _v;
 
   /// The id of the coupled variable
   unsigned int _v_num;

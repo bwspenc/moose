@@ -12,13 +12,19 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "DT2.h"
 #include "FEProblem.h"
+#include "TimeIntegrator.h"
+#include "NonlinearSystem.h"
+
 //libMesh includes
 #include "libmesh/implicit_system.h"
 #include "libmesh/nonlinear_implicit_system.h"
 #include "libmesh/nonlinear_solver.h"
 #include "libmesh/transient_system.h"
+#include "libmesh/numeric_vector.h"
+
 // C++ Includes
 #include <iomanip>
 
@@ -35,8 +41,8 @@ InputParameters validParams<DT2>()
   return params;
 }
 
-DT2::DT2(const std::string & name, InputParameters parameters) :
-    TimeStepper(name, parameters),
+DT2::DT2(const InputParameters & parameters) :
+    TimeStepper(parameters),
     _u_diff(NULL),
     _u1(NULL),
     _u2(NULL),
@@ -120,24 +126,24 @@ DT2::step()
 
     // 1. step
     _fe_problem.onTimestepBegin();
-    // Compute Post-Aux User Objects (Timestep begin)
-    _fe_problem.computeUserObjects();
+    _fe_problem.execute(EXEC_TIMESTEP_BEGIN);
 
     _console << "  - 1. step" << std::endl;
     Moose::setSolverDefaults(_fe_problem);
     nl.solve();
     _converged = nl.converged();
+
     if (_converged)
     {
       nl_sys.update();
 
-      _fe_problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::PRE_AUX);
+      _fe_problem.execute(EXEC_TIMESTEP_END);
       _fe_problem.advanceState();
 
       _time += _dt;
       // 2. step
       _fe_problem.onTimestepBegin();
-      _fe_problem.computeUserObjects();
+      _fe_problem.execute(EXEC_TIMESTEP_BEGIN);
 
       _console << "  - 2. step" << std::endl;
       Moose::setSolverDefaults(_fe_problem);

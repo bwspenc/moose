@@ -20,9 +20,8 @@ InputParameters validParams<RateDepSmearIsoCrackModel>()
 
 }
 
-RateDepSmearIsoCrackModel::RateDepSmearIsoCrackModel(const std::string & name,
-                                                     InputParameters parameters) :
-  RateDepSmearCrackModel( name, parameters),
+RateDepSmearIsoCrackModel::RateDepSmearIsoCrackModel(const InputParameters & parameters) :
+  RateDepSmearCrackModel(parameters),
   _crit_energy(getParam<Real>("critical_energy")),
   _kfail(getParam<Real>("k_fail")),
   _upper_lim_damage(getParam<Real>("upper_limit_damage")),
@@ -156,3 +155,4 @@ RateDepSmearIsoCrackModel::postSolveStress( )
 RateDepSmearIsoCrackModel::~RateDepSmearIsoCrackModel()
 {
 }
+

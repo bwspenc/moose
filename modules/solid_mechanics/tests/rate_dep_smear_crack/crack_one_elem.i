@@ -285,8 +285,8 @@
   petsc_options_value = '101                lu'
 
   line_search = 'none'
-  nl_max_its = 10
-  nl_rel_tol = 1e-11
+  nl_max_its = 20
+  nl_rel_tol = 1.5e-11
 
   dt = 0.05
   dtmin = 1e-3
@@ -297,12 +297,6 @@
   exodus = true
   csv = true
   gnuplot = true
-  output_on = 'initial timestep_end'
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'timestep_end failed nonlinear linear'
-  [../]
 []
 
 [Postprocessors]

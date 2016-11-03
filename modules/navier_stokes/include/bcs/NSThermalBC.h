@@ -9,9 +9,9 @@
 
 #include "NodalBC.h"
 
-
 // Forward Declarations
 class NSThermalBC;
+class IdealGasFluidProperties;
 
 template<>
 InputParameters validParams<NSThermalBC>();
@@ -19,10 +19,7 @@ InputParameters validParams<NSThermalBC>();
 class NSThermalBC : public NodalBC
 {
 public:
-
-  NSThermalBC(const std::string & name, InputParameters parameters);
-
-  virtual ~NSThermalBC(){}
+  NSThermalBC(const InputParameters & parameters);
 
 protected:
   // Computes the temperature based on ideal gas equation of state,
@@ -30,16 +27,14 @@ protected:
   virtual Real computeQpResidual();
 
   unsigned int _rho_var;
-  VariableValue & _rho;
+  const VariableValue & _rho;
 
   Real _initial;
   Real _final;
   Real _duration;
 
-  // Specific heat at constant volume, treated as a single
-  // constant value.
-  Real _R;
-  Real _gamma;
+  // Fluid properties
+  const IdealGasFluidProperties & _fp;
 };
 
-#endif //THERMALBC_H
+#endif //NSTHERMALBC_H

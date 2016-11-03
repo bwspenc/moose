@@ -17,16 +17,16 @@
 template<>
 InputParameters validParams<PointerStoreError>()
 {
-  InputParameters params = validParams<UserObject>();
+  InputParameters params = validParams<GeneralUserObject>();
   return params;
 }
 
 
-PointerStoreError::PointerStoreError(const std::string & name, InputParameters params) :
-    GeneralUserObject(name, params),
-    _pointer_data(declareRestartableData<ReallyDumb *>("pointer_data"))
+PointerStoreError::PointerStoreError(const InputParameters & params) :
+    GeneralUserObject(params),
+    _pointer_data(declareRestartableData<TypeWithNoStore *>("pointer_data"))
 {
-  _pointer_data = new ReallyDumb;
+  _pointer_data = new TypeWithNoStore;
   _pointer_data->_i = 1;
 }
 
@@ -49,4 +49,3 @@ void
 PointerStoreError::execute()
 {
 }
-

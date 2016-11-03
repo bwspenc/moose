@@ -24,7 +24,7 @@ class SolidMech : public Kernel
 {
 public:
 
-  SolidMech(const std::string & name, InputParameters parameters);
+  SolidMech(const InputParameters & parameters);
 
   virtual void subdomainSetup();
 

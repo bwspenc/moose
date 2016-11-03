@@ -22,14 +22,10 @@ InputParameters validParams<DotCouplingKernel>()
   return params;
 }
 
-DotCouplingKernel::DotCouplingKernel(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+DotCouplingKernel::DotCouplingKernel(const InputParameters & parameters) :
+    Kernel(parameters),
     _v_dot(coupledDot("v")),
     _dv_dot_dv(coupledDotDu("v"))
-{
-}
-
-DotCouplingKernel::~DotCouplingKernel()
 {
 }
 

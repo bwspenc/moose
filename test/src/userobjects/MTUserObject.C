@@ -17,15 +17,15 @@
 template<>
 InputParameters validParams<MTUserObject>()
 {
-  InputParameters params = validParams<UserObject>();
+  InputParameters params = validParams<GeneralUserObject>();
   params.addParam<Real>("scalar", 0, "A scalar value");
   params.addParam<std::vector<Real> >("vector", std::vector<Real>(), "A vector value");
   return params;
 }
 
 
-MTUserObject::MTUserObject(const std::string & name, InputParameters params) :
-    GeneralUserObject(name, params),
+MTUserObject::MTUserObject(const InputParameters & params) :
+    GeneralUserObject(params),
     _scalar(getParam<Real>("scalar")),
     _vector(getParam<std::vector<Real> >("vector")),
     _dyn_memory(NULL)

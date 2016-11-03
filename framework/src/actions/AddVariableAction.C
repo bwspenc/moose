@@ -21,7 +21,9 @@
 #include "FEProblem.h"
 #include "Factory.h"
 #include "MooseEnum.h"
-#include "EigenSystem.h"
+#include "MooseEigenSystem.h"
+#include "MooseObjectAction.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/libmesh.h"
@@ -46,7 +48,7 @@ InputParameters validParams<AddVariableAction>()
   params += validParams<OutputInterface>();
   params.addParam<MooseEnum>("family", families, "Specifies the family of FE shape functions to use for this variable");
   params.addParam<MooseEnum>("order", orders,  "Specifies the order of the FE shape function to use for this variable (additional orders not listed are allowed)");
-  params.addParam<Real>("initial_condition", 0.0, "Specifies the initial condition for this variable");
+  params.addParam<Real>("initial_condition", "Specifies the initial condition for this variable");
   params.addParam<std::vector<SubdomainName> >("block", "The block id where this variable lives");
   params.addParam<bool>("eigen", false, "True to make this variable an eigen variable");
 
@@ -57,8 +59,8 @@ InputParameters validParams<AddVariableAction>()
   return params;
 }
 
-AddVariableAction::AddVariableAction(const std::string & name, InputParameters params) :
-    Action(name, params),
+AddVariableAction::AddVariableAction(InputParameters params) :
+    Action(params),
     OutputInterface(params, false),
     _fe_type(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
              Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))),
@@ -81,45 +83,44 @@ AddVariableAction::getNonlinearVariableOrders()
 void
 AddVariableAction::act()
 {
-  if (_current_task == "add_variable")
-  {
-    // Get necessary data for creating a variable
-    std::string var_name = getShortName();
-    addVariable(var_name);
-  }
+  // Get necessary data for creating a variable
+  std::string var_name = name();
+  addVariable(var_name);
 
   // Set the initial condition
-  if (_current_task == "add_ic")
-    setInitialCondition();
+  if (isParamValid("initial_condition"))
+    createInitialConditionAction();
 }
 
 void
-AddVariableAction::setInitialCondition()
+AddVariableAction::createInitialConditionAction()
 {
   // Variable name
-  std::string var_name = getShortName();
+  std::string var_name = name();
 
-  // Set initial condition
-  Real initial = getParam<Real>("initial_condition");
-  if (initial > _abs_zero_tol || initial < -_abs_zero_tol)
-  {
-    if (_scalar_var)
-    {
-      // built a ScalarConstantIC object
-      InputParameters params = _factory.getValidParams("ScalarConstantIC");
-      params.set<VariableName>("variable") = var_name;
-      params.set<Real>("value") = initial;
-      _problem->addInitialCondition("ScalarConstantIC", "ic", params);
-    }
-    else
-    {
-      // built a ConstantIC object
-      InputParameters params = _factory.getValidParams("ConstantIC");
-      params.set<VariableName>("variable") = var_name;
-      params.set<Real>("value") = initial;
-      _problem->addInitialCondition("ConstantIC", "ic", params);
-    }
-  }
+  // Create the object name
+  std::string long_name("");
+  long_name += var_name;
+  long_name += "_moose";
+
+  // Set the parameters for the action
+  InputParameters action_params = _action_factory.getValidParams("AddOutputAction");
+  action_params.set<ActionWarehouse *>("awh") = &_awh;
+
+  if (_scalar_var)
+    action_params.set<std::string>("type") = "ScalarConstantIC";
+  else
+    action_params.set<std::string>("type") = "ConstantIC";
+
+  // Create the action
+  MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("AddInitialConditionAction", long_name, action_params));
+
+  // Set the required parameters for the object to be created
+  action->getObjectParams().set<VariableName>("variable") = var_name;
+  action->getObjectParams().set<Real>("value") = getParam<Real>("initial_condition");
+
+  // Store the action in the ActionWarehouse
+  _awh.addActionBlock(action);
 }
 
 void
@@ -142,7 +143,7 @@ AddVariableAction::addVariable(std::string & var_name)
 
   if (getParam<bool>("eigen"))
   {
-    EigenSystem & esys(static_cast<EigenSystem &>(_problem->getNonlinearSystem()));
+    MooseEigenSystem & esys(static_cast<MooseEigenSystem &>(_problem->getNonlinearSystem()));
     esys.markEigenVariable(var_name);
   }
 }
@@ -153,9 +154,9 @@ AddVariableAction::getSubdomainIDs()
   // Extract and return the block ids supplied in the input
   std::set<SubdomainID> blocks;
   std::vector<SubdomainName> block_param = getParam<std::vector<SubdomainName> >("block");
-  for (std::vector<SubdomainName>::iterator it = block_param.begin(); it != block_param.end(); ++it)
+  for (const auto & subdomain_name : block_param)
   {
-    SubdomainID blk_id = _problem->mesh().getSubdomainID(*it);
+    SubdomainID blk_id = _problem->mesh().getSubdomainID(subdomain_name);
     blocks.insert(blk_id);
   }
   return blocks;

@@ -5,6 +5,7 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 #include "EBSDMesh.h"
+#include "MooseApp.h"
 
 template<>
 InputParameters validParams<EBSDMesh>()
@@ -17,21 +18,21 @@ InputParameters validParams<EBSDMesh>()
   // suppress parameters
   params.suppressParameter<MooseEnum>("dim");
   params.set<MooseEnum>("dim") = MooseEnum("1=1 2 3", "1");
-  params.suppressParameter<int>("nx");
-  params.suppressParameter<int>("ny");
-  params.suppressParameter<int>("nz");
-  params.suppressParameter<int>("xmin");
-  params.suppressParameter<int>("ymin");
-  params.suppressParameter<int>("zmin");
-  params.suppressParameter<int>("xmax");
-  params.suppressParameter<int>("ymax");
-  params.suppressParameter<int>("zmax");
+  params.suppressParameter<unsigned int>("nx");
+  params.suppressParameter<unsigned int>("ny");
+  params.suppressParameter<unsigned int>("nz");
+  params.suppressParameter<Real>("xmin");
+  params.suppressParameter<Real>("ymin");
+  params.suppressParameter<Real>("zmin");
+  params.suppressParameter<Real>("xmax");
+  params.suppressParameter<Real>("ymax");
+  params.suppressParameter<Real>("zmax");
 
   return params;
 }
 
-EBSDMesh::EBSDMesh(const std::string & name, InputParameters parameters) :
-    GeneratedMesh(name, parameters),
+EBSDMesh::EBSDMesh(const InputParameters & parameters) :
+    GeneratedMesh(parameters),
     _filename(getParam<FileName>("filename"))
 {
   if (_nx != 1 || _ny != 1 || _nz !=1)
@@ -51,16 +52,12 @@ EBSDMesh::readEBSDHeader()
     mooseError("Can't open EBSD file: " << _filename);
 
   // Labels to look for in the header
-  std::vector<std::string> labels;
-  labels.push_back("X_step"); // 0
-  labels.push_back("X_Dim");
-  labels.push_back("Y_step"); // 2
-  labels.push_back("Y_Dim");
-  labels.push_back("Z_step"); // 4
-  labels.push_back("Z_Dim");
-  labels.push_back("X_Min");  // 6
-  labels.push_back("Y_Min");
-  labels.push_back("Z_Min");
+  std::vector<std::string> labels = {
+    "x_step", "x_dim",
+    "y_step", "y_dim",
+    "z_step", "z_dim",
+    "x_min", "y_min", "z_min"
+  };
 
   // Dimension variables to store once they are found in the header
   // X_step, X_Dim, Y_step, Y_Dim, Z_step, Z_Dim
@@ -74,15 +71,15 @@ EBSDMesh::readEBSDHeader()
     // X_step, X_Dim
     // Y_step, Y_Dim
     // Z_step, Z_Dim
-    // in them.
+    // in them. The labels are case insensitive.
     if (line.find("#") == 0)
     {
       // Process lines that start with a comment character (comments and meta data)
+      std::transform(line.begin(), line.end(), line.begin(), ::tolower);
 
       for (unsigned i=0; i<labels.size(); ++i)
         if (line.find(labels[i]) != std::string::npos)
         {
-          // Moose::out << "Found label " << labels[i] << ": " << line << std::endl;
           std::string dummy;
           std::istringstream iss(line);
           iss >> dummy >> dummy >> label_vals[i];
@@ -143,13 +140,12 @@ EBSDMesh::buildMesh()
   nr[2] = _geometry.n[2];
 
   // set min/max box length
-  InputParameters & params = parameters();
-  params.set<Real>("xmin") = _geometry.min[0];
-  params.set<Real>("xmax") = nr[0] * _geometry.d[0] + _geometry.min[0];
-  params.set<Real>("ymin") = _geometry.min[1];
-  params.set<Real>("ymax") = nr[1] * _geometry.d[1] + _geometry.min[1];
-  params.set<Real>("zmin") = _geometry.min[2];
-  params.set<Real>("zmax") = nr[2] * _geometry.d[2] + _geometry.min[2];
+  _xmin = _geometry.min[0];
+  _xmax = nr[0] * _geometry.d[0] + _geometry.min[0];
+  _ymin = _geometry.min[1];
+  _ymax = nr[1] * _geometry.d[1] + _geometry.min[1];
+  _zmin = _geometry.min[2];
+  _zmax = nr[2] * _geometry.d[2] + _geometry.min[2];
 
   // check if the requested uniform refine level is possible and determine initial grid size
   for (unsigned int i = 0; i < uniform_refine; ++i)

@@ -35,7 +35,7 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  CoupledGradAux(const std::string & name, InputParameters parameters);
+  CoupledGradAux(const InputParameters & parameters);
 
   virtual ~CoupledGradAux();
 
@@ -47,7 +47,7 @@ protected:
   /// The number of coupled variable
   int _coupled;
   /// The value of coupled gradient
-  VariableGradient & _coupled_grad;
+  const VariableGradient & _coupled_grad;
 };
 
 #endif //COUPLEDGRADAUX_H

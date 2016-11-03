@@ -17,18 +17,14 @@
 template<>
 InputParameters validParams<MaxIncrement>()
 {
-  InputParameters params = validParams<Damper>();
+  InputParameters params = validParams<ElementDamper>();
   params.addRequiredParam<Real>("max_increment", "The maximum newton increment for the variable.");
   return params;
 }
 
-MaxIncrement::MaxIncrement(std::string name, InputParameters parameters) :
-    Damper(name, parameters),
+MaxIncrement::MaxIncrement(const InputParameters & parameters) :
+    ElementDamper(parameters),
     _max_increment(parameters.get<Real>("max_increment"))
-{
-}
-
-MaxIncrement::~MaxIncrement()
 {
 }
 
@@ -43,6 +39,3 @@ MaxIncrement::computeQpDamping()
 
   return 1.0;
 }
-
-
-

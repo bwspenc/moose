@@ -22,9 +22,8 @@ InputParameters validParams<TensorMechanicsPlasticSimpleTester>()
   return params;
 }
 
-TensorMechanicsPlasticSimpleTester::TensorMechanicsPlasticSimpleTester(const std::string & name,
-                                                         InputParameters parameters) :
-    TensorMechanicsPlasticModel(name, parameters),
+TensorMechanicsPlasticSimpleTester::TensorMechanicsPlasticSimpleTester(const InputParameters & parameters) :
+    TensorMechanicsPlasticModel(parameters),
     _a(getParam<Real>("a")),
     _b(getParam<Real>("b")),
     _c(getParam<Real>("c")),
@@ -37,13 +36,13 @@ TensorMechanicsPlasticSimpleTester::TensorMechanicsPlasticSimpleTester(const std
 
 
 Real
-TensorMechanicsPlasticSimpleTester::yieldFunction(const RankTwoTensor & stress, const Real & /*intnl*/) const
+TensorMechanicsPlasticSimpleTester::yieldFunction(const RankTwoTensor & stress, Real /*intnl*/) const
 {
   return _a*stress(1, 1) + _b*stress(2, 2) + _c*stress(0, 0) + _d*(stress(0, 1) + stress(1, 0))/2.0 + _e*(stress(0, 2) + stress(2, 0))/2.0 + _f*(stress(1, 2) + stress(2, 1))/2.0 - _strength;
 }
 
 RankTwoTensor
-TensorMechanicsPlasticSimpleTester::dyieldFunction_dstress(const RankTwoTensor & /*stress*/, const Real & /*intnl*/) const
+TensorMechanicsPlasticSimpleTester::dyieldFunction_dstress(const RankTwoTensor & /*stress*/, Real /*intnl*/) const
 {
   RankTwoTensor df_dsig;
   df_dsig(1, 1) = _a;
@@ -60,25 +59,25 @@ TensorMechanicsPlasticSimpleTester::dyieldFunction_dstress(const RankTwoTensor &
 
 
 Real
-TensorMechanicsPlasticSimpleTester::dyieldFunction_dintnl(const RankTwoTensor & /*stress*/, const Real & /*intnl*/) const
+TensorMechanicsPlasticSimpleTester::dyieldFunction_dintnl(const RankTwoTensor & /*stress*/, Real /*intnl*/) const
 {
   return 0.0;
 }
 
 RankTwoTensor
-TensorMechanicsPlasticSimpleTester::flowPotential(const RankTwoTensor & stress, const Real & intnl) const
+TensorMechanicsPlasticSimpleTester::flowPotential(const RankTwoTensor & stress, Real intnl) const
 {
   return dyieldFunction_dstress(stress, intnl);
 }
 
 RankFourTensor
-TensorMechanicsPlasticSimpleTester::dflowPotential_dstress(const RankTwoTensor & /*stress*/, const Real & /*intnl*/) const
+TensorMechanicsPlasticSimpleTester::dflowPotential_dstress(const RankTwoTensor & /*stress*/, Real /*intnl*/) const
 {
   return RankFourTensor();
 }
 
 RankTwoTensor
-TensorMechanicsPlasticSimpleTester::dflowPotential_dintnl(const RankTwoTensor & /*stress*/, const Real & /*intnl*/) const
+TensorMechanicsPlasticSimpleTester::dflowPotential_dintnl(const RankTwoTensor & /*stress*/, Real /*intnl*/) const
 {
   return RankTwoTensor();
 }
@@ -88,3 +87,4 @@ TensorMechanicsPlasticSimpleTester::modelName() const
 {
   return "SimpleTester";
 }
+

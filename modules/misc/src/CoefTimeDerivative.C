@@ -17,9 +17,8 @@ InputParameters validParams<CoefTimeDerivative>()
 }
 
 
-CoefTimeDerivative::CoefTimeDerivative(const std::string & name,
-                                   InputParameters parameters)
-    :TimeDerivative(name,parameters),
+CoefTimeDerivative::CoefTimeDerivative(const InputParameters & parameters)
+    :TimeDerivative(parameters),
      _coef(getParam<Real>("Coefficient"))
 {}
 
@@ -36,3 +35,4 @@ CoefTimeDerivative::computeQpJacobian()
 {
   return _coef * TimeDerivative::computeQpJacobian();
 }
+

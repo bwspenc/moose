@@ -3,16 +3,13 @@
 []
 
 [Variables]
-  active = 'diffused'
-
   [./diffused]
     order = FIRST
     family = LAGRANGE
   [../]
 []
-[Kernels]
-  active = 'diff'
 
+[Kernels]
   [./diff]
     type = Diffusion
     variable = diffused
@@ -20,8 +17,6 @@
 []
 
 [DiracKernels]
-  active = 'example_point_source'
-
   [./example_point_source]
     type = ExampleDirac
     variable = diffused
@@ -31,8 +26,6 @@
 []
 
 [BCs]
-  active = 'left right'
-
   [./right]
     type = DirichletBC
     variable = diffused
@@ -48,27 +41,14 @@
   [../]
 []
 
-# The Preconditioning block
-[Preconditioning]
-  active = 'pbp'
-
-  [./pbp]
-    type = PBP
-    solve_order = 'diffused'
-    preconditioner  = 'AMG'
-  [../]
-[]
-
 [Executioner]
   type = Steady
-
-  solve_type = JFNK
-
+  solve_type = PJFNK
+  petsc_options_iname = '-pc_type -pc_hypre_type'
+  petsc_options_value = 'hypre boomeramg'
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

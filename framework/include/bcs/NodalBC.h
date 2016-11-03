@@ -19,11 +19,14 @@
 #include "RandomInterface.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
 
-// libMesh
-#include "libmesh/numeric_vector.h"
-#include "libmesh/sparse_matrix.h"
-
+// Forward declarations
 class NodalBC;
+
+// libMesh forward declarations
+namespace libMesh
+{
+template <typename T> class NumericVector;
+}
 
 template<>
 InputParameters validParams<NodalBC>();
@@ -37,7 +40,7 @@ class NodalBC :
   public CoupleableMooseVariableDependencyIntermediateInterface
 {
 public:
-  NodalBC(const std::string & name, InputParameters parameters);
+  NodalBC(const InputParameters & parameters);
 
   virtual void computeResidual(NumericVector<Number> & residual);
   virtual void computeJacobian();
@@ -50,7 +53,17 @@ protected:
   /// Quadrature point index
   unsigned int _qp;
   /// Value of the unknown variable this BC is acting on
-  VariableValue & _u;
+  const VariableValue & _u;
+
+  /// The aux variables to save the residual contributions to
+  bool _has_save_in;
+  std::vector<MooseVariable*> _save_in;
+  std::vector<AuxVariableName> _save_in_strings;
+
+  /// The aux variables to save the diagonal Jacobian contributions to
+  bool _has_diag_save_in;
+  std::vector<MooseVariable*> _diag_save_in;
+  std::vector<AuxVariableName> _diag_save_in_strings;
 
   virtual Real computeQpResidual() = 0;
 

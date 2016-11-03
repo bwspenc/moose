@@ -15,12 +15,16 @@
 #include "QuadraturePointMarker.h"
 #include "FEProblem.h"
 #include "MooseEnum.h"
+#include "Assembly.h"
+
+// libMesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<QuadraturePointMarker>()
 {
   InputParameters params = validParams<Marker>();
-
+  params += validParams<MaterialPropertyInterface>();
   MooseEnum third_state("DONT_MARK=-1 COARSEN DO_NOTHING REFINE", "DONT_MARK");
   params.addParam<MooseEnum>("third_state", third_state, "The Marker state to apply to values falling in-between the coarsen and refine thresholds.");
   params.addParam<Real>("coarsen", "The threshold value for coarsening.  Elements with variable values beyond this will be marked for coarsening.");
@@ -31,17 +35,17 @@ InputParameters validParams<QuadraturePointMarker>()
 }
 
 
-QuadraturePointMarker::QuadraturePointMarker(const std::string & name, InputParameters parameters) :
-    Marker(name, parameters),
-    Coupleable(parameters, false),
-    MaterialPropertyInterface(parameters),
+QuadraturePointMarker::QuadraturePointMarker(const InputParameters & parameters) :
+    Marker(parameters),
+    Coupleable(this, false),
+    MaterialPropertyInterface(this),
     _qrule(_assembly.qRule()),
     _q_point(_assembly.qPoints()),
     _qp(0)
 {
   const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
-  for (unsigned int i=0; i<coupled_vars.size(); i++)
-    addMooseVariableDependency(coupled_vars[i]);
+  for (const auto & var : coupled_vars)
+    addMooseVariableDependency(var);
 }
 
 Marker::MarkerValue

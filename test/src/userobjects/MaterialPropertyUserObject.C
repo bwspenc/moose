@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "MaterialPropertyUserObject.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<MaterialPropertyUserObject>()
@@ -22,8 +23,8 @@ InputParameters validParams<MaterialPropertyUserObject>()
   return params;
 }
 
-MaterialPropertyUserObject::MaterialPropertyUserObject(const std::string & name, InputParameters parameters) :
-    ElementIntegralUserObject(name, parameters),
+MaterialPropertyUserObject::MaterialPropertyUserObject(const InputParameters & parameters) :
+    ElementIntegralUserObject(parameters),
     _mat_prop(getMaterialProperty<Real>("mat_prop"))
 {
 }

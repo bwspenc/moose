@@ -15,10 +15,9 @@ InputParameters validParams<DerivativeParsedMaterial>()
   return params;
 }
 
-DerivativeParsedMaterial::DerivativeParsedMaterial(const std::string & name,
-                                                   InputParameters parameters) :
-    DerivativeParsedMaterialHelper(name, parameters, USE_MOOSE_NAMES),
-    ParsedMaterialBase(name, parameters)
+DerivativeParsedMaterial::DerivativeParsedMaterial(const InputParameters & parameters) :
+    DerivativeParsedMaterialHelper(parameters, USE_MOOSE_NAMES),
+    ParsedMaterialBase(parameters)
 {
   // Build function, take derivatives, optimize
   functionParse(_function,
@@ -26,3 +25,4 @@ DerivativeParsedMaterial::DerivativeParsedMaterial(const std::string & name,
                 getParam<std::vector<std::string> >("material_property_names"),
                 _tol_names, _tol_values);
 }
+

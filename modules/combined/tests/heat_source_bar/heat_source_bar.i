@@ -1,5 +1,5 @@
 #This is a simple 1D test of the volumetric heat source with material properties
-#that are somewhat similar to UO2.  A bar is uniformly heated, and a temperature
+#of a representative ceramic material.  A bar is uniformly heated, and a temperature
 #boundary condition is applied to the left side of the bar.
 
 #Important properties of problem:
@@ -119,8 +119,5 @@
 
 [Outputs]
   file_base = heat_source_bar_out
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

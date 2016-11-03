@@ -16,7 +16,7 @@
 class Tricrystal2CircleGrainsICAction: public Action
 {
 public:
-  Tricrystal2CircleGrainsICAction(const std::string & name, InputParameters params);
+  Tricrystal2CircleGrainsICAction(const InputParameters & params);
 
   virtual void act();
 

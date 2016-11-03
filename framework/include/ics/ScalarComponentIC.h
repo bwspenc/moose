@@ -28,8 +28,7 @@ InputParameters validParams<ScalarComponentIC>();
 class ScalarComponentIC : public ScalarInitialCondition
 {
 public:
-  ScalarComponentIC(const std::string & name, InputParameters parameters);
-  virtual ~ScalarComponentIC();
+  ScalarComponentIC(const InputParameters & parameters);
 
 protected:
   virtual Real value();

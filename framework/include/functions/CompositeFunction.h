@@ -30,10 +30,9 @@ InputParameters validParams<CompositeFunction>();
 class CompositeFunction : public Function, protected FunctionInterface
 {
 public:
-  CompositeFunction(const std::string & name, InputParameters parameters);
-  virtual ~CompositeFunction();
+  CompositeFunction(const InputParameters & parameters);
 
-  virtual Real value(Real t, const Point & pt);
+  virtual Real value(Real t, const Point & pt) override;
 
 private:
   const Real _scale_factor;

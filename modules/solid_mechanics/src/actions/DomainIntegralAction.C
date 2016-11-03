@@ -4,14 +4,18 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#include "DomainIntegralAction.h"
 
+// MOOSE includes
+#include "DomainIntegralAction.h"
 #include "Factory.h"
 #include "FEProblem.h"
 #include "Parser.h"
-#include "libmesh/string_to_enum.h"
 #include "CrackFrontDefinition.h"
 #include "InteractionIntegralAuxFields.h"
+#include "MooseMesh.h"
+
+// libMesh includes
+#include "libmesh/string_to_enum.h"
 
 template<>
 InputParameters validParams<DomainIntegralAction>()
@@ -36,15 +40,18 @@ InputParameters validParams<DomainIntegralAction>()
   params.addParam<VariableName>("disp_x", "", "The x displacement");
   params.addParam<VariableName>("disp_y", "", "The y displacement");
   params.addParam<VariableName>("disp_z", "", "The z displacement");
+  params.addParam<VariableName>("temp", "", "The temperature");
   MooseEnum position_type("Angle Distance","Distance");
   params.addParam<MooseEnum>("position_type", position_type, "The method used to calculate position along crack front.  Options are: "+position_type.getRawNames());
   MooseEnum q_function_type("Geometry Topology","Geometry");
   params.addParam<MooseEnum>("q_function_type",q_function_type,"The method used to define the integration domain. Options are: "+q_function_type.getRawNames());
+  params.addParam<bool>("equivalent_k",false,"Calculate an equivalent K from KI, KII and KIII, assuming self-similar crack growth.");
+  //params.addParam<std::string>("xfem_qrule", "volfrac", "XFEM quadrature rule to use");
   return params;
 }
 
-DomainIntegralAction::DomainIntegralAction(const std::string & name, InputParameters params):
-  Action(name, params),
+DomainIntegralAction::DomainIntegralAction(const InputParameters & params):
+  Action(params),
   _boundary_names(getParam<std::vector<BoundaryName> >("boundary")),
   _order(getParam<std::string>("order")),
   _family(getParam<std::string>("family")),
@@ -60,6 +67,7 @@ DomainIntegralAction::DomainIntegralAction(const std::string & name, InputParame
   _symmetry_plane(_has_symmetry_plane ? getParam<unsigned int>("symmetry_plane") : std::numeric_limits<unsigned int>::max()),
   _position_type(getParam<MooseEnum>("position_type")),
   _q_function_type(getParam<MooseEnum>("q_function_type")),
+  _get_equivalent_k(getParam<bool>("equivalent_k")),
   _use_displaced_mesh(false)
 {
   if (_q_function_type == GEOMETRY)
@@ -142,11 +150,15 @@ DomainIntegralAction::DomainIntegralAction(const std::string & name, InputParame
       _disp_x = getParam<VariableName>("disp_x");
       _disp_y = getParam<VariableName>("disp_y");
       _disp_z = getParam<VariableName>("disp_z");
-
+      if (isParamValid("temp"))
+        _temp = getParam<VariableName>("temp");
     }
 
     _integrals.insert(INTEGRAL(int(integral_moose_enums.get(i))));
   }
+
+  if (_get_equivalent_k && (_integrals.count(INTERACTION_INTEGRAL_KI) == 0 || _integrals.count(INTERACTION_INTEGRAL_KII) == 0 || _integrals.count(INTERACTION_INTEGRAL_KIII) == 0))
+    mooseError("DomainIntegral error: must calculate KI, KII and KIII to get equivalent K.");
 
   if (isParamValid("output_variable"))
   {
@@ -253,7 +265,7 @@ DomainIntegralAction::act()
   else if (_current_task == "add_aux_kernel")
   {
     std::string ak_type_name;
-    unsigned int nrings;
+    unsigned int nrings = 0;
     if (_q_function_type == GEOMETRY)
     {
       ak_type_name = "DomainIntegralQFunction";
@@ -266,7 +278,7 @@ DomainIntegralAction::act()
     }
 
     InputParameters params = _factory.getValidParams(ak_type_name);
-    params.set<MultiMooseEnum>("execute_on") = "initial";
+    params.set<MultiMooseEnum>("execute_on") = "initial timestep_end";
     params.set<UserObjectName>("crack_front_definition") = uo_name;
     params.set<bool>("use_displaced_mesh") = _use_displaced_mesh;
 
@@ -374,10 +386,12 @@ DomainIntegralAction::act()
         params.set<unsigned int>("symmetry_plane") = _symmetry_plane;
       params.set<Real>("poissons_ratio") = _poissons_ratio;
       params.set<Real>("youngs_modulus") = _youngs_modulus;
-      params.set<std::vector<VariableName> >("disp_x") = std::vector<VariableName>(1,_disp_x);
-      params.set<std::vector<VariableName> >("disp_y") = std::vector<VariableName>(1,_disp_y);
+      params.set<std::vector<VariableName> >("disp_x") = {_disp_x};
+      params.set<std::vector<VariableName> >("disp_y") = {_disp_y};
       if (_disp_z !="")
-        params.set<std::vector<VariableName> >("disp_z") = std::vector<VariableName>(1,_disp_z);
+        params.set<std::vector<VariableName> >("disp_z") = {_disp_z};
+      if (_temp != "")
+        params.set<std::vector<VariableName> >("temp") = {_temp};
       if (_has_symmetry_plane)
         params.set<unsigned int>("symmetry_plane") = _symmetry_plane;
 
@@ -485,6 +499,51 @@ DomainIntegralAction::act()
         }
       }
     }
+    if (_get_equivalent_k)
+    {
+      std::string pp_base_name("Keq");
+      const std::string pp_type_name("MixedModeEquivalentK");
+      InputParameters params = _factory.getValidParams(pp_type_name);
+      params.set<MultiMooseEnum>("execute_on") = "timestep_end";
+      params.set<Real>("poissons_ratio") = _poissons_ratio;
+      for (unsigned int ring_index=0; ring_index<_ring_vec.size(); ++ring_index)
+      {
+        if (_treat_as_2d)
+        {
+          std::ostringstream ki_name_stream;
+          ki_name_stream<<"II_KI_"<<_ring_vec[ring_index];
+          std::ostringstream kii_name_stream;
+          kii_name_stream<<"II_KII_"<<_ring_vec[ring_index];
+          std::ostringstream kiii_name_stream;
+          kiii_name_stream<<"II_KIII_"<<_ring_vec[ring_index];
+          params.set<PostprocessorName>("KI_name") = ki_name_stream.str();
+          params.set<PostprocessorName>("KII_name") = kii_name_stream.str();
+          params.set<PostprocessorName>("KIII_name") = kiii_name_stream.str();
+          std::ostringstream pp_name_stream;
+          pp_name_stream<<pp_base_name<<"_"<<_ring_vec[ring_index];
+          _problem->addPostprocessor(pp_type_name,pp_name_stream.str(),params);
+        }
+        else
+        {
+          for (unsigned int cfp_index=0; cfp_index<num_crack_front_points; ++cfp_index)
+          {
+            std::ostringstream ki_name_stream;
+            ki_name_stream<<"II_KI_"<<cfp_index+1<<"_"<<_ring_vec[ring_index];
+            std::ostringstream kii_name_stream;
+            kii_name_stream<<"II_KII_"<<cfp_index+1<<"_"<<_ring_vec[ring_index];
+            std::ostringstream kiii_name_stream;
+            kiii_name_stream<<"II_KIII_"<<cfp_index+1<<"_"<<_ring_vec[ring_index];
+            params.set<PostprocessorName>("KI_name") = ki_name_stream.str();
+            params.set<PostprocessorName>("KII_name") = kii_name_stream.str();
+            params.set<PostprocessorName>("KIII_name") = kiii_name_stream.str();
+            std::ostringstream pp_name_stream;
+            pp_name_stream<<pp_base_name<<"_"<<cfp_index+1<<"_"<<_ring_vec[ring_index];
+            params.set<unsigned int>("crack_front_point_index") = cfp_index;
+            _problem->addPostprocessor(pp_type_name,pp_name_stream.str(),params);
+          }
+        }
+      }
+    }
   }
   else if (_current_task == "add_vector_postprocessor")
   {
@@ -548,6 +607,30 @@ DomainIntegralAction::act()
         {
           std::ostringstream pp_name_stream;
           pp_name_stream<<vpp_name_stream.str()<<"_"<<cfp_index+1;
+          postprocessor_names.push_back(pp_name_stream.str());
+        }
+        params.set<std::vector<PostprocessorName> >("postprocessors") = postprocessor_names;
+        _problem->addVectorPostprocessor(vpp_type_name,vpp_name_stream.str(),params);
+      }
+    }
+    if (_get_equivalent_k && !_treat_as_2d)
+    {
+      std::string pp_base_name("Keq");
+      const std::string vpp_type_name("CrackDataSampler");
+      InputParameters params = _factory.getValidParams(vpp_type_name);
+      params.set<MultiMooseEnum>("execute_on") = "timestep_end";
+      params.set<UserObjectName>("crack_front_definition") = uo_name;
+      params.set<MooseEnum>("sort_by") = "id";
+      params.set<MooseEnum>("position_type") = _position_type;
+      for (unsigned int ring_index=0; ring_index<_ring_vec.size(); ++ring_index)
+      {
+        std::vector<PostprocessorName> postprocessor_names;
+        std::ostringstream vpp_name_stream;
+        vpp_name_stream<<pp_base_name<<"_"<<_ring_vec[ring_index];
+        for (unsigned int cfp_index=0; cfp_index<num_crack_front_points; ++cfp_index)
+        {
+          std::ostringstream pp_name_stream;
+          pp_name_stream<<pp_base_name<<"_"<<cfp_index+1<<"_"<<_ring_vec[ring_index];
           postprocessor_names.push_back(pp_name_stream.str());
         }
         params.set<std::vector<PostprocessorName> >("postprocessors") = postprocessor_names;

@@ -16,7 +16,7 @@
 class PolycrystalVoronoiICAction: public Action
 {
 public:
-  PolycrystalVoronoiICAction(const std::string & name, InputParameters params);
+  PolycrystalVoronoiICAction(const InputParameters & params);
 
   virtual void act();
 

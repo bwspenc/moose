@@ -26,7 +26,7 @@ InputParameters validParams<RichardsRelPermMonomial>();
 class RichardsRelPermMonomial : public RichardsRelPerm
 {
 public:
-  RichardsRelPermMonomial(const std::string & name, InputParameters parameters);
+  RichardsRelPermMonomial(const InputParameters & parameters);
 
   /**
    * Relative permeability

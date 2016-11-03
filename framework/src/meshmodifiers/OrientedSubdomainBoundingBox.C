@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "OrientedSubdomainBoundingBox.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<OrientedSubdomainBoundingBox>()
@@ -27,16 +28,12 @@ InputParameters validParams<OrientedSubdomainBoundingBox>()
   return params;
 }
 
-OrientedSubdomainBoundingBox::OrientedSubdomainBoundingBox(const std::string & name, InputParameters parameters) :
-    MeshModifier(name, parameters),
+OrientedSubdomainBoundingBox::OrientedSubdomainBoundingBox(const InputParameters & parameters) :
+    MeshModifier(parameters),
     OrientedBoxInterface(parameters),
     _location(parameters.get<MooseEnum>("location")),
     _block_id(parameters.get<SubdomainID>("block_id"))
 
-{
-}
-
-OrientedSubdomainBoundingBox::~OrientedSubdomainBoundingBox()
 {
 }
 

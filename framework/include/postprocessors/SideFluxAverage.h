@@ -26,13 +26,12 @@ InputParameters validParams<SideFluxAverage>();
 class SideFluxAverage : public SideFluxIntegral
 {
 public:
-  SideFluxAverage(const std::string & name, InputParameters parameters);
-  virtual ~SideFluxAverage(){}
+  SideFluxAverage(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual Real getValue() override;
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
   Real _volume;

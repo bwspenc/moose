@@ -32,7 +32,7 @@ InputParameters validParams<KKSPhaseConcentration>();
 class KKSPhaseConcentration : public DerivativeMaterialInterface<Kernel>
 {
 public:
-  KKSPhaseConcentration(const std::string & name, InputParameters parameters);
+  KKSPhaseConcentration(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
@@ -40,17 +40,14 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
 private:
-  VariableValue & _ca;
+  const VariableValue & _ca;
   unsigned int _ca_var;
 
-  VariableValue & _c;
+  const VariableValue & _c;
   unsigned int _c_var;
 
-  VariableValue & _eta;
+  const VariableValue & _eta;
   unsigned int _eta_var;
-
-  /// switching function material property base names
-  std::string _h_name;
 
   /// Switching function \f$ h(\eta) \f$
   const MaterialProperty<Real> & _prop_h;

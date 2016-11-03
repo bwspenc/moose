@@ -13,9 +13,10 @@ InputParameters validParams<DefaultMatPropConsumerMaterial>();
 class DefaultMatPropConsumerMaterial : public DerivativeMaterialInterface<Material>
 {
 public:
-  DefaultMatPropConsumerMaterial(const std::string & name, InputParameters parameters);
+  DefaultMatPropConsumerMaterial(const InputParameters & parameters);
 
 protected:
+  virtual void computeQpProperties();
   std::string _prop_name;
   const MaterialProperty<Real> & _prop;
 };

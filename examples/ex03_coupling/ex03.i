@@ -3,8 +3,6 @@
 []
 
 [Variables]
-  active = 'convected diffused'
-
   [./convected]
     order = FIRST
     family = LAGRANGE
@@ -17,15 +15,13 @@
 []
 
 [Kernels]
-  active = 'diff_convected conv diff_diffused'
-
   [./diff_convected]
     type = Diffusion
     variable = convected
   [../]
 
   [./conv]
-    type = Convection
+    type = ExampleConvection
     variable = convected
 
     # Couple a variable into the convection kernel using local_name = simulationg_name syntax
@@ -39,8 +35,6 @@
 []
 
 [BCs]
-  active = 'bottom_convected top_convected bottom_diffused top_diffused'
-
   [./bottom_convected]
     type = DirichletBC
     variable = convected
@@ -72,16 +66,10 @@
 
 [Executioner]
   type = Steady
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

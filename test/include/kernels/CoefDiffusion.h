@@ -26,13 +26,13 @@ class CoefDiffusion : public Kernel
 {
 public:
 
-  CoefDiffusion(const std::string & name, InputParameters parameters);
+  CoefDiffusion(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
 
-  Real _coef;
+  const Real & _coef;
 };
 
 #endif //COEFDIFFUSION_H

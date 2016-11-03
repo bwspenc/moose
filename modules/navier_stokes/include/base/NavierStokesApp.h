@@ -17,7 +17,7 @@ InputParameters validParams<NavierStokesApp>();
 class NavierStokesApp : public MooseApp
 {
 public:
-  NavierStokesApp(const std::string & name, InputParameters parameters);
+  NavierStokesApp(InputParameters parameters);
   virtual ~NavierStokesApp();
 
   static void registerApps();

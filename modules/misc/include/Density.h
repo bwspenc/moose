@@ -16,8 +16,7 @@
 class Density : public Material
 {
 public:
-  Density( const std::string & name,
-           InputParameters params );
+  Density( const InputParameters & params);
 
   virtual void initStatefulProperties(unsigned n_points);
 

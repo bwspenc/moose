@@ -11,10 +11,13 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 // MOOSE includes
 #include "MooseError.h"
 #include "SolutionUserObject.h"
 #include "RotationMatrix.h"
+#include "MooseUtils.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/equation_systems.h"
@@ -24,6 +27,7 @@
 #include "libmesh/transient_system.h"
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/serial_mesh.h"
+#include "libmesh/exodusII_io.h"
 
 template<>
 InputParameters validParams<SolutionUserObject>()
@@ -41,11 +45,9 @@ InputParameters validParams<SolutionUserObject>()
   params.addParam<std::string>("system", "nl0", "The name of the system to pull values out of (xda only).");
 
   // When using ExodusII a specific time is extracted
-  params.addParam<int>("timestep", -1, "Index of the single timestep used (exodusII only).  If not supplied, time interpolation will occur.");
+  params.addParam<std::string>("timestep", "Index of the single timestep used or \"LATEST\" for the last timestep (exodusII only).  If not supplied, time interpolation will occur.");
 
   // Add ability to perform coordinate transformation: scale, factor
-  params.addDeprecatedParam<std::vector<Real> >("coord_scale", "This name has been deprecated.",  "Please use scale instead");
-  params.addDeprecatedParam<std::vector<Real> >("coord_factor", "This name has been deprecated.",  "Please use translation instead");
   params.addParam<std::vector<Real> >("scale", std::vector<Real>(LIBMESH_DIM,1), "Scale factor for points in the simulation");
   params.addParam<std::vector<Real> >("scale_multiplier", std::vector<Real>(LIBMESH_DIM,1), "Scale multiplying factor for points in the simulation");
   params.addParam<std::vector<Real> >("translation", std::vector<Real>(LIBMESH_DIM,0), "Translation factors for x,y,z coordinates of the simulation");
@@ -61,28 +63,23 @@ InputParameters validParams<SolutionUserObject>()
   return params;
 }
 
-SolutionUserObject::SolutionUserObject(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
+// Static mutex definition
+Threads::spin_mutex SolutionUserObject::_solution_user_object_mutex;
+
+SolutionUserObject::SolutionUserObject(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
     _file_type(MooseEnum("xda=0 exodusII=1 xdr=2")),
     _mesh_file(getParam<MeshFileName>("mesh")),
     _es_file(getParam<FileName>("es")),
     _system_name(getParam<std::string>("system")),
     _system_variables(getParam<std::vector<std::string> >("system_variables")),
-    _exodus_time_index(getParam<int>("timestep")),
+    _exodus_time_index(-1),
     _interpolate_times(false),
-    _mesh(NULL),
-    _es(NULL),
-    _system(NULL),
-    _mesh_function(NULL),
-    _exodusII_io(NULL),
-    _serialized_solution(NULL),
-    _es2(NULL),
-    _system2(NULL),
-    _mesh_function2(NULL),
-    _serialized_solution2(NULL),
+    _system(nullptr),
+    _system2(nullptr),
     _interpolation_time(0.0),
     _interpolation_factor(0.0),
-    _exodus_times(NULL),
+    _exodus_times(nullptr),
     _exodus_index1(-1),
     _exodus_index2(-1),
     _scale(getParam<std::vector<Real> >("scale")),
@@ -97,7 +94,6 @@ SolutionUserObject::SolutionUserObject(const std::string & name, InputParameters
     _transformation_order(getParam<MultiMooseEnum>("transformation_order")),
     _initialized(false)
 {
-
   // form rotation matrices with the specified angles
   Real halfPi = std::acos(0.0);
   Real a;
@@ -126,26 +122,13 @@ SolutionUserObject::SolutionUserObject(const std::string & name, InputParameters
   RealTensorValue vec1_to_z = RotationMatrix::rotVecToZ(_rotation1_vector);
   // _r1 is then: rotate points so vec1 lies along z; then rotate about angle1; then rotate points back
   _r1 = vec1_to_z.transpose()*(rot1_z*vec1_to_z);
+
+  if (isParamValid("timestep") && getParam<std::string>("timestep") == "-1")
+    mooseError("A \"timestep\" of -1 is no longer supported for interpolation. Instead simply remove this parameter altogether for interpolation");
 }
 
 SolutionUserObject::~SolutionUserObject()
 {
-  delete _es;
-  delete _mesh;
-  delete _serialized_solution;
-  delete _mesh_function;
-
-  if (_exodusII_io)
-    delete _exodusII_io;
-
-  if (_es2)
-    delete _es2;
-
-  if (_mesh_function2)
-    delete _mesh_function2;
-
-  if (_serialized_solution2)
-    delete _serialized_solution2;
 }
 
 void
@@ -159,7 +142,7 @@ SolutionUserObject::readXda()
   _mesh->read(_mesh_file);
 
   // Create the libmesh::EquationSystems
-  _es = new EquationSystems(*_mesh);
+  _es = libmesh_make_unique<EquationSystems>(*_mesh);
 
   // Use new read syntax (binary)
   if (_file_type ==  "xdr")
@@ -169,7 +152,7 @@ SolutionUserObject::readXda()
   else if (_file_type ==  "xda")
     _es->read(_es_file, READ, EquationSystems::READ_HEADER | EquationSystems::READ_DATA | EquationSystems::READ_ADDITIONAL_DATA);
 
-  // This should never occur, just incase produce an error
+  // This should never occur, just in case produce an error
   else
     mooseError("Faild to determine proper read method for XDA/XDR equation system file: " << _es_file);
 
@@ -185,14 +168,28 @@ SolutionUserObject::readExodusII()
   if (_system_name == "")
     _system_name = "SolutionUserObjectSystem";
 
-  // Interpolate between times rather than using values from a set timestep
-  if (_exodus_time_index == -1)
-    _interpolate_times = true;  // Read the file
-
   // Read the Exodus file
-  _exodusII_io = new ExodusII_IO (*_mesh);
+  _exodusII_io = libmesh_make_unique<ExodusII_IO>(*_mesh);
   _exodusII_io->read(_mesh_file);
   _exodus_times = &_exodusII_io->get_time_steps();
+
+  if (isParamValid("timestep"))
+  {
+    std::string s_timestep = getParam<std::string>("timestep");
+    int n_steps = _exodusII_io->get_num_time_steps();
+    if (s_timestep == "LATEST")
+      _exodus_time_index = n_steps;
+    else
+    {
+      std::istringstream ss(s_timestep);
+      if (!(ss >> _exodus_time_index) || _exodus_time_index > n_steps)
+        mooseError("Invalid value passed as \"timestep\". Expected \"LATEST\" or a valid integer less than "
+                   << n_steps << ", received " << s_timestep);
+    }
+  }
+  else
+    // Interpolate between times rather than using values from a set timestep
+    _interpolate_times = true;
 
   // Check that the number of time steps is valid
   int num_exo_times = _exodus_times->size();
@@ -200,7 +197,7 @@ SolutionUserObject::readExodusII()
     mooseError("In SolutionUserObject, exodus file contains no timesteps.");
 
   // Account for parallel mesh
-  if (dynamic_cast<ParallelMesh *>(_mesh))
+  if (dynamic_cast<DistributedMesh *>(_mesh.get()))
   {
     _mesh->allow_renumbering(true);
     _mesh->prepare_for_use(/*false*/);
@@ -212,7 +209,7 @@ SolutionUserObject::readExodusII()
   }
 
   // Create EquationSystems object for solution
-  _es = new EquationSystems(*_mesh);
+  _es = libmesh_make_unique<EquationSystems>(*_mesh);
   _es->add_system<ExplicitSystem> (_system_name);
   _system = &_es->get_system(_system_name);
 
@@ -226,12 +223,12 @@ SolutionUserObject::readExodusII()
   // Build nodal/elemental variable lists, limit to variables listed in 'system_variables', if provided
   if (!_system_variables.empty())
   {
-    for (std::vector<std::string>::const_iterator it = _system_variables.begin(); it != _system_variables.end(); ++it)
+    for (const auto & var_name : _system_variables)
     {
-      if (std::find(all_nodal.begin(), all_nodal.end(), *it) != all_nodal.end())
-        nodal.push_back(*it);
-      if (std::find(all_elemental.begin(), all_elemental.end(), *it) != all_elemental.end())
-        elemental.push_back(*it);
+      if (std::find(all_nodal.begin(), all_nodal.end(), var_name) != all_nodal.end())
+        nodal.push_back(var_name);
+      if (std::find(all_elemental.begin(), all_elemental.end(), var_name) != all_elemental.end())
+        elemental.push_back(var_name);
     }
   }
   else
@@ -241,29 +238,29 @@ SolutionUserObject::readExodusII()
   }
 
   // Add the variables to the system
-  for (std::vector<std::string>::const_iterator it = nodal.begin(); it != nodal.end(); ++it)
-    _system->add_variable(*it, FIRST);
+  for (const auto & var_name : nodal)
+    _system->add_variable(var_name, FIRST);
 
-  for (std::vector<std::string>::const_iterator it = elemental.begin(); it != elemental.end(); ++it)
-    _system->add_variable(*it, CONSTANT, MONOMIAL);
+  for (const auto & var_name : elemental)
+    _system->add_variable(var_name, CONSTANT, MONOMIAL);
 
-  // Initilize the equations systems
+  // Initialize the equations systems
   _es->init();
 
   // Interpolate times
   if (_interpolate_times)
   {
     // Create a second equation system
-    _es2 = new EquationSystems(*_mesh);
+    _es2 = libmesh_make_unique<EquationSystems>(*_mesh);
     _es2->add_system<ExplicitSystem> (_system_name);
     _system2 = &_es2->get_system(_system_name);
 
     // Add the variables to the system
-    for (std::vector<std::string>::const_iterator it = nodal.begin(); it != nodal.end(); ++it)
-      _system2->add_variable(*it, FIRST);
+    for (const auto & var_name : nodal)
+      _system2->add_variable(var_name, FIRST);
 
-    for (std::vector<std::string>::const_iterator it = elemental.begin(); it != elemental.end(); ++it)
-      _system2->add_variable(*it, CONSTANT, MONOMIAL);
+    for (const auto & var_name : elemental)
+      _system2->add_variable(var_name, CONSTANT, MONOMIAL);
 
     // Initialize
     _es2->init();
@@ -272,16 +269,16 @@ SolutionUserObject::readExodusII()
     updateExodusBracketingTimeIndices(0.0);
 
     // Copy the solutions from the first system
-    for (std::vector<std::string>::const_iterator it = nodal.begin(); it != nodal.end(); ++it)
+    for (const auto & var_name : nodal)
     {
-      _exodusII_io->copy_nodal_solution(*_system, *it, *it, _exodus_index1+1);
-      _exodusII_io->copy_nodal_solution(*_system2, *it, *it, _exodus_index2+1);
+      _exodusII_io->copy_nodal_solution(*_system, var_name, var_name, _exodus_index1+1);
+      _exodusII_io->copy_nodal_solution(*_system2, var_name, var_name, _exodus_index2+1);
     }
 
-    for (std::vector<std::string>::const_iterator it = elemental.begin(); it != elemental.end(); ++it)
+    for (const auto & var_name : elemental)
     {
-      _exodusII_io->copy_elemental_solution(*_system, *it, *it, _exodus_index1+1);
-      _exodusII_io->copy_elemental_solution(*_system2, *it, *it, _exodus_index2+1);
+      _exodusII_io->copy_elemental_solution(*_system, var_name, var_name, _exodus_index1+1);
+      _exodusII_io->copy_elemental_solution(*_system2, var_name, var_name, _exodus_index2+1);
     }
 
     // Update the systems
@@ -298,11 +295,11 @@ SolutionUserObject::readExodusII()
       mooseError("In SolutionUserObject, timestep = "<<_exodus_time_index<<", but there are only "<<num_exo_times<<" time steps.");
 
     // Copy the values from the ExodusII file
-    for (std::vector<std::string>::const_iterator it = nodal.begin(); it != nodal.end(); ++it)
-      _exodusII_io->copy_nodal_solution(*_system, *it, *it,  _exodus_time_index);
+    for (const auto & var_name : nodal)
+      _exodusII_io->copy_nodal_solution(*_system, var_name, var_name,  _exodus_time_index);
 
-    for (std::vector<std::string>::const_iterator it = elemental.begin(); it != elemental.end(); ++it)
-      _exodusII_io->copy_elemental_solution(*_system, *it, *it, _exodus_time_index);
+    for (const auto & var_name : elemental)
+      _exodusII_io->copy_elemental_solution(*_system, var_name, var_name, _exodus_time_index);
 
     // Update the equations systems
     _system->update();
@@ -319,9 +316,9 @@ SolutionUserObject::directValue(const Node * node, const std::string & var_name)
 
   // Get the node id and associated dof
   dof_id_type node_id = node->id();
-  dof_id_type dof_id = _system->get_mesh().node(node_id).dof_number(sys_num, var_num, 0);
+  dof_id_type dof_id = _system->get_mesh().node_ref(node_id).dof_number(sys_num, var_num, 0);
 
-  // Return the desried value for the dof
+  // Return the desired value for the dof
   return directValue(dof_id);
 }
 
@@ -353,7 +350,7 @@ SolutionUserObject::finalize()
 void
 SolutionUserObject::timestepSetup()
 {
-  // Update time interpolatation for ExodusII solution
+  // Update time interpolation for ExodusII solution
   if (_file_type == 1 && _interpolate_times)
     updateExodusTimeInterpolation(_t);
 }
@@ -372,17 +369,17 @@ SolutionUserObject::initialSetup()
     return;
 
   // Several aspects of SolutionUserObject won't work if the FEProblem's MooseMesh is
-  // a ParallelMesh:
+  // a DistributedMesh:
   // .) ExodusII_IO::copy_nodal_solution() doesn't work in parallel.
   // .) We don't know if directValue will be used, which may request
   //    a value on a Node we don't have.
-  _fe_problem.mesh().errorIfParallelDistribution("SolutionUserObject");
+  _fe_problem.mesh().errorIfDistributedMesh("SolutionUserObject");
 
 
   // Create a libmesh::Mesh object for storing the loaded data.  Since
-  // SolutionUserObject is restricted to only work with SerialMesh
-  // (see above) we can force the Mesh used here to be a SerialMesh.
-  _mesh = new SerialMesh(_communicator);
+  // SolutionUserObject is restricted to only work with ReplicatedMesh
+  // (see above) we can force the Mesh used here to be a ReplicatedMesh.
+  _mesh = libmesh_make_unique<ReplicatedMesh>(_communicator);
 
   // ExodusII mesh file supplied
   if (MooseUtils::hasExtension(_mesh_file, "e", /*strip_exodus_ext =*/ true))
@@ -409,7 +406,7 @@ SolutionUserObject::initialSetup()
     mooseError("In SolutionUserObject, invalid file type (only .xda, .xdr, and .e supported)");
 
   // Intilize the serial solution vector
-  _serialized_solution = NumericVector<Number>::build(_communicator).release();
+  _serialized_solution = NumericVector<Number>::build(_communicator);
   _serialized_solution->init(_system->n_dofs(), false, SERIAL);
 
   // Pull down a full copy of this vector on every processor so we can get values in parallel
@@ -422,31 +419,31 @@ SolutionUserObject::initialSetup()
   if (_system_variables.empty())
   {
     _system->get_all_variable_numbers(var_nums);
-    for (std::vector<unsigned int>::const_iterator it = var_nums.begin(); it != var_nums.end(); ++it)
-      _system_variables.push_back(_system->variable_name(*it));
+    for (const auto & var_num : var_nums)
+      _system_variables.push_back(_system->variable_name(var_num));
   }
 
-  // Otherwise, gather the numbers for the variabels given
+  // Otherwise, gather the numbers for the variables given
   else
   {
-    for (std::vector<std::string>::const_iterator it = _system_variables.begin(); it != _system_variables.end(); ++it)
-      var_nums.push_back(_system->variable_number(*it));
+    for (const auto & var_name : _system_variables)
+      var_nums.push_back(_system->variable_number(var_name));
   }
 
   // Create the MeshFunction for working with the solution data
-  _mesh_function = new MeshFunction(*_es, *_serialized_solution, _system->get_dof_map(), var_nums);
+  _mesh_function = libmesh_make_unique<MeshFunction>(*_es, *_serialized_solution, _system->get_dof_map(), var_nums);
   _mesh_function->init();
 
   // Build second MeshFunction for interpolation
   if (_interpolate_times)
   {
     // Need to pull down a full copy of this vector on every processor so we can get values in parallel
-    _serialized_solution2 = NumericVector<Number>::build(_communicator).release();
+    _serialized_solution2 = NumericVector<Number>::build(_communicator);
     _serialized_solution2->init(_system2->n_dofs(), false, SERIAL);
     _system2->solution->localize(*_serialized_solution2);
 
     // Create the MeshFunction for the second copy of the data
-    _mesh_function2 = new MeshFunction(*_es2, *_serialized_solution2, _system2->get_dof_map(), var_nums);
+    _mesh_function2 = libmesh_make_unique<MeshFunction>(*_es2, *_serialized_solution2, _system2->get_dof_map(), var_nums);
     _mesh_function2->init();
 
   }
@@ -482,24 +479,24 @@ SolutionUserObject::updateExodusTimeInterpolation(Real time)
     if (updateExodusBracketingTimeIndices(time))
     {
 
-      for (std::vector<std::string>::const_iterator it = _system_variables.begin(); it != _system_variables.end(); ++it)
+      for (const auto & var_name : _system_variables)
       {
-        if (_local_variable_nodal[*it])
-          _exodusII_io->copy_nodal_solution(*_system, *it, _exodus_index1+1);
+        if (_local_variable_nodal[var_name])
+          _exodusII_io->copy_nodal_solution(*_system, var_name, _exodus_index1+1);
         else
-          _exodusII_io->copy_elemental_solution(*_system, *it, *it, _exodus_index1+1);
+          _exodusII_io->copy_elemental_solution(*_system, var_name, var_name, _exodus_index1+1);
       }
 
       _system->update();
       _es->update();
       _system->solution->localize(*_serialized_solution);
 
-      for (std::vector<std::string>::const_iterator it = _system_variables.begin(); it != _system_variables.end(); ++it)
+      for (const auto & var_name : _system_variables)
       {
-        if (_local_variable_nodal[*it])
-          _exodusII_io->copy_nodal_solution(*_system2, *it, _exodus_index2+1);
+        if (_local_variable_nodal[var_name])
+          _exodusII_io->copy_nodal_solution(*_system2, var_name, _exodus_index2+1);
         else
-          _exodusII_io->copy_elemental_solution(*_system2, *it, *it, _exodus_index2+1);
+          _exodusII_io->copy_elemental_solution(*_system2, var_name, var_name, _exodus_index2+1);
       }
 
       _system2->update();
@@ -556,9 +553,25 @@ SolutionUserObject::updateExodusBracketingTimeIndices(Real time)
   return indices_modified;
 }
 
+unsigned int
+SolutionUserObject::getLocalVarIndex(const std::string & var_name) const
+{
+  // Extract the variable index for the MeshFunction(s)
+  std::map<std::string, unsigned int>::const_iterator it = _local_variable_index.find(var_name);
+  if (it == _local_variable_index.end())
+    mooseError("Value requested for nonexistent variable '" << var_name << "' in the '" << name() << "' SolutionUserObject");
+  return it->second;
+}
 
 Real
 SolutionUserObject::pointValue(Real t, const Point & p, const std::string & var_name) const
+{
+  const unsigned int local_var_index = getLocalVarIndex(var_name);
+  return pointValue(t, p, local_var_index);
+}
+
+Real
+SolutionUserObject::pointValue(Real libmesh_dbg_var(t), const Point & p, const unsigned int local_var_index) const
 {
   // Create copy of point
   Point pt(p);
@@ -582,13 +595,13 @@ SolutionUserObject::pointValue(Real t, const Point & p, const std::string & var_
   }
 
   // Extract the value at the current point
-  Real val = evalMeshFunction(pt, var_name, 1);
+  Real val = evalMeshFunction(pt, local_var_index, 1);
 
-  // Interplolate
+  // Interpolate
   if (_file_type == 1 && _interpolate_times)
   {
     mooseAssert(t == _interpolation_time, "Time passed into value() must match time at last call to timestepSetup()");
-    Real val2 = evalMeshFunction(pt, var_name, 2);
+    Real val2 = evalMeshFunction(pt, local_var_index, 2);
     val = val + (val2 - val)*_interpolation_factor;
   }
 
@@ -608,33 +621,33 @@ SolutionUserObject::directValue(dof_id_type dof_index) const
 }
 
 Real
-SolutionUserObject::evalMeshFunction(const Point & p, std::string var_name, unsigned int func_num) const
+SolutionUserObject::evalMeshFunction(const Point & p, const unsigned int local_var_index, unsigned int func_num) const
 {
   // Storage for mesh function output
   DenseVector<Number> output;
 
   // Extract a value from the _mesh_function
-  if (func_num == 1)
-    (*_mesh_function)(p, 0.0, output);
+  {
+    Threads::spin_mutex::scoped_lock lock(_solution_user_object_mutex);
+    if (func_num == 1)
+      (*_mesh_function)(p, 0.0, output);
 
-  // Extract a value from _mesh_function2
-  else if (func_num == 2)
-    (*_mesh_function2)(p, 0.0, output);
+    // Extract a value from _mesh_function2
+    else if (func_num == 2)
+      (*_mesh_function2)(p, 0.0, output);
 
-  else
-    mooseError("The func_num must be 1 or 2");
-
-  // Extract the variable index for the MeshFunction(s), must use iterator b/c of const
-  std::map<std::string, unsigned int>::const_iterator it = _local_variable_index.find(var_name);
+    else
+      mooseError("The func_num must be 1 or 2");
+  }
 
   // Error if the data is out-of-range, which will be the case if the mesh functions are evaluated outside the domain
   if (output.size() == 0)
   {
     std::ostringstream oss;
     p.print(oss);
-    mooseError("Failed to access the data for variable '"<< var_name << "' at point " << oss.str() << " in the '" << _name << "' SolutionUserObject");
+    mooseError("Failed to access the data for variable '"<< _system_variables[local_var_index] << "' at point " << oss.str() << " in the '" << name() << "' SolutionUserObject");
   }
-  return output(it->second);
+  return output(local_var_index);
 }
 
 const std::vector<std::string> &

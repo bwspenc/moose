@@ -9,7 +9,6 @@
 
 #include "NSKernel.h"
 
-
 // Forward Declarations
 class NSGravityForce;
 
@@ -19,15 +18,14 @@ InputParameters validParams<NSGravityForce>();
 class NSGravityForce : public NSKernel
 {
 public:
-
-  NSGravityForce(const std::string & name, InputParameters parameters);
+  NSGravityForce(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  Real _acceleration;
+  const Real _acceleration;
 };
 
-#endif
+#endif //NSGRAVITYFORCE_H

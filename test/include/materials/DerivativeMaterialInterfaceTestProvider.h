@@ -28,12 +28,13 @@ InputParameters validParams<DerivativeMaterialInterfaceTestProvider>();
 class DerivativeMaterialInterfaceTestProvider : public DerivativeMaterialInterface<Material>
 {
 public:
-  DerivativeMaterialInterfaceTestProvider(const std::string & name, InputParameters parameters);
+  DerivativeMaterialInterfaceTestProvider(const InputParameters & parameters);
+
+  virtual void computeQpProperties();
 
 protected:
-  void computeProperties();
-
   MaterialProperty<Real> & _prop1, & _prop2, & _prop3, & _prop4, & _prop5;
+  MaterialProperty<dof_id_type> & _prop6;
 };
 
 #endif //DERIVATIVEMATERIALINTERFACETESTPROVIDER_H

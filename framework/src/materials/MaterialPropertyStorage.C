@@ -17,7 +17,9 @@
 #include "MaterialData.h"
 #include "MooseMesh.h"
 
+// libmesh includes
 #include "libmesh/fe_interface.h"
+#include "libmesh/quadrature.h"
 
 std::map<std::string, unsigned int> MaterialPropertyStorage::_prop_ids;
 
@@ -70,31 +72,29 @@ MaterialPropertyStorage::~MaterialPropertyStorage()
 void
 MaterialPropertyStorage::releaseProperties()
 {
-  HashMap<const Elem *, HashMap<unsigned int, MaterialProperties> >::iterator i;
-  for (i = _props_elem->begin(); i != _props_elem->end(); ++i)
-  {
-    HashMap<unsigned int, MaterialProperties>::iterator j;
-    for (j = i->second.begin(); j != i->second.end(); ++j)
-      j->second.destroy();
-  }
+  for (auto & i : *_props_elem)
+    for (auto & j : i.second)
+      j.second.destroy();
 
-  for (i = _props_elem_old->begin(); i != _props_elem_old->end(); ++i)
-  {
-    HashMap<unsigned int, MaterialProperties>::iterator j;
-    for (j = i->second.begin(); j != i->second.end(); ++j)
-      j->second.destroy();
-  }
+  for (auto & i : *_props_elem_old)
+    for (auto & j : i.second)
+      j.second.destroy();
 
-  for (i = _props_elem_older->begin(); i != _props_elem_older->end(); ++i)
-  {
-    HashMap<unsigned int, MaterialProperties>::iterator j;
-    for (j = i->second.begin(); j != i->second.end(); ++j)
-      j->second.destroy();
-  }
+  for (auto & i : *_props_elem_older)
+    for (auto & j : i.second)
+      j.second.destroy();
 }
 
 void
-MaterialPropertyStorage::prolongStatefulProps(const std::vector<std::vector<QpMap> > & refinement_map, QBase & qrule, QBase & qrule_face, MaterialPropertyStorage & parent_material_props, MaterialData & child_material_data, const Elem & elem, const int input_parent_side, const int input_child, const int input_child_side)
+MaterialPropertyStorage::prolongStatefulProps(const std::vector<std::vector<QpMap> > & refinement_map,
+                                              QBase & qrule,
+                                              QBase & qrule_face,
+                                              MaterialPropertyStorage & parent_material_props,
+                                              MaterialData & child_material_data,
+                                              const Elem & elem,
+                                              const int input_parent_side,
+                                              const int input_child,
+                                              const int input_child_side)
 {
   mooseAssert(input_child != -1 || input_parent_side == input_child_side, "Invalid inputs!");
 
@@ -124,10 +124,8 @@ MaterialPropertyStorage::prolongStatefulProps(const std::vector<std::vector<QpMa
       children[child] = child;
   }
 
-  for (unsigned int i=0; i < children.size(); i++)
+  for (const auto & child : children)
   {
-    unsigned int child = children[i];
-
     // If we're not projecting an internal child side, but we are projecting sides, see if this child is on that side
     if (input_child == -1 && input_child_side != -1 && !elem.is_child_on_side(child, parent_side))
       continue;
@@ -170,7 +168,13 @@ MaterialPropertyStorage::prolongStatefulProps(const std::vector<std::vector<QpMa
 
 
 void
-MaterialPropertyStorage::restrictStatefulProps(const std::vector<std::pair<unsigned int, QpMap> > & coarsening_map, std::vector<const Elem *> & coarsened_element_children, QBase & qrule, QBase & qrule_face, MaterialData & material_data, const Elem & elem, int input_side)
+MaterialPropertyStorage::restrictStatefulProps(const std::vector<std::pair<unsigned int, QpMap> > & coarsening_map,
+                                               const std::vector<const Elem *> & coarsened_element_children,
+                                               QBase & qrule,
+                                               QBase & qrule_face,
+                                               MaterialData & material_data,
+                                               const Elem & elem,
+                                               int input_side)
 {
   unsigned int side;
 
@@ -236,10 +240,8 @@ MaterialPropertyStorage::restrictStatefulProps(const std::vector<std::pair<unsig
 }
 
 
-
-
 void
-MaterialPropertyStorage::initStatefulProps(MaterialData & material_data, std::vector<Material *> & mats, unsigned int n_qpoints, const Elem & elem, unsigned int side/* = 0*/)
+MaterialPropertyStorage::initStatefulProps(MaterialData & material_data, const std::vector<MooseSharedPointer<Material> > & mats, unsigned int n_qpoints, const Elem & elem, unsigned int side/* = 0*/)
 {
   // NOTE: since materials are storing their computed properties in MaterialData class, we need to
   // juggle the memory between MaterialData and MaterialProperyStorage classes
@@ -263,8 +265,8 @@ MaterialPropertyStorage::initStatefulProps(MaterialData & material_data, std::ve
   // copy from storage to material data
   swap(material_data, elem, side);
   // run custom init on properties
-  for (std::vector<Material *>::iterator it = mats.begin(); it != mats.end(); ++it)
-    (*it)->initStatefulProperties(n_qpoints);
+  for (const auto & mat : mats)
+    mat->initStatefulProperties(n_qpoints);
   swapBack(material_data, elem, side);
 
   // Copy the properties to Old and Older as needed
@@ -277,7 +279,6 @@ MaterialPropertyStorage::initStatefulProps(MaterialData & material_data, std::ve
           propsOlder()[&elem][side][i]->qpCopy(qp, props()[&elem][side][i], qp);
       }
 }
-
 void
 MaterialPropertyStorage::shift()
 {

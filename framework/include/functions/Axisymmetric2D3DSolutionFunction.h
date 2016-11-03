@@ -16,10 +16,10 @@
 #define AXISYMMETRIC2D3DSOLUTIONFUNCTION_H
 
 #include "Function.h"
-#include "SolutionUserObject.h"
 
 // Forward decleration
 class Axisymmetric2D3DSolutionFunction;
+class SolutionUserObject;
 
 template<>
 InputParameters validParams<Axisymmetric2D3DSolutionFunction>();
@@ -37,25 +37,11 @@ public:
 
   /**
    * Constructor
-   * @param name The name of the function
    * @param parameters The input parameters for the function
    */
-  Axisymmetric2D3DSolutionFunction(const std::string & name, InputParameters parameters);
+  Axisymmetric2D3DSolutionFunction(const InputParameters & parameters);
 
-  /**
-   * Empty destructor
-   */
-  virtual ~Axisymmetric2D3DSolutionFunction();
-
-  /**
-   * Extract a value from the solution
-   * @param t Time at which to extract
-   * @param p Spatial location of desired data
-   * @return The value at t and p
-   */
-  virtual Real value(Real t, const Point & p);
-
-  // virtual RealGradient gradient(Real t, const Point & p);
+  virtual Real value(Real t, const Point & p) override;
 
   /**
    * Setup the function for use
@@ -63,7 +49,7 @@ public:
    * was read. A pointer is required because Functions are created prior to UserObjects,
    * see Moose.C.
    */
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
 protected:
 
@@ -75,6 +61,11 @@ protected:
 
   /// Factor to add to the solution (default = 0)
   const Real _add_factor;
+
+  /// Ratio of axial dimension of 3d model to its counterpart in the 2d model.
+  /// This permits the axial dimension of the 3d model to be larger than that
+  /// of the 2d model
+  const Real _axial_dim_ratio;
 
   /// Two points that define the axis of rotation for the 2d model
   const RealVectorValue _2d_axis_point1;
@@ -96,6 +87,9 @@ protected:
 
   /// The variable names to extract from the file
   std::vector<std::string> _var_names;
+
+  /// The local SolutionUserObject indices for the variables extracted from the file
+  std::vector<unsigned int> _solution_object_var_indices;
 };
 
 #endif //AXISYMMETRIC2D3DSOLUTIONFUNCTION_H

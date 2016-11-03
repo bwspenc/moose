@@ -21,7 +21,7 @@ class RigidBodyModesRZ :
   public NodalUserObject
 {
 public:
-  RigidBodyModesRZ(const std::string & name, InputParameters parameters);
+  RigidBodyModesRZ(const InputParameters & parameters);
 
   /**
    * This function will get called on each node.

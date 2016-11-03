@@ -14,6 +14,9 @@
 
 #include "ErrorFractionMarker.h"
 
+// libMesh includes
+#include "libmesh/error_vector.h"
+
 template<>
 InputParameters validParams<ErrorFractionMarker>()
 {
@@ -26,8 +29,8 @@ InputParameters validParams<ErrorFractionMarker>()
 }
 
 
-ErrorFractionMarker::ErrorFractionMarker(const std::string & name, InputParameters parameters) :
-    IndicatorMarker(name, parameters),
+ErrorFractionMarker::ErrorFractionMarker(const InputParameters & parameters) :
+    IndicatorMarker(parameters),
     _coarsen(parameters.get<Real>("coarsen")),
     _refine(parameters.get<Real>("refine"))
 {
@@ -40,10 +43,10 @@ ErrorFractionMarker::markerSetup()
   _max = 0;
 
   // First find the max and min error
-  for (unsigned int i=0; i<_error_vector.size(); i++)
+  for (const auto & val : _error_vector)
   {
-    _min = std::min(_min, static_cast<Real>(_error_vector[i]));
-    _max = std::max(_max, static_cast<Real>(_error_vector[i]));
+    _min = std::min(_min, static_cast<Real>(val));
+    _max = std::max(_max, static_cast<Real>(val));
   }
 
   _delta = _max-_min;

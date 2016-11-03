@@ -16,12 +16,17 @@
 #define CONSOLEUTILS_H
 
 // MOOSE includes
-#include "NonlinearSystem.h"
-#include "AuxiliarySystem.h"
+#include "Moose.h"
 
 // Forward declarations
 class MooseApp;
 class FEProblem;
+
+// libMesh forward declarations
+namespace libMesh
+{
+class System;
+}
 
 namespace ConsoleUtils
 {
@@ -31,6 +36,11 @@ static const unsigned int console_field_width = 27;
 
 /// Line length for printing simulation information
 static const unsigned int console_line_length = 100;
+
+/**
+ * Create empty string for indenting
+ */
+std::string indent(unsigned int spaces);
 
 /**
  * Outputs framework information
@@ -43,7 +53,6 @@ std::string outputFrameworkInformation(MooseApp & app);
  * Output the mesh information
  */
 std::string outputMeshInformation(FEProblem & problem, bool verbose = true);
-
 
 /**
  * Output the Auxiliary system information
@@ -68,7 +77,7 @@ std::string outputOutputInformation(MooseApp & app);
 /**
  * Output the legacy flag information
  */
-std::string outputLegacyInformation(FEProblem & problem);
+std::string outputLegacyInformation(MooseApp & app, FEProblem & problem);
 
 /**
  * Output system information
@@ -76,6 +85,7 @@ std::string outputLegacyInformation(FEProblem & problem);
  * @see outputAuxiliarySystemInformation outputNonlinearSystemInformation
  */
 std::string outputSystemInformationHelper(const System & system);
+
 
 /**
  * Helper function function for stringstream formatting

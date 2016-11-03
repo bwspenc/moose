@@ -22,8 +22,7 @@ InputParameters validParams<AbaqusCreepMaterial>();
 class AbaqusCreepMaterial : public SolidModel
 {
 public:
-  AbaqusCreepMaterial(const std::string & name,
-                  InputParameters parameters);
+  AbaqusCreepMaterial(const InputParameters & parameters);
 
   virtual ~AbaqusCreepMaterial();
 

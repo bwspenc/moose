@@ -21,8 +21,8 @@ template<> InputParameters validParams<ConstantFunction>()
    return params;
 }
 
-ConstantFunction::ConstantFunction(const std::string & name, InputParameters parameters) :
-    Function(name, parameters),
+ConstantFunction::ConstantFunction(const InputParameters & parameters) :
+    Function(parameters),
     _value(getParam<Real>("value"))
 {
 }
@@ -32,3 +32,4 @@ ConstantFunction::value(Real, const Point &)
 {
   return _value;
 }
+

@@ -27,10 +27,10 @@ InputParameters validParams<KKSCHBulk>();
  * The user picks one phase free energy \f$ F_a \f$ (f_base) and its corresponding
  * phase concentration \f$ c_a \f$
  */
-class KKSCHBulk : public CHBulk
+class KKSCHBulk : public CHBulk<Real>
 {
 public:
-  KKSCHBulk(const std::string & name, InputParameters parameters);
+  KKSCHBulk(const InputParameters & parameters);
 
 protected:
   virtual RealGradient computeGradDFDCons(PFFunctionType type);
@@ -40,16 +40,13 @@ private:
   /// Number of coupled variables
   unsigned int _nvar;
 
-  /// free energy function material property base names
-  MaterialPropertyName _Fa_name;
-
-  /// free energy function material property base names
-  MaterialPropertyName _Fb_name;
-
+  ///@{
+  /// Phase concnetration variables
   unsigned int _ca_var;
   const VariableName _ca_name;
   unsigned int _cb_var;
   const VariableName _cb_name;
+  ///@}
 
   /// Derivatives of \f$ dFa/dca \f$ with respect to all coupled variables
   std::vector<const MaterialProperty<Real> *> _second_derivatives;
@@ -61,7 +58,7 @@ private:
   std::vector<const MaterialProperty<Real> *> _third_derivatives_ca;
 
   /// Gradients for all coupled variables
-  std::vector<VariableGradient *> _grad_args;
+  std::vector<const VariableGradient *> _grad_args;
 
   /// h(eta) material property
   const MaterialProperty<Real> & _prop_h;

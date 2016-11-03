@@ -14,6 +14,7 @@
 
 #include "NodalScalarKernel.h"
 #include "SystemBase.h"
+#include "Assembly.h"
 
 template<>
 InputParameters validParams<NodalScalarKernel>()
@@ -23,20 +24,16 @@ InputParameters validParams<NodalScalarKernel>()
   return params;
 }
 
-NodalScalarKernel::NodalScalarKernel(const std::string & name, InputParameters parameters) :
-    ScalarKernel(name, parameters),
-    Coupleable(parameters, true),
+NodalScalarKernel::NodalScalarKernel(const InputParameters & parameters) :
+    ScalarKernel(parameters),
+    Coupleable(this, true),
     MooseVariableDependencyInterface(),
     _node_ids(getParam<std::vector<dof_id_type> >("nodes"))
 {
   // Fill in the MooseVariable dependencies
   const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
-  for (unsigned int i=0; i<coupled_vars.size(); i++)
-    addMooseVariableDependency(coupled_vars[i]);
-}
-
-NodalScalarKernel::~NodalScalarKernel()
-{
+  for (const auto & var : coupled_vars)
+    addMooseVariableDependency(var);
 }
 
 void

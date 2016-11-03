@@ -1,3 +1,12 @@
+###########################################################
+# This is a simple test of the Mesh System. This
+# test demonstrates the usage of GeneratedMesh. It
+# builds a square domain on demand.
+#
+# @Requirement F2.10
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -55,7 +64,5 @@
 
 [Outputs]
   file_base = out
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

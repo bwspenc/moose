@@ -11,8 +11,9 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-#include "ComputeMarkerThread.h"
 
+// MOOSE includes
+#include "ComputeMarkerThread.h"
 #include "AuxiliarySystem.h"
 #include "Problem.h"
 #include "FEProblem.h"
@@ -21,13 +22,11 @@
 // libmesh includes
 #include "libmesh/threads.h"
 
-ComputeMarkerThread::ComputeMarkerThread(FEProblem & fe_problem,
-                                               AuxiliarySystem & sys,
-                                               std::vector<MarkerWarehouse> & marker_whs) :
+ComputeMarkerThread::ComputeMarkerThread(FEProblem & fe_problem, AuxiliarySystem & sys) :
     ThreadedElementLoop<ConstElemRange>(fe_problem, sys),
     _fe_problem(fe_problem),
     _aux_sys(sys),
-    _marker_whs(marker_whs)
+    _marker_whs(_fe_problem.getMarkerWarehouse())
 {
 }
 
@@ -48,23 +47,14 @@ void
 ComputeMarkerThread::subdomainChanged()
 {
   _fe_problem.subdomainSetup(_subdomain, _tid);
-  _marker_whs[_tid].updateActiveMarkers(_subdomain);
-
-  const std::vector<Marker *> & markers = _marker_whs[_tid].active();
-  for (std::vector<Marker *>::const_iterator it = markers.begin(); it != markers.end(); ++it)
-    (*it)->subdomainSetup();
+  _marker_whs.subdomainSetup(_tid);
 
   std::set<MooseVariable *> needed_moose_vars;
+  _marker_whs.updateVariableDependency(needed_moose_vars, _tid);
 
-  for (std::vector<Marker *>::const_iterator it = markers.begin(); it != markers.end(); ++it)
+  for (const auto & it : _aux_sys._elem_vars[_tid])
   {
-    const std::set<MooseVariable *> & mv_deps = (*it)->getMooseVariableDependencies();
-    needed_moose_vars.insert(mv_deps.begin(), mv_deps.end());
-  }
-
-  for (std::map<std::string, MooseVariable *>::iterator it = _aux_sys._elem_vars[_tid].begin(); it != _aux_sys._elem_vars[_tid].end(); ++it)
-  {
-    MooseVariable * var = it->second;
+    MooseVariable * var = it.second;
     var->prepareAux();
   }
 
@@ -77,20 +67,22 @@ ComputeMarkerThread::onElement(const Elem *elem)
 {
   _fe_problem.prepare(elem, _tid);
   _fe_problem.reinitElem(elem, _tid);
-
   _fe_problem.reinitMaterials(_subdomain, _tid);
 
-  const std::vector<Marker *> & markers = _marker_whs[_tid].active();
-  for (std::vector<Marker *>::const_iterator it = markers.begin(); it != markers.end(); ++it)
-    (*it)->computeMarker();
+  if (_marker_whs.hasActiveBlockObjects(_subdomain, _tid))
+  {
+    const std::vector<MooseSharedPointer<Marker> > & markers = _marker_whs.getActiveBlockObjects(_subdomain, _tid);
+    for (const auto & marker : markers)
+      marker->computeMarker();
+  }
 
   _fe_problem.swapBackMaterials(_tid);
 
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (std::map<std::string, MooseVariable *>::iterator it = _aux_sys._elem_vars[_tid].begin(); it != _aux_sys._elem_vars[_tid].end(); ++it)
+    for (const auto & it : _aux_sys._elem_vars[_tid])
     {
-      MooseVariable * var = it->second;
+      MooseVariable * var = it.second;
       var->insert(_aux_sys.solution());
     }
   }

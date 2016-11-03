@@ -27,8 +27,8 @@ InputParameters validParams<MaterialSymmElasticityTensorAux>()
   return params;
 }
 
-MaterialSymmElasticityTensorAux::MaterialSymmElasticityTensorAux(const std::string & name, InputParameters parameters)
-    :AuxKernel(name, parameters),
+MaterialSymmElasticityTensorAux::MaterialSymmElasticityTensorAux(const InputParameters & parameters)
+    :AuxKernel(parameters),
      _tensor_matpro(getParam<std::string>("tensor_matpro")),
      _index(getParam<int>("index")),
      _tensor_prop(getMaterialProperty<SymmElasticityTensor>(_tensor_matpro))

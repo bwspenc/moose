@@ -32,13 +32,11 @@ InputParameters validParams<AddAllSideSetsByNormals>();
 class AddAllSideSetsByNormals : public AddSideSetsBase
 {
 public:
-  AddAllSideSetsByNormals(const std::string & name, InputParameters parameters);
-
-  virtual ~AddAllSideSetsByNormals();
-
-  virtual void modify();
+  AddAllSideSetsByNormals(const InputParameters & parameters);
 
 protected:
+  virtual void modify() override;
+
   BoundaryID getNextBoundaryID();
 
   /**

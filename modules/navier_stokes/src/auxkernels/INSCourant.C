@@ -5,6 +5,7 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 #include "INSCourant.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<INSCourant>()
@@ -19,19 +20,19 @@ InputParameters validParams<INSCourant>()
   return params;
 }
 
-INSCourant::INSCourant(const std::string & name, InputParameters parameters)
-  :AuxKernel(name, parameters),
-  _u_vel(coupledValue("u")),
-  _v_vel(_mesh.dimension() >= 2 ? coupledValue("v") : _zero),
-  _w_vel(_mesh.dimension() == 3 ? coupledValue("w") : _zero)
-{}
+INSCourant::INSCourant(const InputParameters & parameters) :
+    AuxKernel(parameters),
+    _u_vel(coupledValue("u")),
+    _v_vel(_mesh.dimension() >= 2 ? coupledValue("v") : _zero),
+    _w_vel(_mesh.dimension() == 3 ? coupledValue("w") : _zero)
+{
+}
 
 Real
 INSCourant::computeValue()
 {
-  RealVectorValue U(_u_vel[_qp], _v_vel[_qp], _w_vel[_qp]);
-
-  Real vel_mag = U.size();
+  const RealVectorValue U(_u_vel[_qp], _v_vel[_qp], _w_vel[_qp]);
+  Real vel_mag = U.norm();
 
   // Don't divide by zero...
   vel_mag = std::max(vel_mag, std::numeric_limits<Real>::epsilon());

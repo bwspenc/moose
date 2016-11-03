@@ -8,16 +8,15 @@
 #define COMPUTESTRESSFREESTRAINBASE_H
 
 #include "Material.h"
-#include "DerivativeMaterialInterface.h"
 #include "RankTwoTensor.h"
 
 /**
  * ComputeStressFreeStrainBase is the base class for stress free strain tensors
  */
-class ComputeStressFreeStrainBase : public DerivativeMaterialInterface<Material>
+class ComputeStressFreeStrainBase : public Material
 {
 public:
-  ComputeStressFreeStrainBase(const std:: string & name, InputParameters parameters);
+  ComputeStressFreeStrainBase(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();

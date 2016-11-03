@@ -4,10 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "HomogenizedElasticConstants.h"
 #include "SymmElasticityTensor.h"
-
 #include "SubProblem.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<HomogenizedElasticConstants>()
@@ -37,8 +38,8 @@ InputParameters validParams<HomogenizedElasticConstants>()
   return params;
 }
 
-HomogenizedElasticConstants::HomogenizedElasticConstants(const std::string & name, InputParameters parameters)
-  :ElementAverageValue(name, parameters),
+HomogenizedElasticConstants::HomogenizedElasticConstants(const InputParameters & parameters)
+  :ElementAverageValue(parameters),
    _grad_disp_x_xx(coupledGradient("dx_xx")),
    _grad_disp_y_xx(coupledGradient("dy_xx")),
    _grad_disp_z_xx(_subproblem.mesh().dimension() == 3 ? coupledGradient("dz_xx") : _grad_zero),
@@ -199,7 +200,7 @@ HomogenizedElasticConstants::computeQpIntegral()
 
     value = 0.0;
 
-    VariableGradient * grad[6][3];
+    const VariableGradient * grad[6][3];
     grad[0][0] = &_grad_disp_x_xx;
     grad[0][1] = &_grad_disp_y_xx;
     grad[0][2] = &_grad_disp_z_xx;

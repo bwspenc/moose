@@ -17,26 +17,28 @@
 template<>
 InputParameters validParams<MaterialStdVectorAux>()
 {
-  InputParameters params = validParams<MaterialAuxBase<std::vector<Real> > >();
-  params.addParam<unsigned int>("index", 0, "The index to consider for this kernel");
-  params.addClassDescription("Extracts a component of a material's std::vector<Real> to an aux variable.  If the std::vector is not of sufficient size then zero is returned");
-
+  InputParameters params = validParams<MaterialStdVectorAuxBase<> >();
+  params.addClassDescription("Extracts a component of a material type std::vector<Real> to an aux variable.  If the std::vector is not of sufficient size then zero is returned");
+  params.addParam<unsigned int>("selected_qp", "Evaluate the std::vector<Real> at this quadpoint.  This only needs to be used if you are interested in a particular quadpoint in each element: otherwise do not include this parameter in your input file");
+  params.addParamNamesToGroup("selected_qp", "Advanced");
   return params;
 }
 
-MaterialStdVectorAux::MaterialStdVectorAux(const std::string & name, InputParameters parameters) :
-  MaterialAuxBase<std::vector<Real> >(name, parameters),
-    _index(getParam<unsigned int>("index"))
-{
-}
-
-MaterialStdVectorAux::~MaterialStdVectorAux()
+MaterialStdVectorAux::MaterialStdVectorAux(const InputParameters & parameters) :
+    MaterialStdVectorAuxBase<Real>(parameters),
+    _has_selected_qp(isParamValid("selected_qp")),
+    _selected_qp(_has_selected_qp ? getParam<unsigned int>("selected_qp") : 0)
 {
 }
 
 Real
-MaterialStdVectorAux::computeValue()
+MaterialStdVectorAux::getRealValue()
 {
-  mooseAssert(_prop[_qp].size() > _index, "MaterialStdVectorAux: You chose to extract component " << _index << " but your Material property only has size " << _prop[_qp].size());
-  return _factor * _prop[_qp][_index] + _offset;
+  if (_has_selected_qp)
+  {
+    if (_selected_qp >= _q_point.size())
+      mooseError("MaterialStdVectorAux.  selected_qp specified as " << _selected_qp << " but there are only " << _q_point.size() << " quadpoints in the element");
+    return _prop[_selected_qp][_index];
+  }
+  return _prop[_qp][_index];
 }

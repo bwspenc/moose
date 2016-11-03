@@ -14,9 +14,8 @@ InputParameters validParams<ComputeFiniteStrainElasticStress>()
   return params;
 }
 
-ComputeFiniteStrainElasticStress::ComputeFiniteStrainElasticStress(const std::string & name,
-                                                 InputParameters parameters) :
-    ComputeStressBase(name, parameters),
+ComputeFiniteStrainElasticStress::ComputeFiniteStrainElasticStress(const InputParameters & parameters) :
+    ComputeStressBase(parameters),
     _strain_increment(getMaterialPropertyByName<RankTwoTensor>(_base_name + "strain_increment")),
     _rotation_increment(getMaterialPropertyByName<RankTwoTensor>(_base_name + "rotation_increment")),
     _stress_old(declarePropertyOld<RankTwoTensor>(_base_name + "stress"))
@@ -40,8 +39,8 @@ ComputeFiniteStrainElasticStress::computeQpStress()
   //Rotate the stress to the current configuration
   _stress[_qp] = _rotation_increment[_qp]*intermediate_stress*_rotation_increment[_qp].transpose();
 
-  //Assign value for elastic strain, which is equal to the total strain
-  _elastic_strain[_qp] = _total_strain[_qp];
+  //Assign value for elastic strain, which is equal to the mechanical strain
+  _elastic_strain[_qp] = _mechanical_strain[_qp];
 
   //Compute dstress_dstrain
   _Jacobian_mult[_qp] = _elasticity_tensor[_qp]; //This is NOT the exact jacobian

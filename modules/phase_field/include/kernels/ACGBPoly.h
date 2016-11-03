@@ -15,16 +15,16 @@ class ACGBPoly;
 template<>
 InputParameters validParams<ACGBPoly>();
 
-class ACGBPoly : public ACBulk
+class ACGBPoly : public ACBulk<Real>
 {
 public:
-  ACGBPoly(const std::string & name, InputParameters parameters);
+  ACGBPoly(const InputParameters & parameters);
 
 protected:
   virtual Real computeDFDOP(PFFunctionType type);
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  VariableValue & _c;
+  const VariableValue & _c;
   unsigned int _c_var;
 
   const MaterialProperty<Real> & _mu;

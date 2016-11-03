@@ -25,12 +25,12 @@ InputParameters validParams<CoupledEigenKernel>();
 class CoupledEigenKernel : public EigenKernel
 {
 public:
-  CoupledEigenKernel(const std::string & name, InputParameters parameters);
+  CoupledEigenKernel(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
 
-  VariableValue & _v;
+  const VariableValue & _v;
 };
 
 #endif //COUPLEDEIGENKERNEL_H

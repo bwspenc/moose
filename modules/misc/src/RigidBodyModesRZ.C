@@ -5,8 +5,8 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-
 #include "RigidBodyModesRZ.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<RigidBodyModesRZ>()
@@ -19,8 +19,8 @@ InputParameters validParams<RigidBodyModesRZ>()
   return params;
 }
 
-RigidBodyModesRZ::RigidBodyModesRZ(const std::string & name, InputParameters parameters) :
-  NodalUserObject(name, parameters),
+RigidBodyModesRZ::RigidBodyModesRZ(const InputParameters & parameters) :
+  NodalUserObject(parameters),
   _subspace_name(parameters.get<std::string>("subspace_name")),
   _subspace_indices(parameters.get<std::vector<unsigned int> >("subspace_indices")),
   _disp_r_i(coupled("disp_r")),
@@ -72,3 +72,4 @@ RigidBodyModesRZ::finalize()
     mode.close();
   }
 }
+

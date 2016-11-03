@@ -48,28 +48,29 @@
     l = 0.08
     beta = b
     visco =1e-4
+    gc_prop_var = 'gc_prop'
+    G0_var = 'G0_pos'
+    dG0_dstrain_var = 'dG0_pos_dstrain'
+    disp_x = u
+    disp_y = v
   [../]
   [./solid_x]
     type = StressDivergencePFFracTensors
     variable = u
-    disp_x = u
-    disp_y = v
+    displacements = 'u v'
     component = 0
     block = 1
     save_in = resid_x
     c = c
-    pff_jac_prop_name = dstress_dc
   [../]
   [./solid_y]
     type = StressDivergencePFFracTensors
     variable = v
-    disp_x = u
-    disp_y = v
+    displacements = 'u v'
     component = 1
     block = 1
     save_in = resid_y
     c = c
-    pff_jac_prop_name = dstress_dc
   [../]
   [./dcdt]
     type = TimeDerivative
@@ -133,10 +134,17 @@
     block = 1
     c = c
     kdamage = 1e-8
-    disp_y = v
-    disp_x = u
-    C_ijkl = '280.0 120.0 120.0 280.0 120.0 280.0 80.0 80.0 80.0'
-    fill_method = symmetric9
+  [../]
+  [./elasticity_tensor]
+    type = ComputeElasticityTensor
+    block = 1
+    C_ijkl = '120.0 80.0'
+    fill_method = symmetric_isotropic
+  [../]
+  [./strain]
+    type = ComputeSmallStrain
+    block = 1
+    displacements = 'u v'
   [../]
 []
 
@@ -157,7 +165,6 @@
   active = 'smp'
   [./smp]
     type = SMP
-    pc_side = left
     full = true
   [../]
 []
@@ -166,7 +173,7 @@
   type = Transient
 
   solve_type = PJFNK
-  petsc_options_iname = '-pc_type -ksp_grmres_restart -sub_ksp_type -sub_pc_type -pc_asm_overlap'
+  petsc_options_iname = '-pc_type -ksp_gmres_restart -sub_ksp_type -sub_pc_type -pc_asm_overlap'
   petsc_options_value = 'asm      31                  preonly       lu           1'
 
   nl_rel_tol = 1e-8
@@ -174,19 +181,12 @@
   nl_max_its = 10
 
   dt = 1e-4
-  dtmin = 1.e-4
+  dtmin = 1e-4
   num_steps = 2
 []
 
 [Outputs]
-  output_initial = true
-  interval = 1
   exodus = true
   csv = true
   gnuplot = true
-  [./console]
-    type = Console
-    output_linear = true
-  [../]
 []
-

@@ -15,10 +15,11 @@
 #include "Moose.h"
 #include "Factory.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 // Example 6 Includes
 #include "ExampleDiffusion.h"
-#include "Convection.h"
+#include "ExampleConvection.h"
 #include "ExampleTimeDerivative.h"
 
 template<>
@@ -31,8 +32,8 @@ InputParameters validParams<ExampleApp>()
   return params;
 }
 
-ExampleApp::ExampleApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ExampleApp::ExampleApp(InputParameters parameters) :
+    MooseApp(parameters)
 {
   srand(processor_id());
 
@@ -50,7 +51,7 @@ ExampleApp::~ExampleApp()
 void
 ExampleApp::registerObjects(Factory & factory)
 {
-  registerKernel(Convection);
+  registerKernel(ExampleConvection);
   registerKernel(ExampleDiffusion);
   registerKernel(ExampleTimeDerivative);
 }

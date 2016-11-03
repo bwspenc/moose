@@ -31,12 +31,12 @@ class TransientHalf : public TimeStepper
 {
 public:
 
-  TransientHalf(const std::string & name, InputParameters parameters);
+  TransientHalf(const InputParameters & parameters);
 
 protected:
-  virtual Real computeInitialDT();
+  virtual Real computeInitialDT() override;
 
-  virtual Real computeDT();
+  virtual Real computeDT() override;
 
 private:
   Real _ratio;

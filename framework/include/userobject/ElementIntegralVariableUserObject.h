@@ -35,17 +35,15 @@ class ElementIntegralVariableUserObject :
   public MooseVariableInterface
 {
 public:
-  ElementIntegralVariableUserObject(const std::string & name, InputParameters parameters);
+  ElementIntegralVariableUserObject(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpIntegral();
-
-  MooseVariable & _var;
+  virtual Real computeQpIntegral() override;
 
   /// Holds the solution at current quadrature points
-  VariableValue & _u;
+  const VariableValue & _u;
   /// Holds the solution gradient at the current quadrature points
-  VariableGradient & _grad_u;
+  const VariableGradient & _grad_u;
 };
 
 #endif

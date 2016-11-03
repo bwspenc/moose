@@ -4,38 +4,36 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
+// Navier-Stokes includes
 #include "NSThermalBC.h"
+#include "NS.h"
+
+// FluidProperties includes
+#include "IdealGasFluidProperties.h"
 
 template<>
 InputParameters validParams<NSThermalBC>()
 {
   InputParameters params = validParams<NodalBC>();
-
-  // Declare some required coupled variables
-  params.addRequiredCoupledVar("rho", "");
-
+  params.addRequiredCoupledVar(NS::density, "density");
   params.addRequiredParam<Real>("initial", "Initial temperature");
   params.addRequiredParam<Real>("final", "Final temperature");
   params.addRequiredParam<Real>("duration", "Time over which temperature ramps up from initial to final");
-  params.addRequiredParam<Real>("R", "Gas constant.");
-  params.addRequiredParam<Real>("gamma", "Ratio of specific heats.");
-
+  params.addRequiredParam<UserObjectName>("fluid_properties", "The name of the user object for fluid properties");
   return params;
 }
 
-NSThermalBC::NSThermalBC(const std::string & name, InputParameters parameters)
-  :NodalBC(name, parameters),
-   _rho_var(coupled("rho")),
-   _rho(coupledValue("rho")),
-   _initial(getParam<Real>("initial")),
-   _final(getParam<Real>("final")),
-   _duration(getParam<Real>("duration")),
-   _R(getParam<Real>("R")),
-   _gamma(getParam<Real>("gamma"))
-  {}
-
-
-
+NSThermalBC::NSThermalBC(const InputParameters & parameters) :
+    NodalBC(parameters),
+    _rho_var(coupled(NS::density)),
+    _rho(coupledValue(NS::density)),
+    _initial(getParam<Real>("initial")),
+    _final(getParam<Real>("final")),
+    _duration(getParam<Real>("duration")),
+    _fp(getUserObject<IdealGasFluidProperties>("fluid_properties"))
+{
+}
 
 Real
 NSThermalBC::computeQpResidual()
@@ -59,13 +57,11 @@ NSThermalBC::computeQpResidual()
   // ***at a no-slip wall*** this further reduces to (no coupling to velocity variables):
   // rho*E - rho*cv*T = 0
 
-// std::ios_base::fmtflags flags = Moose::out.flags();
-// Moose::out << std::scientific << std::setprecision(16);
-// Moose::out << "rho*E                        =" << _u[_qp] << std::endl;
-// Moose::out << "(_p[_qp] * _c_v[_qp] * value)=" << (_p[_qp] * _c_v[_qp] * value) << std::endl;
-// //Moose::out << "_c_v[_qp]                    =" << _c_v[_qp] << std::endl;
-// Moose::out.flags(flags);
-
-  Real cv = _R / (_gamma-1.);
-  return _u[_qp] - (_rho[_qp] * cv * value);
+  // std::ios_base::fmtflags flags = Moose::out.flags();
+  // Moose::out << std::scientific << std::setprecision(16);
+  // Moose::out << "rho*E                        =" << _u[_qp] << std::endl;
+  // Moose::out << "(_p[_qp] * _c_v[_qp] * value)=" << (_p[_qp] * _c_v[_qp] * value) << std::endl;
+  // //Moose::out << "_c_v[_qp]                    =" << _c_v[_qp] << std::endl;
+  // Moose::out.flags(flags);
+  return _u[_qp] - (_rho[_qp] * _fp.cv() * value);
 }

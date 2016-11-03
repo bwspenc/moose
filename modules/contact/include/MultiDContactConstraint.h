@@ -27,7 +27,7 @@ class MultiDContactConstraint :
   public NodeFaceConstraint
 {
 public:
-  MultiDContactConstraint(const std::string & name, InputParameters parameters);
+  MultiDContactConstraint(const InputParameters & parameters);
   virtual ~MultiDContactConstraint(){}
 
   virtual void timestepSetup();

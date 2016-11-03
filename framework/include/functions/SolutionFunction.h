@@ -16,10 +16,10 @@
 #define SOLUTIONFUNCTION_H
 
 #include "Function.h"
-#include "SolutionUserObject.h"
 
 // Forward decleration
 class SolutionFunction;
+class SolutionUserObject;
 
 template<>
 InputParameters validParams<SolutionFunction>();
@@ -34,21 +34,16 @@ class SolutionFunction : public Function
 public:
 
   /** Constructor
-   * @param name The name of the function
    * @param parameters The input parameters for the function
    */
-  SolutionFunction(const std::string & name, InputParameters parameters);
-
-  /** Empty destructor
-   */
-  virtual ~SolutionFunction();
+  SolutionFunction(const InputParameters & parameters);
 
   /** Extract a value from the solution
    * @param t Time at which to extract
    * @param p Spatial location of desired data
    * @return The value at t and p
    */
-  virtual Real value(Real t, const Point & p);
+  virtual Real value(Real t, const Point & p) override;
 
   // virtual RealGradient gradient(Real t, const Point & p);
 
@@ -57,15 +52,15 @@ public:
    * was read. A pointer is required because Functions are created prior to UserObjects,
    * see Moose.C.
    */
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
 protected:
 
   /// Pointer to SolutionUserObject containing the solution of interest
   const SolutionUserObject * _solution_object_ptr;
 
-  /// The variable name to extract from the file
-  std::string _var_name;
+  /// The local SolutionUserObject index for the variable extracted from the file
+  unsigned int _solution_object_var_index;
 
   /// Factor to scale the solution by (default = 1)
   const Real _scale_factor;

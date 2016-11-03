@@ -30,7 +30,7 @@ public:
    * Constructing the object
    * @param parameters Parameters that come from constructing the object
    */
-  ScalarCoupleable(const InputParameters & parameters);
+  ScalarCoupleable(const MooseObject * moose_object);
 
   /**
    * Destructor for object
@@ -44,6 +44,8 @@ public:
   const std::vector<MooseVariableScalar *> & getCoupledMooseScalarVars();
 
 protected:
+  // Reference to the interface's input parameters
+  const InputParameters & _sc_parameters;
 
   /**
    * Returns true if a variables has been coupled_as name.
@@ -65,6 +67,14 @@ protected:
    * @return Index of coupled variable
    */
   virtual unsigned int coupledScalar(const std::string & var_name, unsigned int comp = 0);
+
+  /**
+   * Returns the order for a scalar coupled variable by name
+   * @param var_name Name of coupled variable
+   * @param comp Component number for vector of coupled variables
+   * @return Order of coupled variable
+   */
+  virtual Order coupledScalarOrder(const std::string & var_name, unsigned int comp = 0);
 
   /**
    * Returns value of a scalar coupled variable
@@ -115,7 +125,7 @@ protected:
   bool _sc_is_implicit;
 
   /// Local InputParameters
-  InputParameters _coupleable_params;
+  const InputParameters & _coupleable_params;
 
   /**
    * Helper method to return (and insert if necessary) the default value

@@ -30,11 +30,9 @@ InputParameters validParams<TimeKernel>();
 class TimeKernel : public Kernel
 {
 public:
-  TimeKernel(const std::string & name, InputParameters parameters);
-  virtual ~TimeKernel();
+  TimeKernel(const InputParameters & parameters);
 
-  virtual void computeResidual();
-
+  virtual void computeResidual() override;
 };
 
 #endif //TIMEKERNEL_H

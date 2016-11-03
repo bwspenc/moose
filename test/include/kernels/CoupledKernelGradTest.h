@@ -25,7 +25,7 @@ InputParameters validParams<CoupledKernelGradTest>();
 class CoupledKernelGradTest : public KernelGrad
 {
 public:
-  CoupledKernelGradTest(const std::string & name, InputParameters parameters);
+  CoupledKernelGradTest(const InputParameters & parameters);
   virtual ~CoupledKernelGradTest();
 
 protected:
@@ -34,9 +34,8 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int);
 
   RealVectorValue _beta;
-  VariableValue & _var2;
+  const VariableValue & _var2;
   unsigned int _var2_num;
-
 };
 
 

@@ -25,7 +25,7 @@ InputParameters validParams<RichardsRelPermPowerGas>();
 class RichardsRelPermPowerGas : public RichardsRelPerm
 {
 public:
-  RichardsRelPermPowerGas(const std::string & name, InputParameters parameters);
+  RichardsRelPermPowerGas(const InputParameters & parameters);
 
   /**
    * Relative permeability

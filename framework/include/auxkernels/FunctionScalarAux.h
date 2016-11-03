@@ -29,13 +29,12 @@ InputParameters validParams<FunctionScalarAux>();
 class FunctionScalarAux : public AuxScalarKernel
 {
 public:
-  FunctionScalarAux(const std::string & name, InputParameters parameters);
-  virtual ~FunctionScalarAux();
+  FunctionScalarAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
-  Function & _function;
+  std::vector<Function *> _functions;
 };
 
 

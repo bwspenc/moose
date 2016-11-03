@@ -14,6 +14,9 @@
 
 #include "NumElemQPs.h"
 
+// libmesh includes
+#include "libmesh/quadrature.h"
+
 template<>
 InputParameters validParams<NumElemQPs>()
 {
@@ -21,8 +24,8 @@ InputParameters validParams<NumElemQPs>()
   return params;
 }
 
-NumElemQPs::NumElemQPs(const std::string & name, InputParameters parameters) :
-    ElementIntegralPostprocessor(name, parameters)
+NumElemQPs::NumElemQPs(const InputParameters & parameters) :
+    ElementIntegralPostprocessor(parameters)
 {
 }
 

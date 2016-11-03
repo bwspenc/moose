@@ -5,7 +5,7 @@
   ny = 10
   xmax = 0.2
   ymax = 0.2
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -53,8 +53,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

@@ -8,6 +8,7 @@
 #include "Factory.h"
 #include "Parser.h"
 #include "FEProblem.h"
+#include "Conversion.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -31,13 +32,13 @@ InputParameters validParams<PolycrystalVoronoiICAction>()
   params.addRequiredParam<unsigned int>("grain_num", "number of grains to create, if it is going to greater than op_num");
   params.addRequiredParam<std::string>("var_name_base", "specifies the base name of the variables");
   params.addParam<unsigned int>("rand_seed", 12444, "The random seed");
-  params.addParam<bool>("cody_test", false, "Use set grain center points for Cody's test. Grain num MUST equal 10");
   params.addParam<bool>("columnar_3D", false, "3D microstructure will be columnar in the z-direction?");
+  params.addParam<bool>("advanced_op_assignment", false, "Enable advanced grain to op assignment (avoid invalid graph coloring)");
   return params;
 }
 
-PolycrystalVoronoiICAction::PolycrystalVoronoiICAction(const std::string & name, InputParameters params) :
-    Action(name, params),
+PolycrystalVoronoiICAction::PolycrystalVoronoiICAction(const InputParameters & params) :
+    Action(params),
     _op_num(getParam<unsigned int>("op_num")),
     _grain_num(getParam<unsigned int>("grain_num")),
     _var_name_base(getParam<std::string>("var_name_base"))
@@ -67,10 +68,10 @@ PolycrystalVoronoiICAction::act()
     poly_params.set<unsigned int>("grain_num") = _grain_num;
     poly_params.set<unsigned int>("op_index") = op;
     poly_params.set<unsigned int>("rand_seed") = getParam<unsigned int>("rand_seed");
-    poly_params.set<bool>("cody_test") = getParam<bool>("cody_test");
     poly_params.set<bool>("columnar_3D") = getParam<bool>("columnar_3D");
+    poly_params.set<bool>("advanced_op_assignment") = getParam<bool>("advanced_op_assignment");
 
     //Add initial condition
-    _problem->addInitialCondition("PolycrystalReducedIC", "InitialCondition", poly_params);
+    _problem->addInitialCondition("PolycrystalReducedIC", "PolycrystalVoronoiIC_" + Moose::stringify(op), poly_params);
   }
 }

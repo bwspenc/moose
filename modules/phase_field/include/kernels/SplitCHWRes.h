@@ -7,35 +7,20 @@
 #ifndef SPLITCHWRES_H
 #define SPLITCHWRES_H
 
-#include "Kernel.h"
-#include "JvarMapInterface.h"
-#include "DerivativeMaterialInterface.h"
+#include "SplitCHWResBase.h"
 
-//Forward Declaration
-class SplitCHWRes;
+/**
+ * SplitCHWRes creates the residual for the chemical
+ * potential in the split form of the Cahn-Hilliard
+ * equation with a scalar (isotropic) mobility.
+ */
+class SplitCHWRes : public SplitCHWResBase<Real>
+{
+public:
+  SplitCHWRes(const InputParameters & parameters);
+};
 
 template<>
 InputParameters validParams<SplitCHWRes>();
-/**
- * SplitCHWres creates the residual for the chemical
- * potential in the split form of the Cahn-Hilliard
- * equation.
- */
-class SplitCHWRes : public DerivativeMaterialInterface<JvarMapInterface<Kernel> >
-{
-public:
-  SplitCHWRes(const std::string & name, InputParameters parameters);
-
-protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
-
-private:
-  const MaterialPropertyName _mob_name;
-  const MaterialProperty<Real> & _mob;
-
-  std::vector<const MaterialProperty<Real> *> _dmobdarg;
-};
 
 #endif //SPLITCHWRES_H

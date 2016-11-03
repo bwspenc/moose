@@ -32,12 +32,12 @@ InputParameters validParams<ElementAverageValue>();
 class ElementAverageValue : public ElementIntegralVariablePostprocessor
 {
 public:
-  ElementAverageValue(const std::string & name, InputParameters parameters);
+  ElementAverageValue(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual Real getValue() override;
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
   Real _volume;

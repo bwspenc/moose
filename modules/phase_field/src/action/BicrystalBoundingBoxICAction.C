@@ -8,6 +8,7 @@
 #include "Factory.h"
 #include "Parser.h"
 #include "FEProblem.h"
+#include "Conversion.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -40,8 +41,8 @@ InputParameters validParams<BicrystalBoundingBoxICAction>()
   return params;
 }
 
-BicrystalBoundingBoxICAction::BicrystalBoundingBoxICAction(const std::string & name, InputParameters params) :
-    Action(name, params),
+BicrystalBoundingBoxICAction::BicrystalBoundingBoxICAction(const InputParameters & params) :
+    Action(params),
     _var_name_base(getParam<std::string>("var_name_base")),
     _op_num(getParam<unsigned int>("op_num")),
     _x1(getParam<Real>("x1")),
@@ -94,6 +95,6 @@ BicrystalBoundingBoxICAction::act()
     }
 
     //Add initial condition
-    _problem->addInitialCondition("BoundingBoxIC", "InitialCondition", poly_params);
+    _problem->addInitialCondition("BoundingBoxIC", "BicrystalBoundingBoxIC_" + Moose::stringify(op), poly_params);
   }
 }

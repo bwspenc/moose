@@ -25,13 +25,12 @@ InputParameters validParams<ErrorFractionMarker>();
 class ErrorFractionMarker : public IndicatorMarker
 {
 public:
-  ErrorFractionMarker(const std::string & name, InputParameters parameters);
-  virtual ~ErrorFractionMarker(){};
+  ErrorFractionMarker(const InputParameters & parameters);
 
-  virtual void markerSetup();
+  virtual void markerSetup() override;
 
 protected:
-  virtual MarkerValue computeElementMarker();
+  virtual MarkerValue computeElementMarker() override;
 
   Real _coarsen;
   Real _refine;

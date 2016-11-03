@@ -53,17 +53,16 @@
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
-  restart_file_base = csv_restart_part1_out_cp/0010
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   [./csv]
     type = CSV
     file_base = csv_restart_part2_out
   [../]
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
+[]
+
+[Problem]
+  restart_file_base = csv_restart_part1_out_cp/0010
 []

@@ -15,17 +15,17 @@
 #ifndef GENERALUSEROBJECT_H
 #define GENERALUSEROBJECT_H
 
+// MOOSE includes
 #include "UserObject.h"
+#include "MaterialPropertyInterface.h"
 #include "TransientInterface.h"
 #include "DependencyResolverInterface.h"
 #include "UserObjectInterface.h"
 #include "PostprocessorInterface.h"
 #include "VectorPostprocessorInterface.h"
 #include "MaterialPropertyInterface.h"
-#include "Problem.h"
 
-
-//Forward Declarations
+// Forward Declarations
 class GeneralUserObject;
 
 template<>
@@ -43,32 +43,30 @@ class GeneralUserObject :
   protected VectorPostprocessorInterface
 {
 public:
-  GeneralUserObject(const std::string & name, InputParameters parameters);
+  GeneralUserObject(const InputParameters & parameters);
 
+
+  const std::set<std::string> & getRequestedItems() override;
+
+  const std::set<std::string> & getSuppliedItems() override;
+
+  ///@{
   /**
-   * This function will get called when this user object needs to update its values
-   *
-   * Someone somewhere has to override this.
+   * This method is not used and should not be used in a custom GeneralUserObject.
    */
-  virtual void execute() = 0;
-
-  const std::set<std::string> & getRequestedItems();
-
-  const std::set<std::string> & getSuppliedItems();
-
-  virtual ~GeneralUserObject() {}
+  virtual void threadJoin(const UserObject &) override; /*final*/
+  virtual void subdomainSetup() override; /*final*/
+  ///@}
 
   ///@{
   /**
    * Store dependency among same object types for proper execution order
    */
-
-  // FIXME: This should be const but fails to work when it is const
-  virtual PostprocessorValue & getPostprocessorValue(const std::string & name);
+  virtual const PostprocessorValue & getPostprocessorValue(const std::string & name);
   virtual const PostprocessorValue & getPostprocessorValueByName(const PostprocessorName & name);
 
-  virtual const VectorPostprocessorValue & getVectorPostprocessorValue(const std::string & name, const std::string & vector_name);
-  virtual const VectorPostprocessorValue & getVectorPostprocessorValueByName(const VectorPostprocessorName & name, const std::string & vector_name);
+  virtual const VectorPostprocessorValue & getVectorPostprocessorValue(const std::string & name, const std::string & vector_name) override;
+  virtual const VectorPostprocessorValue & getVectorPostprocessorValueByName(const VectorPostprocessorName & name, const std::string & vector_name) override;
   ///@}
 
 protected:

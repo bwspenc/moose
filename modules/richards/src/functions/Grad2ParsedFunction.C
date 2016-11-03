@@ -7,6 +7,7 @@
 
 
 #include "Grad2ParsedFunction.h"
+#include "MooseParsedFunctionWrapper.h"
 
 template<>
 InputParameters validParams<Grad2ParsedFunction>()
@@ -17,8 +18,8 @@ InputParameters validParams<Grad2ParsedFunction>()
   return params;
 }
 
-Grad2ParsedFunction::Grad2ParsedFunction(const std::string & name, InputParameters parameters) :
-    MooseParsedFunction(name, parameters),
+Grad2ParsedFunction::Grad2ParsedFunction(const InputParameters & parameters) :
+    MooseParsedFunction(parameters),
     _direction(getParam<RealVectorValue>("direction"))
 {
   _len2 = _direction*_direction;
@@ -31,3 +32,4 @@ Grad2ParsedFunction::value(Real t, const Point & p)
 {
   return (_function_ptr->evaluate<Real>(t, p + _direction) - 2*_function_ptr->evaluate<Real>(t, p) + _function_ptr->evaluate<Real>(t, p - _direction))/_len2;
 }
+

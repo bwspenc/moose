@@ -12,40 +12,49 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-#include <string>
-#include <map>
-#include <fstream>
-#include <iomanip>
-#include <algorithm>
-
+// MOOSE includes
 #include "MooseUtils.h"
 #include "MooseInit.h"
 #include "InputParameters.h"
-
 #include "ActionFactory.h"
 #include "Action.h"
 #include "Factory.h"
 #include "MooseObjectAction.h"
 #include "ActionWarehouse.h"
 #include "EmptyAction.h"
-
 #include "FEProblem.h"
 #include "MooseMesh.h"
 #include "Executioner.h"
 #include "MooseApp.h"
 #include "MooseEnum.h"
 #include "MultiMooseEnum.h"
-
+#include "MultiApp.h"
 #include "GlobalParamsAction.h"
-
 #include "SyntaxTree.h"
 #include "InputFileFormatter.h"
 #include "YAMLFormatter.h"
-
 #include "MooseTypes.h"
+#include "CommandLine.h"
 
-// libMesh
+// libMesh includes
 #include "libmesh/getpot.h"
+
+// Regular expression includes
+#include "pcrecpp.h"
+
+// C++ includes
+#include <string>
+#include <map>
+#include <fstream>
+#include <iomanip>
+#include <algorithm>
+
+// Free function for removing cli flags
+bool isFlag(const std::string s)
+{
+  return s.length() && s[0] == '-';
+}
+
 
 Parser::Parser(MooseApp & app, ActionWarehouse & action_wh) :
     ConsoleStreamInterface(app),
@@ -96,8 +105,8 @@ Parser::isSectionActive(const std::string & s,
   }
 
   // Finally see if any of the inactive strings are partially contained in this path (matching from the beginning)
-  for (std::set<std::string>::iterator i = _inactive_strings.begin(); i != _inactive_strings.end(); ++i)
-    if (s.find(*i) == 0)
+  for (const auto & search_string : _inactive_strings)
+    if (s.find(search_string) == 0)
       retValue = false;
 
   // If this section is not active - then keep track of it for future checks
@@ -137,30 +146,54 @@ Parser::parse(const std::string &input_filename)
   _input_filename = input_filename;
 
   // vector for initializing active blocks
-  std::vector<std::string> all(1);
-  all[0] = "__all__";
+  std::vector<std::string> all = {"__all__"};
 
   MooseUtils::checkFileReadable(input_filename, true);
 
+  _getpot_file.absorb(*_app.commandLine()->getPot());
+
   // GetPot object
+  _getpot_file.enable_request_recording();
   _getpot_file.parse_input_file(input_filename);
+
+  /**
+   * We re-parse the exact same file for error checking purposes. We don't want all of the CLI variables
+   * involved in error checks.
+   */
+  _getpot_file_error_checking.parse_input_file(input_filename);
+
   _getpot_initialized = true;
   _inactive_strings.clear();
+
+  /**
+   * If this is a Multiapp or wrapper make sure we set a prefix on the CommandLine object for CLI overrides.
+   */
+  if (_app.name() != "main")
+  {
+    std::string name;
+    std::string num;
+    if (pcrecpp::RE("(.*?)"                       // Match the multiapp name
+                    "(\\d+)"                      // math the multiapp number
+          ).FullMatch(_app.name(), &name, &num))
+      _app.commandLine()->setPrefix(name, num);
+    else
+      // Wrapper case
+      _app.commandLine()->setPrefix(_app.name(), "0");
+  }
 
   // Check for "unidentified nominuses".  These can indicate a vector
   // input which the user failed to wrap in quotes e.g.: v = 1 2
   {
     std::set<std::string> knowns;
-    std::vector<std::string> ufos = _getpot_file.unidentified_nominuses(knowns);
+    std::vector<std::string> ufos = _getpot_file_error_checking.unidentified_nominuses();
     if (!ufos.empty())
     {
       Moose::err << "Error: the following unidentified entries were found in your input file:" << std::endl;
-      for (unsigned int i=0; i<ufos.size(); ++i)
-        Moose::err << ufos[i] << std::endl;
+      for (const auto & ufo : ufos)
+        Moose::err << ufo << std::endl;
       mooseError("Your input file may have a syntax error, or you may have forgotten to put quotes around a vector, ie. v='1 2'.");
     }
   }
-
 
   section_names = _getpot_file.get_section_names();
   appendAndReorderSectionNames(section_names);
@@ -168,9 +201,9 @@ Parser::parse(const std::string &input_filename)
   // Set the class variable to indicate that sections names have been read, this is used later by the checkOverriddenParams function
   _sections_read = true;
 
-  for (std::vector<std::string>::iterator i=section_names.begin(); i != section_names.end(); ++i)
+  for (auto & section_name : section_names)
   {
-    curr_identifier = i->erase(i->size()-1);  // Chop off the last character (the trailing slash)
+    curr_identifier = section_name.erase(section_name.size()-1);  // Chop off the last character (the trailing slash)
 
     // Before we retrieve any actions or build any objects, make sure that the section they are in is active
     if (isSectionActive(curr_identifier, active_lists))
@@ -179,7 +212,7 @@ Parser::parse(const std::string &input_filename)
       // There may be more than one Action registered for a given section in which case we need to
       // build them all
       bool is_parent;
-      std::string registered_identifier = _syntax.isAssociated(*i, &is_parent);
+      std::string registered_identifier = _syntax.isAssociated(section_name, &is_parent);
 
       // We need to retrieve a list of Actions associated with the current identifier
       std::pair<std::multimap<std::string, Syntax::ActionInfo>::iterator,
@@ -201,14 +234,18 @@ Parser::parse(const std::string &input_filename)
           // Add the parsed syntax to the parameters object for consumption by the Action
           params.set<std::string>("task") = it->second._task;
           params.set<std::string>("registered_identifier") = registered_identifier;
+          params.addPrivateParam<std::string>("parser_syntax", curr_identifier);
 
           // Create the Action
-          MooseSharedPointer<Action> action_obj = _action_factory.create(it->second._action, curr_identifier, params);
+          MooseSharedPointer<Action> action_obj = _action_factory.create(it->second._action, MooseUtils::shortName(curr_identifier), params);
 
           // extract the MooseObject params if necessary
           MooseSharedPointer<MooseObjectAction> object_action = MooseSharedNamespace::dynamic_pointer_cast<MooseObjectAction>(action_obj);
-          if (object_action.get())
+          if (object_action)
+          {
             extractParams(curr_identifier, object_action->getObjectParams());
+            object_action->getObjectParams().set<std::vector<std::string> >("control_tags").push_back(MooseUtils::baseName(curr_identifier));
+          }
 
           // add it to the warehouse
           _action_wh.addActionBlock(action_obj);
@@ -233,13 +270,12 @@ Parser::checkActiveUsed(std::vector<std::string > & sections,
   std::set<std::string> active_lists_set;
   std::vector<std::string> difference;
 
-  for (std::map<std::string, std::vector<std::string> >::const_iterator i = active_lists.begin();
-       i != active_lists.end(); ++i)
-    for (std::vector<std::string>::const_iterator j = (i->second).begin(); j != (i->second).end(); ++j)
+  for (const auto & i : active_lists)
+    for (const auto & j : i.second)
     {
-      active_lists_set.insert(i->first);
-      if (*j != "__all__")
-        active_lists_set.insert(i->first + "/" + *j);
+      active_lists_set.insert(i.first);
+      if (j != "__all__")
+        active_lists_set.insert(i.first + "/" + j);
     }
 
   std::sort(sections.begin(), sections.end());
@@ -251,38 +287,100 @@ Parser::checkActiveUsed(std::vector<std::string > & sections,
   {
     std::ostringstream oss;
     oss << "One or more active lists in the input file are missing a referenced section:\n";
-    for (std::vector<std::string>::iterator i = difference.begin(); i != difference.end();  ++i)
-      oss << *i << "\n";
+    for (const auto & name : difference)
+      oss << name << "\n";
     mooseError(oss.str());
   }
 }
 
 void
-Parser::checkUnidentifiedParams(std::vector<std::string> & all_vars, bool error_on_warn, bool in_input_file) const
+Parser::checkUnidentifiedParams(std::vector<std::string> & all_vars, bool error_on_warn, bool in_input_file, MooseSharedPointer<FEProblem> fe_problem) const
 {
+  // Make sure that multiapp overrides were processed properly
+  int last = all_vars.size() - 1;                      // last is allowed to go negative
+  for (int i = 0; i <= last; /* no increment */)       // i is an int because last is an int
+  {
+    std::string multi_app, variable;
+    int app_num;
+
+    /**
+     * Command line parameters that contain a colon are assumed to apply to MultiApps
+     * (e.g.  MultiApp_name[num]:fully_qualified_parameter)
+     *
+     * Note: Two separate regexs are used since the digit part is optional. Attempting
+     * to have an optional capture into a non-string type will cause pcrecpp to report
+     * false. Capturing into a string an converting is more work than just using two
+     * regexs to begin with.
+     */
+    if (pcrecpp::RE("(.*?)"                                             // Match the MultiApp name
+                    "(\\d+)"                                            // MultiApp number (leave off to apply to all MultiApps with this name)
+                    ":"                                                 // the colon delimiter
+                    "(.*)"                                              // the variable override that applies to the MultiApp
+          ).FullMatch(all_vars[i], &multi_app, &app_num, &variable) &&
+        fe_problem->hasMultiApp(multi_app) &&                           // Make sure the MultiApp exists
+        // Finally make sure the number is in range (if provided)
+        static_cast<unsigned int>(app_num) < fe_problem->getMultiApp(multi_app)->numGlobalApps())
+
+
+      // delete the current item by copying the last item to this position and decrementing the vector end position
+      all_vars[i] = all_vars[last--];
+
+    else if (pcrecpp::RE("(.*?)"                                        // Same as above without the MultiApp number
+                         ":"
+                         "(.*)"
+               ).FullMatch(all_vars[i], &multi_app, &variable) &&
+             fe_problem->hasMultiApp(multi_app))                        // Make sure the MultiApp exists but no need to check numbers
+
+      // delete (see comment above)
+      all_vars[i] = all_vars[last--];
+
+
+    // TODO: check to see if globals are unused
+    else if (all_vars[i].find(":") == 0)
+      all_vars[i] = all_vars[last--];
+
+    else
+      // only increment if we didn't "delete", otherwise we'll need to revisit the current index due to copy
+      ++i;
+  }
+
+  mooseAssert(last + 1 >= 0, "index \"last\" is negative");
+
+  // Remove the deleted items
+  all_vars.resize(last+1);
+
   std::set<std::string> difference;
 
   std::sort(all_vars.begin(), all_vars.end());
+
+  // Remove flags, they aren't "input" parameters
+  all_vars.erase( std::remove_if(all_vars.begin(), all_vars.end(), isFlag), all_vars.end() );
 
   std::set_difference(all_vars.begin(), all_vars.end(), _extracted_vars.begin(), _extracted_vars.end(),
                       std::inserter(difference, difference.end()));
 
   // Remove un-parsed parameters that were located in an inactive sections
-  for (std::set<std::string>::iterator i=_inactive_strings.begin(); i != _inactive_strings.end(); ++i)
+  for (const auto & inactive_string : _inactive_strings)
     for (std::set<std::string>::iterator j=difference.begin(); j != difference.end(); /*no increment*/)
     {
       std::set<std::string>::iterator curr = j++;
-      if (curr->find(*i) != std::string::npos)
+      if (curr->find(inactive_string) != std::string::npos)
         difference.erase(curr);
     }
 
-  if (!difference.empty())
+  std::set<std::string> requested_vars = _getpot_file.get_requested_variables();
+
+  std::set<std::string> no_overrides;
+  std::set_difference(difference.begin(), difference.end(), requested_vars.begin(), requested_vars.end(),
+                      std::inserter(no_overrides, no_overrides.end()));
+
+  if (!no_overrides.empty())
   {
     std::ostringstream oss;
 
     oss << "The following parameters were unused " << (in_input_file ? "in your input file:\n" : "on the command line:\n");
-    for (std::set<std::string>::iterator i=difference.begin(); i != difference.end(); ++i)
-      oss << *i << "\n";
+    for (const auto & name : no_overrides)
+      oss << name << "\n";
 
     if (error_on_warn)
       mooseError(oss.str());
@@ -298,16 +396,15 @@ Parser::checkOverriddenParams(bool error_on_warn) const
     // The user has requested errors but we haven't done any parsing yet so throw an error
     mooseError("No parsing has been done, so checking for overridden parameters is not possible");
 
-  std::set<std::string> overridden_vars = _getpot_file.get_overridden_variables();
+  std::set<std::string> overridden_vars = _getpot_file_error_checking.get_overridden_variables();
 
   if (!overridden_vars.empty())
   {
     std::ostringstream oss;
 
     oss << "The following variables were overridden or supplied multiple times:\n";
-    for (std::set<std::string>::const_iterator i=overridden_vars.begin();
-         i != overridden_vars.end(); ++i)
-      oss << *i << "\n";
+    for (const auto & name : overridden_vars)
+      oss << name << "\n";
 
     if (error_on_warn)
       mooseError(oss.str());
@@ -320,12 +417,12 @@ void
 Parser::appendAndReorderSectionNames(std::vector<std::string> & section_names)
 {
   /**
-   * We only want to retrieve CLI overrides for the main application. We'll check the
+   * We only want to retrieve non-prefixed CLI overrides for the main application. We'll check the
    * name of the controlling application to determine whether to use the command line
    * here or not.
    */
   MooseSharedPointer<CommandLine> cmd_line;
-  if (_app.name() == "main") // See AppFactory::createApp
+//  if (_app.name() == "main") // See AppFactory::createApp
     cmd_line = _app.commandLine();
 
   if (cmd_line.get())
@@ -334,13 +431,17 @@ Parser::appendAndReorderSectionNames(std::vector<std::string> & section_names)
     mooseAssert(get_pot, "GetPot object is NULL");
 
     std::vector<std::string> cli_variables = get_pot->get_variable_names();
-    for (unsigned int i=0; i<cli_variables.size(); ++i)
+    for (const auto & cli_var : cli_variables)
     {
-      std::string::size_type pos = cli_variables[i].find_last_of('/');
-      if (pos != std::string::npos)
+      std::string::size_type colon_pos = cli_var.find(':');
+      std::string::size_type last_slash_pos = cli_var.find_last_of('/');
+
+      // Make sure that the variable does not contain a colon. This indicates that the override is for
+      // a Multiapp parameter which we won't handle here.
+      if (colon_pos == std::string::npos && last_slash_pos != std::string::npos)
       {
         // If the user supplies a CLI argument whose section doesn't exist in the input file, we'll append it here
-        std::string section = cli_variables[i].substr(0, pos+1);
+        std::string section = cli_var.substr(0, last_slash_pos+1);
         if (std::find(section_names.begin(), section_names.end(), section) == section_names.end())
           section_names.push_back(section);
       }
@@ -409,32 +510,31 @@ Parser::initSyntaxFormatter(SyntaxFormatterType type, bool dump_mode)
 }
 
 void
-Parser::buildFullTree(const std::string &search_string)
+Parser::buildFullTree(const std::string & search_string)
 {
 //  std::string prev_name = "";
 //  std::vector<InputParameters *> params_ptrs(2);
   std::vector<std::pair<std::string, Syntax::ActionInfo> > all_names;
 
-  for (std::multimap<std::string, Syntax::ActionInfo>::const_iterator iter = _syntax.getAssociatedActions().begin();
-       iter != _syntax.getAssociatedActions().end(); ++iter)
+  for (const auto & iter : _syntax.getAssociatedActions())
   {
-    Syntax::ActionInfo act_info = iter->second;
+    Syntax::ActionInfo act_info = iter.second;
     // If the task is NULL that means we need to figure out which task
     // goes with this syntax for the purpose of building the Moose Object part of the tree.
     // We will figure this out by asking the ActionFactory for the registration info.
     if (act_info._task == "")
       act_info._task = _action_factory.getTaskName(act_info._action);
 
-    all_names.push_back(std::pair<std::string, Syntax::ActionInfo>(iter->first, act_info));
+    all_names.push_back(std::pair<std::string, Syntax::ActionInfo>(iter.first, act_info));
   }
 
-  for (std::vector<std::pair<std::string, Syntax::ActionInfo> >::iterator act_names = all_names.begin(); act_names != all_names.end(); ++act_names)
+  for (const auto & act_names : all_names)
   {
-    InputParameters action_obj_params = _action_factory.getValidParams(act_names->second._action);
-    _syntax_formatter->insertNode(act_names->first, act_names->second._action, true, &action_obj_params);
+    InputParameters action_obj_params = _action_factory.getValidParams(act_names.second._action);
+    _syntax_formatter->insertNode(act_names.first, act_names.second._action, true, &action_obj_params);
 
-    const std::string & task = act_names->second._task;
-    std::string act_name = act_names->first;
+    const std::string & task = act_names.second._task;
+    std::string act_name = act_names.first;
 
     // We need to see if this action is inherited from MooseObjectAction
     // If it is, then we will loop over all the Objects in MOOSE's Factory object to print them out
@@ -545,6 +645,9 @@ template<>
 void Parser::setVectorParameter<VariableName>(const std::string & full_name, const std::string & short_name,
                                               InputParameters::Parameter<std::vector<VariableName> > * param, bool in_global, GlobalParamsAction * global_block);
 
+template<>
+void Parser::setDoubleIndexParameter<VariableName>(const std::string & full_name, const std::string & short_name,
+                                                   InputParameters::Parameter<std::vector<std::vector<VariableName> > >* param, bool /*in_global*/, GlobalParamsAction * /*global_block*/);
 
 // Macros for parameter extraction
 #define dynamicCastAndExtractScalar(type, param, full_name, short_name, in_global, global_block)                                        \
@@ -571,8 +674,16 @@ void Parser::setVectorParameter<VariableName>(const std::string & full_name, con
       setVectorParameter<type>(full_name, short_name, vector_p, in_global, global_block);                                               \
   } while (0)
 
+#define dynamicCastAndExtractDoubleIndex(type, param, full_name, short_name, in_global, global_block)                                                                    \
+  do                                                                                                                                                                     \
+  {                                                                                                                                                                      \
+    InputParameters::Parameter<std::vector<std::vector<type> > > * double_index_p = dynamic_cast<InputParameters::Parameter<std::vector<std::vector<type> > > *>(param); \
+    if (double_index_p)                                                                                                                                                  \
+      setDoubleIndexParameter<type>(full_name, short_name, double_index_p, in_global, global_block);                                                                     \
+  } while (0)
+
 void
-Parser::extractParams(const std::string & prefix, InputParameters &p)
+Parser::extractParams(const std::string & prefix, InputParameters & p)
 {
   std::ostringstream error_stream;
   static const std::string global_params_task = "set_global_params";
@@ -588,27 +699,27 @@ Parser::extractParams(const std::string & prefix, InputParameters &p)
   // Set a pointer to the current InputParameters object being parsed so that it can be referred to in the extraction routines
   _current_params = &p;
   _current_error_stream = &error_stream;
-  for (InputParameters::iterator it = p.begin(); it != p.end(); ++it)
+  for (const auto & it : p)
   {
     bool found = false;
     bool in_global = false;
-    std::string orig_name = prefix + "/" + it->first;
+    std::string orig_name = prefix + "/" + it.first;
     std::string full_name = orig_name;
 
     // Mark parameters appearing in the input file or command line
     if (_getpot_file.have_variable(full_name.c_str()) || (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str())))
     {
-      p.set_attributes(it->first, false);
+      p.set_attributes(it.first, false);
       _extracted_vars.insert(full_name);  // Keep track of all variables extracted from the input file
       found = true;
     }
     // Wait! Check the GlobalParams section
     else if (global_params_block != NULL)
     {
-      full_name = global_params_block_name + "/" + it->first;
+      full_name = global_params_block_name + "/" + it.first;
       if (_getpot_file.have_variable(full_name.c_str()))
       {
-        p.set_attributes(it->first, false);
+        p.set_attributes(it.first, false);
         _extracted_vars.insert(full_name);  // Keep track of all variables extracted from the input file
         found = true;
         in_global = true;
@@ -617,10 +728,15 @@ Parser::extractParams(const std::string & prefix, InputParameters &p)
 
     if (!found)
     {
+      /**
+       * Special case handling
+       *   if the parameter wasn't found in the input file or the cli object the logic in this branch will execute
+       */
+
       // In the case where we have OutFileName but it wasn't actually found in the input filename,
       // we will populate it with the actual parsed filename which is available here in the parser.
 
-      InputParameters::Parameter<OutFileBase> * scalar_p = dynamic_cast<InputParameters::Parameter<OutFileBase>*>(it->second);
+      InputParameters::Parameter<OutFileBase> * scalar_p = dynamic_cast<InputParameters::Parameter<OutFileBase>*>(it.second);
       if (scalar_p)
       {
         std::string input_file_name = getFileName();
@@ -628,7 +744,7 @@ Parser::extractParams(const std::string & prefix, InputParameters &p)
         size_t pos = input_file_name.find_last_of('.');
         mooseAssert(pos != std::string::npos, "Unable to determine suffix of input file name");
         scalar_p->set() = input_file_name.substr(0,pos) + "_out";
-        p.set_attributes(it->first, false);
+        p.set_attributes(it.first, false);
       }
     }
     else
@@ -638,53 +754,54 @@ Parser::extractParams(const std::string & prefix, InputParameters &p)
        */
       // built-ins
       // NOTE: Similar dynamic casting is done in InputParameters.C, please update appropriately
-      dynamicCastAndExtractScalarValueType(Real, Real         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalarValueType(int,  long         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalarValueType(long, long         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalarValueType(unsigned int, long , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(bool                        , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractScalarValueType(Real, Real         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalarValueType(int,  long         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalarValueType(long, long         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalarValueType(unsigned int, long , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(bool                        , it.second, full_name, it.first, in_global, global_params_block);
 
       // Moose Scalars
-      dynamicCastAndExtractScalar(SubdomainID           , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(BoundaryID            , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(SubdomainID           , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(BoundaryID            , it.second, full_name, it.first, in_global, global_params_block);
 
       // Moose Compound Scalars
-      dynamicCastAndExtractScalar(RealVectorValue       , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(Point                 , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(MooseEnum             , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(MultiMooseEnum        , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(RealTensorValue       , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(RealVectorValue       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(Point                 , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MooseEnum             , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MultiMooseEnum        , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(RealTensorValue       , it.second, full_name, it.first, in_global, global_params_block);
 
       // Moose String-derived scalars
-      dynamicCastAndExtractScalar(/*std::*/string       , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(SubdomainName         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(BoundaryName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(FileName              , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(FileNameNoExtension   , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(MeshFileName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(OutFileBase           , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(VariableName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(NonlinearVariableName , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(AuxVariableName       , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(FunctionName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(UserObjectName        , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(PostprocessorName     , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(VectorPostprocessorName, it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(IndicatorName         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(MarkerName            , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(MultiAppName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(OutputName            , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractScalar(MaterialPropertyName  , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(/*std::*/string       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(SubdomainName         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(BoundaryName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(FileName              , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(FileNameNoExtension   , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MeshFileName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(OutFileBase           , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(VariableName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(NonlinearVariableName , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(AuxVariableName       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(FunctionName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(UserObjectName        , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(PostprocessorName     , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(VectorPostprocessorName, it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(IndicatorName         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MarkerName            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MultiAppName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(OutputName            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MaterialPropertyName  , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractScalar(MaterialName          , it.second, full_name, it.first, in_global, global_params_block);
 
 
       /**
        * Vector types
        */
       // built-ins
-      dynamicCastAndExtractVector(Real                  , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(int                   , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(long                  , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(unsigned int          , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractVector(Real                  , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(int                   , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(long                  , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(unsigned int          , it.second, full_name, it.first, in_global, global_params_block);
       // We need to be able to parse 8-byte unsigned types when
       // libmesh is configured --with-dof-id-bytes=8.  Officially,
       // libmesh uses uint64_t in that scenario, which is usually
@@ -693,39 +810,104 @@ Parser::extractParams(const std::string & prefix, InputParameters &p)
       // but presumably uint64_t is the "most standard" way to get a
       // 64-bit unsigned type, so we'll stick with that here.
 #if LIBMESH_DOF_ID_BYTES == 8
-      dynamicCastAndExtractVector(uint64_t              , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractVector(uint64_t              , it.second, full_name, it.first, in_global, global_params_block);
 #endif
 
       // Moose Vectors
-      dynamicCastAndExtractVector(SubdomainID           , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(BoundaryID            , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(RealVectorValue       , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(Point                 , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(MooseEnum             , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractVector(SubdomainID           , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(BoundaryID            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(RealVectorValue       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(Point                 , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(MooseEnum             , it.second, full_name, it.first, in_global, global_params_block);
       /* We won't try to do vectors of tensors ;) */
 
       // Moose String-derived vectors
-      dynamicCastAndExtractVector(/*std::*/string       , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(SubdomainName         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(BoundaryName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(VariableName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(NonlinearVariableName , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(AuxVariableName       , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(FunctionName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(UserObjectName        , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(IndicatorName         , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(MarkerName            , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(MultiAppName          , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(PostprocessorName     , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(VectorPostprocessorName, it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(OutputName            , it->second, full_name, it->first, in_global, global_params_block);
-      dynamicCastAndExtractVector(MaterialPropertyName  , it->second, full_name, it->first, in_global, global_params_block);
+      dynamicCastAndExtractVector(/*std::*/string       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(FileName              , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(FileNameNoExtension   , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(MeshFileName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(SubdomainName         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(BoundaryName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(VariableName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(NonlinearVariableName , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(AuxVariableName       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(FunctionName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(UserObjectName        , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(IndicatorName         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(MarkerName            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(MultiAppName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(PostprocessorName     , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(VectorPostprocessorName, it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(OutputName            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(MaterialPropertyName  , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractVector(MaterialName          , it.second, full_name, it.first, in_global, global_params_block);
+
+      /**
+       * Double indexed types
+       */
+       // built-ins
+       dynamicCastAndExtractDoubleIndex(Real                  , it.second, full_name, it.first, in_global, global_params_block);
+       dynamicCastAndExtractDoubleIndex(int                   , it.second, full_name, it.first, in_global, global_params_block);
+       dynamicCastAndExtractDoubleIndex(long                  , it.second, full_name, it.first, in_global, global_params_block);
+       dynamicCastAndExtractDoubleIndex(unsigned int          , it.second, full_name, it.first, in_global, global_params_block);
+       // See vector type explanation
+ #if LIBMESH_DOF_ID_BYTES == 8
+       dynamicCastAndExtractDoubleIndex(uint64_t              , it.second, full_name, it.first, in_global, global_params_block);
+ #endif
+
+      dynamicCastAndExtractDoubleIndex(SubdomainID           , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(BoundaryID            , it.second, full_name, it.first, in_global, global_params_block);
+
+      // Moose String-derived vectors
+      dynamicCastAndExtractDoubleIndex(/*std::*/string       , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(FileName              , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(FileNameNoExtension   , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(MeshFileName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(SubdomainName         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(BoundaryName          , it.second, full_name, it.first, in_global, global_params_block);
+      // reading double indexed Variable name is problematic because Coupleable assumes they come as vectors
+      // therefore they not included in this list
+      dynamicCastAndExtractDoubleIndex(FunctionName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(UserObjectName        , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(IndicatorName         , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(MarkerName            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(MultiAppName          , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(PostprocessorName     , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(VectorPostprocessorName, it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(OutputName            , it.second, full_name, it.first, in_global, global_params_block);
+      dynamicCastAndExtractDoubleIndex(MaterialPropertyName  , it.second, full_name, it.first, in_global, global_params_block);
     }
   }
 
   // All of the parameters for this object have been extracted.  See if there are any errors
   if (!error_stream.str().empty())
     mooseError(error_stream.str());
+
+  // Here we will see if there are any auto build vectors that need to be created
+  const std::map<std::string, std::pair<std::string, std::string> > & auto_build_vectors = p.getAutoBuildVectors();
+  for (const auto & it : auto_build_vectors)
+  {
+    // We'll autogenerate values iff the requested vector is not valid but both the base and number are valid
+    const std::string & base_name = it.second.first;
+    const std::string & num_repeat = it.second.second;
+
+    if (!p.isParamValid(it.first) && p.isParamValid(base_name) && p.isParamValid(num_repeat))
+    {
+      unsigned int vec_size = p.get<unsigned int>(num_repeat);
+      const std::string & name = p.get<std::string>(base_name);
+
+      std::vector<VariableName> variable_names(vec_size);
+      for (unsigned int i = 0; i < vec_size; ++i)
+      {
+        std::ostringstream oss;
+        oss << name << i;
+        variable_names[i] = oss.str();
+      }
+
+      // Finally set the autogenerated vector into the InputParameters object
+      p.set<std::vector<VariableName> >(it.first) = variable_names;
+    }
+  }
 }
 
 template<typename T>
@@ -791,6 +973,45 @@ void Parser::setVectorParameter(const std::string & full_name, const std::string
   }
 }
 
+
+template<typename T>
+void Parser::setDoubleIndexParameter(const std::string & full_name, const std::string & short_name, InputParameters::Parameter<std::vector<std::vector<T> > >* param, bool in_global, GlobalParamsAction * global_block)
+{
+  GetPot *gp;
+
+  // See if this variable was passed on the command line
+  // if it was then we will retrieve the value from the command line instead of the file
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
+    gp = _app.commandLine()->getPot();
+  else
+    gp = &_getpot_file;
+
+  // Get the full string assigned to the variable full_name
+  std::string buffer = gp->get_value_no_default(full_name, "");
+
+  // split vector at delim ;
+  // NOTE: the substrings are _not_ of type T yet
+  std::vector<std::string> first_tokenized_vector;
+  MooseUtils::tokenize(buffer, first_tokenized_vector, 1, ";");
+  param->set().resize(first_tokenized_vector.size());
+
+  for (unsigned j = 0; j < first_tokenized_vector.size(); ++j)
+    if (!MooseUtils::tokenizeAndConvert<T>(first_tokenized_vector[j], param->set()[j]))
+      mooseError("Reading parameter " << short_name << " failed.");
+
+  if (in_global)
+  {
+    global_block->remove(short_name);
+    global_block->setDoubleIndexParam<T>(short_name).resize(first_tokenized_vector.size());
+    for (unsigned j = 0; j < first_tokenized_vector.size(); ++j)
+    {
+      global_block->setDoubleIndexParam<T>(short_name)[j].resize(param->get()[j].size());
+      for (unsigned int i = 0; i < param->get()[j].size(); ++i)
+        global_block->setDoubleIndexParam<T>(short_name)[j][i] = param->get()[j][i];
+    }
+  }
+}
+
 template<typename T>
 void Parser::setScalarComponentParameter(const std::string & full_name, const std::string & short_name, InputParameters::Parameter<T> * param, bool in_global, GlobalParamsAction * global_block)
 {
@@ -811,7 +1032,7 @@ void Parser::setScalarComponentParameter(const std::string & full_name, const st
 
   T value;
   for (int i = 0; i < vec_size; ++i)
-    value(i) = Real(gp->get_value_no_default(full_name.c_str(), (Real) 0.0, i));
+    value(i) = Real(gp->get_value_no_default(full_name.c_str(), static_cast<Real>(0.0), i));
 
   param->set() = value;
   if (in_global)
@@ -844,7 +1065,7 @@ void Parser::setVectorComponentParameter(const std::string & full_name, const st
   {
     T value;
     for (int j=0; j < LIBMESH_DIM; ++j)
-      value(j) = Real(gp->get_value_no_default(full_name.c_str(), (Real) 0.0, i*LIBMESH_DIM+j));
+      value(j) = Real(gp->get_value_no_default(full_name.c_str(), static_cast<Real>(0.0), i*LIBMESH_DIM+j));
     values.push_back(value);
   }
 
@@ -878,7 +1099,7 @@ void Parser::setScalarParameter<MooseEnum>(const std::string & full_name, const 
 
   // See if this variable was passed on the command line
   // if it was then we will retrieve the value from the command line instead of the file
-  if (_app.name() == "main" && _app.commandLine()->haveVariable(full_name.c_str()))
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
     gp = _app.commandLine()->getPot();
   else
     gp = &_getpot_file;
@@ -887,6 +1108,7 @@ void Parser::setScalarParameter<MooseEnum>(const std::string & full_name, const 
   std::string current_name = current_param;
 
   std::string value = gp->get_value_no_default(full_name.c_str(), current_name);
+
   param->set() = value;
   if (in_global)
   {
@@ -902,7 +1124,7 @@ void Parser::setScalarParameter<MultiMooseEnum>(const std::string & full_name, c
 
   // See if this variable was passed on the command line
   // if it was then we will retrieve the value from the command line instead of the file
-  if (_app.name() == "main" && _app.commandLine()->haveVariable(full_name.c_str()))
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
     gp = _app.commandLine()->getPot();
   else
     gp = &_getpot_file;
@@ -934,7 +1156,7 @@ void Parser::setScalarParameter<RealTensorValue>(const std::string & full_name, 
 
   // See if this variable was passed on the command line
   // if it was then we will retrieve the value from the command line instead of the file
-  if (_app.name() == "main" && _app.commandLine()->haveVariable(full_name.c_str()))
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
     gp = _app.commandLine()->getPot();
   else
     gp = &_getpot_file;
@@ -947,7 +1169,7 @@ void Parser::setScalarParameter<RealTensorValue>(const std::string & full_name, 
   RealTensorValue value;
   for (int i = 0; i < LIBMESH_DIM; ++i)
     for (int j = 0; j < LIBMESH_DIM; ++j)
-      value(i, j) = Real(gp->get_value_no_default(full_name.c_str(), (Real) 0.0, i * LIBMESH_DIM + j));
+      value(i, j) = Real(gp->get_value_no_default(full_name.c_str(), static_cast<Real>(0.0), i * LIBMESH_DIM + j));
 
   param->set() = value;
   if (in_global)
@@ -965,12 +1187,13 @@ void Parser::setScalarParameter<PostprocessorName>(const std::string & full_name
 
   // See if this variable was passed on the command line
   // if it was then we will retrieve the value from the command line instead of the file
-  if (_app.name() == "main" && _app.commandLine()->haveVariable(full_name.c_str()))
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
     gp = _app.commandLine()->getPot();
   else
     gp = &_getpot_file;
 
   PostprocessorName pps_name = gp->get_value_no_default(full_name.c_str(), param->get());
+
   // Set the value here
   param->set() = pps_name;
 
@@ -978,7 +1201,7 @@ void Parser::setScalarParameter<PostprocessorName>(const std::string & full_name
   std::istringstream ss(pps_name);
 
   if (ss >> real_value && ss.eof())
-    _current_params->defaultPostprocessorValue(short_name, true) = real_value;
+    _current_params->setDefaultPostprocessorValue(short_name, real_value);
 
   if (in_global)
   {
@@ -1006,7 +1229,7 @@ void Parser::setVectorParameter<MooseEnum>(const std::string & full_name, const 
 
   // See if this variable was passed on the command line
   // if it was then we will retrieve the value from the command line instead of the file
-  if (_app.name() == "main" && _app.commandLine()->haveVariable(full_name.c_str()))
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
     gp = _app.commandLine()->getPot();
   else
     gp = &_getpot_file;
@@ -1014,7 +1237,7 @@ void Parser::setVectorParameter<MooseEnum>(const std::string & full_name, const 
   std::vector<MooseEnum> enum_values = param->get();
   std::vector<std::string> values(enum_values.size());
   for (unsigned int i=0; i<values.size(); ++i)
-    values[i] = (std::string)enum_values[i];
+    values[i] = static_cast<std::string>(enum_values[i]);
 
   /**
    * With MOOSE Enums we need a default object so it should have been passed in the param
@@ -1036,7 +1259,7 @@ void Parser::setVectorParameter<MooseEnum>(const std::string & full_name, const 
   }
 }
 
-// Specialization for coupling a Real value to any coupling term in MOOSE
+// Specialization for coupling vectors. This routine handles default values and auto generated VariableValue vectors
 template<>
 void Parser::setVectorParameter<VariableName>(const std::string & full_name, const std::string & short_name, InputParameters::Parameter<std::vector<VariableName> > * param, bool /*in_global*/, GlobalParamsAction * /*global_block*/)
 {
@@ -1044,7 +1267,7 @@ void Parser::setVectorParameter<VariableName>(const std::string & full_name, con
 
   // See if this variable was passed on the command line
   // if it was then we will retrieve the value from the command line instead of the file
-  if (_app.name() == "main" && _app.commandLine()->haveVariable(full_name.c_str()))
+  if (_app.commandLine() && _app.commandLine()->haveVariable(full_name.c_str()))
     gp = _app.commandLine()->getPot();
   else
     gp = &_getpot_file;
@@ -1062,6 +1285,8 @@ void Parser::setVectorParameter<VariableName>(const std::string & full_name, con
 
     // If we are able to convert this value into a Real, then set a default coupled value
     if (ss >> real_value && ss.eof())
+      // FIXME: the real_value is assigned to defaultCoupledValue overriding the value assigned before.
+      // Currently there is no functionality to separately assign the correct "real_value[i]" in InputParameters
       _current_params->defaultCoupledValue(short_name, real_value);
     else
     {

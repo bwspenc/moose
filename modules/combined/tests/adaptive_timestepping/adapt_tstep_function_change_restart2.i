@@ -160,28 +160,23 @@
     max_function_change = 3e7
     dt = 1e6
   [../]
-
-  restart_file_base = adapt_tstep_function_change_restart1_checkpoint_cp/0065
 []
 
 [Postprocessors]
   [./Temperatrue_of_Block]
     type = ElementAverageValue
     variable = temp
-    execute_on = 'initial timestep_end'
+    execute_on = 'timestep_end'
   [../]
 
   [./vonMises]
     type = ElementAverageValue
     variable = vonmises
-    execute_on = 'initial timestep_end'
+    execute_on = 'timestep_end'
   [../]
 []
 
 [Outputs]
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./out]
     type = Exodus
     elemental_as_nodal = true
@@ -190,4 +185,8 @@
     type = Console
     max_rows = 10
   [../]
+[]
+
+[Problem]
+  restart_file_base = adapt_tstep_function_change_restart1_checkpoint_cp/0065
 []

@@ -11,7 +11,9 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 #include "PostprocessorCED.h"
+#include "Assembly.h"
 
 template<>
 InputParameters validParams<PostprocessorCED>()
@@ -23,8 +25,8 @@ InputParameters validParams<PostprocessorCED>()
   return params;
 }
 
-PostprocessorCED::PostprocessorCED(const std::string & name, InputParameters parameters) :
-    ScalarKernel(name, parameters),
+PostprocessorCED::PostprocessorCED(const InputParameters & parameters) :
+    ScalarKernel(parameters),
     _value(getParam<Real>("value")),
     _pp_value(getPostprocessorValue("pp_name"))
 {

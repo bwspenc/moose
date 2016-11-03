@@ -33,7 +33,7 @@ class UserForcingFunction : public Kernel
 {
 public:
 
-  UserForcingFunction(const std::string & name, InputParameters parameters);
+  UserForcingFunction(const InputParameters & parameters);
 
 protected:
   /**
@@ -44,7 +44,7 @@ protected:
   /**
    * Computes test function * forcing function.
    */
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   Function & _func;
 };

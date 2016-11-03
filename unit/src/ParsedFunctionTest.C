@@ -21,6 +21,7 @@
 #include "MooseUnitApp.h"
 #include "AppFactory.h"
 #include "GeneratedMesh.h"
+#include "MooseParsedFunctionWrapper.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ParsedFunctionTest );
 
@@ -34,13 +35,13 @@ ParsedFunctionTest::init()
 
   InputParameters mesh_params = _factory->getValidParams("GeneratedMesh");
   mesh_params.set<MooseEnum>("dim") = "3";
-  mesh_params.set<std::string>("name") = "mesh";
-  _mesh = new GeneratedMesh("mesh", mesh_params); // deleted by ~FEProblem
+  mesh_params.set<std::string>("_object_name") = "mesh";
+  _mesh = new GeneratedMesh(mesh_params); // deleted by ~FEProblem
 
   InputParameters problem_params = _factory->getValidParams("FEProblem");
   problem_params.set<MooseMesh *>("mesh") = _mesh;
-  problem_params.set<std::string>("name") = "FEProblem";
-  _fe_problem = new FEProblem("fep", problem_params);
+  problem_params.set<std::string>("_object_name") = "FEProblem";
+  _fe_problem = new FEProblem(problem_params);
 }
 
 void
@@ -67,8 +68,8 @@ ParsedFunctionTest::basicConstructor()
   params.set<FEProblem *>("_fe_problem") = _fe_problem;
   params.set<SubProblem *>("_subproblem") = _fe_problem;
   params.set<std::string>("value") = std::string("x + 1.5*y + 2 * z + t/4");
-  params.set<std::string>("name") = "test";
-  MooseParsedFunction f("test", params);
+  params.set<std::string>("_object_name") = "test";
+  MooseParsedFunction f(params);
   f.initialSetup();
   CPPUNIT_ASSERT(f.value(4, Point(1,2,3)) == 11);
 
@@ -91,10 +92,10 @@ ParsedFunctionTest::advancedConstructor()
   params.set<std::string>("value") = "x + y + q";
   params.set<std::vector<std::string> >("vars") = one_var;
   params.set<std::vector<std::string> >("vals") = std::vector<std::string>(1, "-1"); // Dummy value, will be overwritten in test below
-  params.set<std::string>("name") = "test";
+  params.set<std::string>("_object_name") = "test1";
 
 
-  MooseParsedFunction f("test", params);
+  MooseParsedFunction f(params);
   f.initialSetup();
   // Access address via pointer to MooseParsedFunctionWrapper that contains pointer to libMesh::ParsedFunction
   f._function_ptr->_function_ptr->getVarAddress("q") = 4;
@@ -112,9 +113,9 @@ ParsedFunctionTest::advancedConstructor()
   params2.set<std::string>("value") = "r*x + y/w + q";
   params2.set<std::vector<std::string> >("vars") = three_vars;
   params2.set<std::vector<std::string> >("vals") = std::vector<std::string>(3, "-1"); // Dummy values, will be overwritten in test below
-  params2.set<std::string>("name") = "test";
+  params2.set<std::string>("_object_name") = "test2";
 
-  MooseParsedFunction f2("test", params2);
+  MooseParsedFunction f2(params2);
   f2.initialSetup();
   f2._function_ptr->_function_ptr->getVarAddress("q") = 4;
   f2._function_ptr->_function_ptr->getVarAddress("w") = 2;
@@ -131,9 +132,9 @@ ParsedFunctionTest::advancedConstructor()
   params3.set<std::string>("value") = "q*x";
   params3.set<std::vector<std::string> >("vars") = one_var;
   params3.set<std::vector<std::string> >("vals") = one_val;
-  params3.set<std::string>("name") = "test";
+  params3.set<std::string>("_object_name") = "test3";
 
-  MooseParsedFunction f3("test", params3);
+  MooseParsedFunction f3(params3);
   f3.initialSetup();
   CPPUNIT_ASSERT( f3.value(0,2) == 5 );
 
@@ -149,9 +150,9 @@ ParsedFunctionTest::advancedConstructor()
   params4.set<std::string>("value") = "q*x + y/r + w";
   params4.set<std::vector<std::string> >("vars") = three_vars;
   params4.set<std::vector<std::string> >("vals") = three_vals;
-  params4.set<std::string>("name") = "test";
+  params4.set<std::string>("_object_name") = "test4";
 
-  MooseParsedFunction f4("test", params4);
+  MooseParsedFunction f4(params4);
   f4.initialSetup();
   f4._function_ptr->_function_ptr->getVarAddress("r") = 2;
   CPPUNIT_ASSERT( f4.value(0, Point(2, 4)) == 6 );
@@ -177,9 +178,9 @@ ParsedFunctionTest::testVariables()
   params.set<std::string>("value") = "x + y + q";
   params.set<std::vector<std::string> >("vars") = one_var;
   params.set<std::vector<std::string> >("vals") = std::vector<std::string>(1, "-1"); // Dummy value, will be overwritten in test below
-  params.set<std::string>("name") = "test";
+  params.set<std::string>("_object_name") = "test1";
 
-  MooseParsedFunction f("test", params);
+  MooseParsedFunction f(params);
   f.initialSetup();
   Real & q = f._function_ptr->_function_ptr->getVarAddress("q");
   q = 4;
@@ -201,9 +202,9 @@ ParsedFunctionTest::testVariables()
   params2.set<std::string>("value") = "r*x + y/w + q";
   params2.set<std::vector<std::string> >("vars") = three_vars;
   params2.set<std::vector<std::string> >("vals") = std::vector<std::string>(3, "-1"); // Dummy values, will be overwritten in test below
-  params2.set<std::string>("name") = "test";
+  params2.set<std::string>("_object_name") = "test2";
 
-  MooseParsedFunction f2("test", params2);
+  MooseParsedFunction f2(params2);
   f2.initialSetup();
   Real & q2 = f2._function_ptr->_function_ptr->getVarAddress("q");
   Real & w2 = f2._function_ptr->_function_ptr->getVarAddress("w");
@@ -228,22 +229,22 @@ ParsedFunctionTest::testConstants()
   //this functions tests that pi and e get correctly substituted
   //it also tests built in functions of the function parser
   InputParameters params = _factory->getValidParams("ParsedFunction");
-  params.set<std::string>("name") = "test";
+  params.set<std::string>("_object_name") = "test1";
   params.set<FEProblem *>("_fe_problem") = _fe_problem;
   params.set<SubProblem *>("_subproblem") = _fe_problem;
   params.set<std::string>("value") = "log(e) + x";
 
-  MooseParsedFunction f("test", params);
+  MooseParsedFunction f(params);
   f.initialSetup();
   CPPUNIT_ASSERT_DOUBLES_EQUAL( 2, f.value(0,1), 0.0000001 );
 
   InputParameters params2 = _factory->getValidParams("ParsedFunction");
-  params2.set<std::string>("name") = "test";
+  params2.set<std::string>("_object_name") = "test2";
   params2.set<FEProblem *>("_fe_problem") = _fe_problem;
   params2.set<SubProblem *>("_subproblem") = _fe_problem;
   params2.set<std::string>("value") = "sin(pi*x)";
 
-  MooseParsedFunction f2("test", params2);
+  MooseParsedFunction f2(params2);
   f2.initialSetup();
   CPPUNIT_ASSERT_DOUBLES_EQUAL( 0, f2.value(0,1), 0.0000001 );
   CPPUNIT_ASSERT_DOUBLES_EQUAL( 1, f2.value(0,0.5), 0.0000001 );

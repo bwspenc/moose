@@ -15,12 +15,11 @@
 class ComputeEigenstrain : public ComputeStressFreeStrainBase
 {
 public:
-  ComputeEigenstrain(const std:: string & name, InputParameters parameters);
+  ComputeEigenstrain(const InputParameters & parameters);
 
 protected:
   virtual void computeQpStressFreeStrain();
 
-  MaterialPropertyName _prefactor_name;
   const MaterialProperty<Real> & _prefactor;
 
   RankTwoTensor _eigen_base_tensor;

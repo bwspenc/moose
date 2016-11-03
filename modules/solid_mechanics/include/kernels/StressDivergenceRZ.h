@@ -21,9 +21,13 @@ class StressDivergenceRZ : public Kernel
 {
 public:
 
-  StressDivergenceRZ(const std::string & name, InputParameters parameters);
+  StressDivergenceRZ(const InputParameters & parameters);
 
 protected:
+  virtual void computeResidual();
+  virtual void computeJacobian();
+  virtual void computeOffDiagJacobian(unsigned int jvar);
+
   virtual Real computeQpResidual();
 
   virtual Real computeQpJacobian();
@@ -45,5 +49,8 @@ private:
   const unsigned int _rdisp_var;
   const unsigned int _zdisp_var;
   const unsigned int _temp_var;
+  std::vector<std::vector<Real> > _avg_grad_test;
+  std::vector<std::vector<Real> > _avg_grad_phi;
+  bool _volumetric_locking_correction;
 };
 #endif //STRESSDIVERGENCERZ_H

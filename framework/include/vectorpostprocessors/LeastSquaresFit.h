@@ -34,33 +34,19 @@ class LeastSquaresFit :
 public:
   /**
     * Class constructor
-    * @param name The name of the object
     * @param parameters The input parameters
     */
-  LeastSquaresFit(const std::string & name, InputParameters parameters);
-
-  /**
-   * Destructor
-   */
-  virtual ~LeastSquaresFit() {}
+  LeastSquaresFit(const InputParameters & parameters);
 
   /**
    * Initialize, clears old results
    */
-  virtual void initialize();
+  virtual void initialize() override;
 
   /**
    * Perform the least squares fit
    */
-  virtual void execute();
-
-  ///@{
-  /**
-   * no-op because the other VectorPostprocessor is already parallel consistent
-   */
-  virtual void finalize() {}
-  virtual void threadJoin(const UserObject &) {}
-  ///@}
+  virtual void execute() override;
 
 protected:
   /// The name of the VectorPostprocessor on which to perform the fit

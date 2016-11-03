@@ -20,8 +20,8 @@ InputParameters validParams<RichardsSeff1VG>()
   return params;
 }
 
-RichardsSeff1VG::RichardsSeff1VG(const std::string & name, InputParameters parameters) :
-    RichardsSeff(name, parameters),
+RichardsSeff1VG::RichardsSeff1VG(const InputParameters & parameters) :
+    RichardsSeff(parameters),
     _al(getParam<Real>("al")),
     _m(getParam<Real>("m"))
 {
@@ -29,19 +29,20 @@ RichardsSeff1VG::RichardsSeff1VG(const std::string & name, InputParameters param
 
 
 Real
-RichardsSeff1VG::seff(std::vector<VariableValue *> p, unsigned int qp) const
+RichardsSeff1VG::seff(std::vector<const VariableValue *> p, unsigned int qp) const
 {
   return RichardsSeffVG::seff((*p[0])[qp], _al, _m);
 }
 
 void
-RichardsSeff1VG::dseff(std::vector<VariableValue *> p, unsigned int qp, std::vector<Real> & result) const
+RichardsSeff1VG::dseff(std::vector<const VariableValue *> p, unsigned int qp, std::vector<Real> & result) const
 {
   result[0] = RichardsSeffVG::dseff((*p[0])[qp], _al, _m);
 }
 
 void
-RichardsSeff1VG::d2seff(std::vector<VariableValue *> p, unsigned int qp, std::vector<std::vector<Real> > & result) const
+RichardsSeff1VG::d2seff(std::vector<const VariableValue *> p, unsigned int qp, std::vector<std::vector<Real> > & result) const
 {
   result[0][0] = RichardsSeffVG::d2seff((*p[0])[qp], _al, _m);
 }
+

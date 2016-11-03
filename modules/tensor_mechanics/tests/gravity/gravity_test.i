@@ -9,12 +9,6 @@
 # which makes it trivial to check displacements.
 #
 
-[GlobalParams]
-  disp_x = disp_x
-  disp_y = disp_y
-  disp_z = disp_z
-[]
-
 [Mesh]
   type = GeneratedMesh
   dim = 3
@@ -38,12 +32,10 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./gravity_y]
-    type = GravityTM
+    type = Gravity
     variable = disp_y
     value = -9.81
   [../]
@@ -80,6 +72,7 @@
   [./strain]
     type = ComputeSmallStrain
     block = 0
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./stress]
     type = ComputeLinearElasticStress
@@ -102,9 +95,6 @@
 []
 
 [Outputs]
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./out]
     type = Exodus
     elemental_as_nodal = true

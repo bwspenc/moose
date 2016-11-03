@@ -177,7 +177,6 @@
   [./initial_water]
     type = ParsedFunction
     value = 1000000*(1-min(x/5,1))-300000*(max(x-5,0)/max(abs(x-5),1E-10))
-    #value = max(1000000*(1-x/5),-300000)
   [../]
   [./initial_gas]
     type = ParsedFunction
@@ -220,8 +219,8 @@
     type = SMP
     full = true
     petsc_options = '-snes_converged_reason'
-    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it -ksp_rtol -ksp_atol'
-    petsc_options_value = 'bcgs bjacobi 1E-10 1E-10 20 1E-20 1E-20'
+    petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -sub_pc_factor_shift_type -snes_atol -snes_rtol -snes_max_it -ksp_rtol -ksp_atol'
+    petsc_options_value = 'gmres asm lu NONZERO 1E-10 1E-10 20 1E-20 1E-20'
   [../]
 
 []
@@ -240,10 +239,8 @@
 
 [Outputs]
   file_base = bl20
-  output_initial = true
-  output_final = true
+  execute_on = 'initial timestep_end final'
   interval = 10000
   exodus = true
   hide = pgas
-  print_perf_log = true
 []

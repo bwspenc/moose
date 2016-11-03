@@ -28,12 +28,11 @@ InputParameters validParams<DiffusionFluxBC>();
 class DiffusionFluxBC : public FluxBC
 {
 public:
-  DiffusionFluxBC(const std::string & name, InputParameters parameters);
-  virtual ~DiffusionFluxBC();
+  DiffusionFluxBC(const InputParameters & parameters);
 
 protected:
-  virtual RealGradient computeQpFluxResidual();
-  virtual RealGradient computeQpFluxJacobian();
+  virtual RealGradient computeQpFluxResidual() override;
+  virtual RealGradient computeQpFluxJacobian() override;
 };
 
 #endif /* DIFFUSIONFLUXBC_H */

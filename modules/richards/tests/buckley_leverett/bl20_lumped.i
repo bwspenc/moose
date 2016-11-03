@@ -143,7 +143,6 @@
     type = DirichletBC
     variable = pgas
     boundary = left
-    ####value = 1E6+1000
     value = 1000
   [../]
   [./right_w]
@@ -168,7 +167,6 @@
   [../]
   [./initial_gas]
     type = ParsedFunction
-    ####value = max(1000000*(1-x/5),0)+1000
     value = 1000
   [../]
 []
@@ -224,12 +222,10 @@
 
 [Outputs]
   file_base = bl20_lumped
-  output_initial = true
-  output_final = true
+  execute_on = 'initial timestep_end final'
   interval = 100000
   exodus = true
   hide = pgas
-  print_perf_log = true
   [./console_out]
     type = Console
     interval = 1

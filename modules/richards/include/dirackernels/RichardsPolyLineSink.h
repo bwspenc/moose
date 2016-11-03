@@ -28,7 +28,7 @@ InputParameters validParams<RichardsPolyLineSink>();
 class RichardsPolyLineSink : public DiracKernel
 {
 public:
-  RichardsPolyLineSink(const std::string & name, InputParameters parameters);
+  RichardsPolyLineSink(const InputParameters & parameters);
 
   virtual void addPoints();
   virtual Real computeQpResidual();

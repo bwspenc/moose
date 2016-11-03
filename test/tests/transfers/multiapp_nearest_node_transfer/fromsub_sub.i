@@ -3,10 +3,13 @@
   dim = 2
   nx = 10
   ny = 10
+  elem_type = QUAD8
 []
 
 [Variables]
   [./u]
+    family = LAGRANGE
+    order = FIRST
   [../]
 []
 
@@ -45,8 +48,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

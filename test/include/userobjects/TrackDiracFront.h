@@ -49,7 +49,7 @@ InputParameters validParams<TrackDiracFront>();
 class TrackDiracFront : public NodalUserObject
 {
 public:
-  TrackDiracFront(const std::string & name, InputParameters parameters);
+  TrackDiracFront(const InputParameters & parameters);
 
   virtual void initialize();
   virtual void execute();
@@ -67,7 +67,7 @@ protected:
 
   std::vector<std::pair<Elem *, Point> > _dirac_points;
 
-  VariableValue & _var_value;
+  const VariableValue & _var_value;
 };
 
 #endif //TRACKDIRACFRONT_H

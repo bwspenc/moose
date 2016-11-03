@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ComputeSmallStrain.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<ComputeSmallStrain>()
@@ -14,27 +18,25 @@ InputParameters validParams<ComputeSmallStrain>()
   return params;
 }
 
-ComputeSmallStrain::ComputeSmallStrain(const std::string & name,
-                                                 InputParameters parameters) :
-    ComputeStrainBase(name, parameters),
+ComputeSmallStrain::ComputeSmallStrain(const InputParameters & parameters) :
+    ComputeStrainBase(parameters),
     _stress_free_strain(getDefaultMaterialProperty<RankTwoTensor>(_base_name + "stress_free_strain"))
 {
 }
 
 void
-ComputeSmallStrain::computeProperties()
+ComputeSmallStrain::computeQpProperties()
 {
-  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-  {
-    //strain = (grad_disp + grad_disp^T)/2
-    RankTwoTensor grad_tensor(_grad_disp_x[_qp], _grad_disp_y[_qp], _grad_disp_z[_qp]);
+  //strain = (grad_disp + grad_disp^T)/2
+  RankTwoTensor grad_tensor((*_grad_disp[0])[_qp], (*_grad_disp[1])[_qp], (*_grad_disp[2])[_qp]);
 
-    _total_strain[_qp] = ( grad_tensor + grad_tensor.transpose() )/2.0;
+  _total_strain[_qp] = ( grad_tensor + grad_tensor.transpose() )/2.0;
 
-    //Remove thermal expansion
-    _total_strain[_qp].addIa(-_thermal_expansion_coeff*( _T[_qp] - _T0 ));
+  _mechanical_strain[_qp] = _total_strain[_qp];
 
-    //Remove the Eigen strain
-    _total_strain[_qp] -= _stress_free_strain[_qp];
-  }
+  if (_no_thermal_eigenstrains) //Deprecated; use ComputeThermalExpansionEigenStrains instead
+    _mechanical_strain[_qp].addIa(-_thermal_expansion_coeff*( _T[_qp] - _T0 ));
+
+  //Remove the Eigen strain
+  _mechanical_strain[_qp] -= _stress_free_strain[_qp];
 }

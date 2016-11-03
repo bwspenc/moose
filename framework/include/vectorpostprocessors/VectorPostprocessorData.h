@@ -29,7 +29,7 @@ public:
   /**
    * Class constructor
    */
-  VectorPostprocessorData(FEProblem & fe_problem, THREAD_ID tid);
+  VectorPostprocessorData(FEProblem & fe_problem);
 
   /**
    * Initialization method, sets the current and old value to 0.0 for this
@@ -47,12 +47,16 @@ public:
 
   /**
    * Return the value for the post processor
+   * @param vpp_name The name of the VectorPostprocessor
+   * @param vector_name The name of the vector
+   * @return The reference to the current value
    */
   VectorPostprocessorValue & getVectorPostprocessorValue(const VectorPostprocessorName & vpp_name, const std::string & vector_name);
 
   /**
    * The the old value of an post-processor
-   * @param name The name of the post-processor
+   * @param vpp_name The name of the VectorPostprocessor
+   * @param vector_name The name of the vector
    * @return The reference to the old value
    */
   VectorPostprocessorValue & getVectorPostprocessorValueOld(const VectorPostprocessorName & vpp_name, const std::string & vector_name);

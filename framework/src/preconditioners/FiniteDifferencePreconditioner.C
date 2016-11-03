@@ -16,6 +16,9 @@
 #include "NonlinearSystem.h"
 #include "FEProblem.h"
 
+// libMesh includes
+#include "libmesh/coupling_matrix.h"
+
 
 template<>
 InputParameters validParams<FiniteDifferencePreconditioner>()
@@ -30,8 +33,8 @@ InputParameters validParams<FiniteDifferencePreconditioner>()
   return params;
 }
 
-FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const std::string & name, InputParameters params) :
-    MoosePreconditioner(name, params)
+FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const InputParameters & params) :
+    MoosePreconditioner(params)
 {
   if (n_processors() > 1)
     mooseError("Can't use the Finite Difference Preconditioner in parallel yet!");
@@ -75,8 +78,4 @@ FiniteDifferencePreconditioner::FiniteDifferencePreconditioner(const std::string
 
   // Set the jacobian to null so that libMesh won't override our finite differenced jacobian
   nl.useFiniteDifferencedPreconditioner(true);
-}
-
-FiniteDifferencePreconditioner::~FiniteDifferencePreconditioner()
-{
 }

@@ -18,8 +18,8 @@ InputParameters validParams<RichardsDensity>()
   return params;
 }
 
-RichardsDensity::RichardsDensity(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters)
+RichardsDensity::RichardsDensity(const InputParameters & parameters) :
+    GeneralUserObject(parameters)
 {}
 
 void
@@ -32,3 +32,4 @@ RichardsDensity::execute()
 
 void RichardsDensity::finalize()
 {}
+

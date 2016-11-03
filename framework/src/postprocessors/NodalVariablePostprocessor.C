@@ -21,14 +21,13 @@ template<>
 InputParameters validParams<NodalVariablePostprocessor>()
 {
   InputParameters params = validParams<NodalPostprocessor>();
-  params.addRequiredParam<VariableName>("variable", "The name of the variable that this postprocessor operates on");
+  params.addRequiredCoupledVar("variable", "The name of the variable that this postprocessor operates on");
   return params;
 }
 
-NodalVariablePostprocessor::NodalVariablePostprocessor(const std::string & name, InputParameters parameters) :
-    NodalPostprocessor(name, parameters),
-    MooseVariableInterface(parameters, true),
-    _var(_subproblem.getVariable(_tid, parameters.get<VariableName>("variable"))),
-    _u(_var.nodalSln())
+NodalVariablePostprocessor::NodalVariablePostprocessor(const InputParameters & parameters) :
+    NodalPostprocessor(parameters),
+    MooseVariableInterface(this, true),
+    _u(coupledValue("variable"))
 {
 }

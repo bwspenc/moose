@@ -11,10 +11,10 @@
   ny = 1
   nz = 1
   elem_type = HEX27
-  # This problem only has 1 element, so using ParallelMesh in parallel
-  # isn't really an option, and we don't care that much about ParallelMesh
+  # This problem only has 1 element, so using DistributedMesh in parallel
+  # isn't really an option, and we don't care that much about DistributedMesh
   # in serial.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Functions]
@@ -155,11 +155,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   csv = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

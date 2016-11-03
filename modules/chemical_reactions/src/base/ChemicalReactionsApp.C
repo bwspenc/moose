@@ -4,9 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ChemicalReactionsApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 #include "PrimaryTimeDerivative.h"
 #include "PrimaryConvection.h"
@@ -40,15 +42,12 @@ InputParameters validParams<ChemicalReactionsApp>()
   InputParameters params = validParams<MooseApp>();
   params.set<bool>("use_legacy_uo_initialization") = false;
   params.set<bool>("use_legacy_uo_aux_computation") = false;
-
   return params;
 }
 
-ChemicalReactionsApp::ChemicalReactionsApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ChemicalReactionsApp::ChemicalReactionsApp(const InputParameters & parameters) :
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
   ChemicalReactionsApp::registerObjects(_factory);
 

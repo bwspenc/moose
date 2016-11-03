@@ -33,13 +33,9 @@ class AuxNodalScalarKernel :
   public MooseVariableDependencyInterface
 {
 public:
-  AuxNodalScalarKernel(const std::string & name, InputParameters parameters);
-  virtual ~AuxNodalScalarKernel();
+  AuxNodalScalarKernel(const InputParameters & parameters);
 
-  /**
-   * Evaluate the kernel
-   */
-  virtual void compute();
+  virtual void compute() override;
 
 protected:
   /// List of node IDs

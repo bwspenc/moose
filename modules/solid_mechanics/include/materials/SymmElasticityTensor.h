@@ -148,16 +148,20 @@ public:
 
   void form9x9Rotation( const ColumnMajorMatrix & R_3x3,
                         ColumnMajorMatrix & R_9x9 ) const;
-  void rotateFromGlobalToLocal( const ColumnMajorMatrix & R );
-  void rotateFromLocalToGlobal( const ColumnMajorMatrix & R );
+  void rotateFromGlobalToLocal(const ColumnMajorMatrix & R );
+  void rotateFromLocalToGlobal(const ColumnMajorMatrix & R );
 
-  virtual void adjustForCracking( const RealVectorValue & crack_flags );
+  virtual void adjustForCracking(const RealVectorValue & crack_flags);
+  virtual void adjustForCrackingWithShearRetention(const RealVectorValue & crack_flags);
 
   virtual SymmElasticityTensor calculateDerivative(unsigned int qp,unsigned int i);
 
   friend std::ostream & operator<<(std::ostream & stream, const SymmElasticityTensor & obj);
 
   void fillFromInputVector(std::vector<Real> input, bool all);
+
+  Real sum_3x3() const;
+  RealGradient sum_3x1() const;
 
   /*
    * @return the value of the tensor given the index supplied.
@@ -190,6 +194,18 @@ protected:
                  // 3 in fourth
                  // 2 in fifth
                  // 1 in sixth
+
+  template<class T>
+  friend void dataStore(std::ostream &, T &, void *);
+
+  template<class T>
+  friend void dataLoad(std::istream &, T &, void *);
 };
+
+template<>
+void dataStore(std::ostream &, SymmElasticityTensor &, void *);
+
+template<>
+void dataLoad(std::istream &, SymmElasticityTensor &, void *);
 
 #endif //SYMMELASTICITYTENSOR_H

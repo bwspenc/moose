@@ -41,13 +41,11 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  DGFunctionDiffusionDirichletBC(const std::string & name, InputParameters parameters);
-
-  virtual ~DGFunctionDiffusionDirichletBC() {}
+  DGFunctionDiffusionDirichletBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
+  virtual Real computeQpResidual() override;
+  virtual Real computeQpJacobian() override;
 
 private:
   Function & _func;

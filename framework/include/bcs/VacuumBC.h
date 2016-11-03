@@ -38,12 +38,12 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  VacuumBC(const std::string & name, InputParameters parameters);
+  VacuumBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
-  virtual Real computeQpJacobian();
+  virtual Real computeQpJacobian() override;
 
   /// Ratio of u to du/dn
   Real _alpha;

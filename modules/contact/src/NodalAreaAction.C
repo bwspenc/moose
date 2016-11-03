@@ -27,20 +27,16 @@ InputParameters validParams<NodalAreaAction>()
   return params;
 }
 
-NodalAreaAction::NodalAreaAction(const std::string & name, InputParameters params) :
-  MooseObjectAction(name, params)
+NodalAreaAction::NodalAreaAction(const InputParameters & params) :
+  MooseObjectAction(params)
 {
 }
 
 void
 NodalAreaAction::act()
 {
-  std::string short_name(_name);
-  // Chop off "Contact/"
-  short_name.erase(0, 8);
-
-  _moose_object_pars.set<std::vector<BoundaryName> >("boundary") = std::vector<BoundaryName>(1,getParam<BoundaryName>("slave"));
-  _moose_object_pars.set<VariableName>("variable") = "nodal_area_"+short_name;
+  _moose_object_pars.set<std::vector<BoundaryName> >("boundary") = {getParam<BoundaryName>("slave")};
+  _moose_object_pars.set<std::vector<VariableName> >("variable") = {"nodal_area_" + _name};
 
   mooseAssert(_problem, "Problem pointer is NULL");
   if (_problem->legacyUoInitialization())

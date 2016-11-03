@@ -11,13 +11,13 @@
 #include "DiracKernel.h"
 #include "PenetrationLocator.h"
 
-//Forward Declarations
 enum ContactModel
 {
   CM_INVALID,
   CM_FRICTIONLESS,
   CM_GLUED,
-  CM_COULOMB
+  CM_COULOMB,
+  CM_COULOMB_MP // Coulomb contact enforced with a "model problem" strategy where slip is computed after the nonlinear solve is converged
 };
 
 enum ContactFormulation
@@ -26,13 +26,14 @@ enum ContactFormulation
   CF_DEFAULT,
   CF_KINEMATIC = CF_DEFAULT,
   CF_PENALTY,
-  CF_AUGMENTED_LAGRANGE
+  CF_AUGMENTED_LAGRANGE,
+  CF_TANGENTIAL_PENALTY
 };
 
 class ContactMaster : public DiracKernel
 {
 public:
-  ContactMaster(const std::string & name, InputParameters parameters);
+  ContactMaster(const InputParameters & parameters);
 
   virtual void jacobianSetup();
   virtual void timestepSetup();
@@ -58,6 +59,7 @@ protected:
   const Real _penalty;
   const Real _friction_coefficient;
   const Real _tension_release;
+  const Real _capture_tolerance;
   bool _updateContactSet;
 
   NumericVector<Number> & _residual_copy;

@@ -13,13 +13,13 @@
 /****************************************************************/
 
 #include "Factory.h"
-#include "MooseApp.h"
 #include "InfixIterator.h"
+#include "InputParameterWarehouse.h"
+// Just for testing...
+#include "Diffusion.h"
 
-
-Factory::Factory(MooseApp & app):
-    _app(app),
-    _object_count(0)
+Factory::Factory(MooseApp & app) :
+    _app(app)
 {
 }
 
@@ -44,12 +44,17 @@ Factory::getValidParams(const std::string & obj_name)
   paramsPtr & func = it->second;
   InputParameters params = (*func)();
   params.addPrivateParam("_moose_app", &_app);
+
   return params;
 }
 
 MooseObjectPtr
-Factory::create(const std::string & obj_name, const std::string & name, InputParameters parameters)
+Factory::create(const std::string & obj_name, const std::string & name, InputParameters parameters, THREAD_ID tid /* =0 */, bool print_deprecated /* =true */)
 {
+  if (print_deprecated)
+    mooseDeprecated("Factory::create() is deprecated, please use Factory::create<T>() instead");
+
+  // Pointer to the object constructor
   std::map<std::string, buildPtr>::iterator it = _name_to_build_pointer.find(obj_name);
 
   // Check if the object is registered
@@ -59,13 +64,11 @@ Factory::create(const std::string & obj_name, const std::string & name, InputPar
   // Print out deprecated message, if it exists
   deprecatedMessage(obj_name);
 
-  // Check to make sure that all required parameters are supplied
-  parameters.addParam<std::string>("name", name, "The objects short name");
-  parameters.addPrivateParam<MooseObjectID>("_object_id", _object_count);
-  parameters.checkParams(name);
+  // Create the actual parameters object that the object will reference
+  InputParameters & params = _app.getInputParameterWarehouse().addInputParameters(name, parameters, tid);
 
-  // Increment object counter
-  _object_count++;
+  // Check to make sure that all required parameters are supplied
+  params.checkParams(name);
 
   // register type name as constructed
   _constructed_types.insert(obj_name);
@@ -73,7 +76,7 @@ Factory::create(const std::string & obj_name, const std::string & name, InputPar
   // Actually call the function pointer.  You can do this in one line,
   // but it's a bit more obvious what's happening if you do it in two...
   buildPtr & func = it->second;
-  return (*func)(name, parameters);
+  return (*func)(params);
 }
 
 void
@@ -133,7 +136,7 @@ void Factory::deprecatedMessage(const std::string obj_name)
 
     // Append replacement object, if it exsits
     if (name_it != _deprecated_name.end())
-      msg << "Upadate your application using the '" << name_it->second << "' object";
+      msg << "Update your application using the '" << name_it->second << "' object";
 
     // Produce the error message
     mooseError(msg.str());
@@ -151,7 +154,7 @@ void Factory::deprecatedMessage(const std::string obj_name)
       msg << "Replaced " << obj_name << " with " <<  name_it->second;
 
     // Produce the error message
-    mooseDoOnce(mooseWarning(msg.str()));
+    mooseDeprecated(msg.str());
   }
 }
 
@@ -176,7 +179,7 @@ std::vector<std::string>
 Factory::getConstructedObjects() const
 {
   std::vector<std::string> list;
-  for (std::set<std::string>::iterator i = _constructed_types.begin(); i != _constructed_types.end(); ++i)
-    list.push_back(*i);
+  for (const auto & name : _constructed_types)
+    list.push_back(name);
   return list;
 }

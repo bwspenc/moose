@@ -22,7 +22,7 @@ class OutOfPlaneStress : public Kernel
 {
 public:
 
-  OutOfPlaneStress(const std::string & name, InputParameters parameters);
+  OutOfPlaneStress(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

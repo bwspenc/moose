@@ -29,12 +29,12 @@ class SideVectorPostprocessor :
   public VectorPostprocessor
 {
 public:
-  SideVectorPostprocessor(const std::string & name, InputParameters parameters);
+  SideVectorPostprocessor(const InputParameters & parameters);
 
   /**
    * Finalize.  This is called _after_ execute() and _after_ threadJoin()!  This is probably where you want to do MPI communication!
    */
-  virtual void finalize(){}
+  virtual void finalize() override {}
 };
 
 #endif

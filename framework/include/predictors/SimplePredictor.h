@@ -47,13 +47,10 @@ InputParameters validParams<SimplePredictor>();
 class SimplePredictor : public Predictor
 {
 public:
-  SimplePredictor(const std::string & name, InputParameters parameters);
-  virtual ~SimplePredictor();
+  SimplePredictor(const InputParameters & parameters);
 
-  virtual void apply(NumericVector<Number> & sln);
-
-protected:
-  Real _scale;
+  virtual bool shouldApply() override;
+  virtual void apply(NumericVector<Number> & sln) override;
 };
 
 #endif /* SIMPLEPREDICTOR_H */

@@ -31,13 +31,13 @@ InputParameters validParams<FunctionPresetBC>();
 class FunctionPresetBC : public PresetNodalBC
 {
 public:
-  FunctionPresetBC(const std::string & name, InputParameters parameters);
+  FunctionPresetBC(const InputParameters & parameters);
 
 protected:
   /**
    * Evaluate the function at the current quadrature point and timestep.
    */
-  virtual Real computeQpValue();
+  virtual Real computeQpValue() override;
 
   /// Function being used for evaluation of this BC
   Function & _func;

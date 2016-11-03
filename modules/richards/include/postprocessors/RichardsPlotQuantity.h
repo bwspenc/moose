@@ -23,7 +23,7 @@ InputParameters validParams<RichardsPlotQuantity>();
 class RichardsPlotQuantity : public GeneralPostprocessor
 {
 public:
-  RichardsPlotQuantity(const std::string & name, InputParameters parameters);
+  RichardsPlotQuantity(const InputParameters & parameters);
   virtual ~RichardsPlotQuantity();
 
   virtual void initialize();

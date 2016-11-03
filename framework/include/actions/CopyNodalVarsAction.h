@@ -15,7 +15,7 @@
 #ifndef COPYNODALVARSACTION_H
 #define COPYNODALVARSACTION_H
 
-#include "AddVariableAction.h"
+#include "Action.h"
 
 class CopyNodalVarsAction;
 
@@ -26,9 +26,9 @@ InputParameters validParams<CopyNodalVarsAction>();
 class CopyNodalVarsAction: public Action
 {
 public:
-  CopyNodalVarsAction(const std::string & name, InputParameters params);
+  CopyNodalVarsAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif //COPYNODALVARSACTION_H

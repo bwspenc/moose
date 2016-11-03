@@ -24,6 +24,17 @@
 #include "Conversion.h"
 #include "CommandLine.h"
 #include "InfixIterator.h"
+#include "MultiApp.h"
+#include "MeshModifier.h"
+#include "DependencyResolver.h"
+#include "MooseUtils.h"
+#include "MooseObjectAction.h"
+#include "InputParameterWarehouse.h"
+#include "SystemInfo.h"
+#include "RestartableDataIO.h"
+#include "MooseMesh.h"
+#include "FileOutput.h"
+#include "ConsoleUtils.h"
 
 // Regular expression includes
 #include "pcrecpp.h"
@@ -34,6 +45,10 @@
 
 // System include for dynamic library methods
 #include <dlfcn.h>
+#include <sys/utsname.h> // utsname
+
+// C++ includes
+#include <numeric> // std::accumulate
 
 #define QUOTE(macro) stringifyName(macro)
 
@@ -47,10 +62,12 @@ InputParameters validParams<MooseApp>()
 
   params.addCommandLineParam<bool>("show_input", "--show-input", false, "Shows the parsed input file before running the simulation.");
   params.addCommandLineParam<bool>("show_outputs", "--show-outputs", false, "Shows the output execution time information.");
+  params.addCommandLineParam<bool>("show_controls", "--show-controls", false, "Shows the Control logic available and executed.");
 
   params.addCommandLineParam<bool>("no_color", "--no-color", false, "Disable coloring of all Console outputs.");
 
   params.addCommandLineParam<bool>("help", "-h --help", false, "Displays CLI usage statement.");
+  params.addCommandLineParam<bool>("minimal", "--minimal", false, "Ignore input file and build a minimal application with Transient executioner.");
 
   params.addCommandLineParam<std::string>("dump", "--dump [search_string]", "Shows a dump of available input file syntax.");
   params.addCommandLineParam<std::string>("yaml", "--yaml", "Dumps input file syntax in YAML format.");
@@ -63,8 +80,11 @@ InputParameters validParams<MooseApp>()
   params.addCommandLineParam<bool>("warn_unused", "-w --warn-unused", false, "Warn about unused input file options");
   params.addCommandLineParam<bool>("error_unused", "-e --error-unused", false, "Error when encountering unused input file options");
   params.addCommandLineParam<bool>("error_override", "-o --error-override", false, "Error when encountering overridden or parameters supplied multiple times");
+  params.addCommandLineParam<bool>("error_deprecated", "--error-deprecated", false, "Turn deprecated code messages into Errors");
+  params.addCommandLineParam<bool>("allow_deprecated", "--allow-deprecated", false, "Can be used in conjunction with --error to turn off deprecated errors");
 
-  params.addCommandLineParam<bool>("parallel_mesh", "--parallel-mesh", false, "The libMesh Mesh underlying MooseMesh should always be a ParallelMesh");
+  params.addCommandLineParam<bool>("parallel_mesh", "--parallel-mesh", false, "This command line option is deprecated, use --distributed-mesh instead.");
+  params.addCommandLineParam<bool>("distributed_mesh", "--distributed-mesh", false, "The libMesh Mesh underlying MooseMesh should always be a DistributedMesh");
 
   params.addCommandLineParam<unsigned int>("refinements", "-r <n>", 0, "Specify additional initial uniform refinements for automatic scaling");
 
@@ -84,6 +104,12 @@ InputParameters validParams<MooseApp>()
   params.addParam<bool>("use_legacy_uo_aux_computation", true, "Set to true to have MOOSE recompute *all* AuxKernel types every time *any* UserObject type is executed.\nThis behavoir is non-intuitive and will be removed late fall 2014, The default is controlled through MooseApp");
   params.addParam<bool>("use_legacy_uo_initialization", true, "Set to true to have MOOSE compute all UserObjects and Postprocessors during the initial setup phase of the problem recompute *all* AuxKernel types every time *any* UserObject type is executed.\nThis behavoir is non-intuitive and will be removed late fall 2014, The default is controlled through MooseApp");
 
+  // Options ignored by MOOSE but picked up by libMesh, these are here so that they are displayed in the application help
+  params.addCommandLineParam<bool>("keep_cout", "--keep-cout", false, "Keep standard output from all processors when running in parallel");
+  params.addCommandLineParam<bool>("redirect_stdout", "--redirect-stdout", false, "Keep standard output from all processors when running in parallel");
+
+
+  params.addPrivateParam<std::string>("_app_name"); // the name passed to AppFactory::create
   params.addPrivateParam<std::string>("_type");
   params.addPrivateParam<int>("_argc");
   params.addPrivateParam<char**>("_argv");
@@ -93,15 +119,10 @@ InputParameters validParams<MooseApp>()
   return params;
 }
 
-// Free function for removing cli flags
-bool isFlag(const std::string s)
-{
-  return s.length() && s[0] == '-';
-}
-
-MooseApp::MooseApp(const std::string & name, InputParameters parameters) :
+MooseApp::MooseApp(InputParameters parameters) :
+    ConsoleStreamInterface(*this),
     ParallelObject(*parameters.get<MooseSharedPointer<Parallel::Communicator> >("_comm")), // Can't call getParam() before pars is set
-    _name(name),
+    _name(parameters.get<std::string>("_app_name")),
     _pars(parameters),
     _type(getParam<std::string>("_type")),
     _comm(getParam<MooseSharedPointer<Parallel::Communicator> >("_comm")),
@@ -109,8 +130,8 @@ MooseApp::MooseApp(const std::string & name, InputParameters parameters) :
     _start_time_set(false),
     _start_time(0.0),
     _global_time_offset(0.0),
-    _alternate_output_warehouse(NULL),
-    _output_warehouse(new OutputWarehouse),
+    _output_warehouse(*this),
+    _input_parameter_warehouse(new InputParameterWarehouse()),
     _action_factory(*this),
     _action_warehouse(*this, _syntax, _action_factory),
     _parser(*this, _action_warehouse),
@@ -120,13 +141,15 @@ MooseApp::MooseApp(const std::string & name, InputParameters parameters) :
     _error_overridden(false),
     _ready_to_exit(false),
     _initial_from_file(false),
-    _parallel_mesh_on_command_line(false),
+    _distributed_mesh_on_command_line(false),
     _recover(false),
     _restart(false),
     _half_transient(false),
     _legacy_uo_aux_computation_default(getParam<bool>("use_legacy_uo_aux_computation")),
     _legacy_uo_initialization_default(getParam<bool>("use_legacy_uo_initialization")),
-    _check_input(getParam<bool>("check_input"))
+    _check_input(getParam<bool>("check_input")),
+    _restartable_data(libMesh::n_threads()),
+    _multiapp_level(0)
 {
   if (isParamValid("_argc") && isParamValid("_argv"))
   {
@@ -139,25 +162,34 @@ MooseApp::MooseApp(const std::string & name, InputParameters parameters) :
     _command_line = getParam<MooseSharedPointer<CommandLine> >("_command_line");
   else
     mooseError("Valid CommandLine object required");
+
+  if (getParam<bool>("error_deprecated") && getParam<bool>("allow_deprecated"))
+    mooseError("Both error deprecated and allowed deprecated were set.");
 }
 
 MooseApp::~MooseApp()
 {
   _action_warehouse.clear();
+  _executioner.reset();
 
-  // MUST be deleted before _comm is destroyed!
-  delete _output_warehouse;
+  delete _input_parameter_warehouse;
 
 #ifdef LIBMESH_HAVE_DLOPEN
   // Close any open dynamic libraries
-  for (std::map<std::pair<std::string, std::string>, void *>::iterator it = _lib_handles.begin(); it != _lib_handles.end(); ++it)
-    dlclose(it->second);
+  for (const auto & it : _lib_handles)
+    dlclose(it.second);
 #endif
 }
 
 void
 MooseApp::setupOptions()
 {
+  // Print the header, this is as early as possible
+  std::string hdr(header() + "\n");
+  if (multiAppLevel() > 0)
+    MooseUtils::indentMessage(_name, hdr);
+  Moose::out << hdr << std::flush;
+
   if (getParam<bool>("error_unused"))
     setCheckUnusedFlag(true);
   else if (getParam<bool>("warn_unused"))
@@ -166,7 +198,15 @@ MooseApp::setupOptions()
   if (getParam<bool>("error_override"))
     setErrorOverridden();
 
-  _parallel_mesh_on_command_line = getParam<bool>("parallel_mesh");
+  // Warn if user passed the old command line arg, but still accept it.
+  if (getParam<bool>("parallel_mesh"))
+  {
+    mooseWarning("The --parallel-mesh command line option is deprecated, use --distributed-mesh instead.");
+    _distributed_mesh_on_command_line = getParam<bool>("parallel_mesh");
+  }
+  else
+    _distributed_mesh_on_command_line = getParam<bool>("distributed_mesh");
+
   _half_transient = getParam<bool>("half_transient");
   _pars.set<bool>("timing") = getParam<bool>("timing");
 
@@ -177,16 +217,49 @@ MooseApp::setupOptions()
   else if (isParamValid("no_trap_fpe"))
     Moose::_trap_fpe = false;
 
+  // Turn all warnings in MOOSE to errors (almost see next logic block)
   Moose::_warnings_are_errors = getParam<bool>("error");
+
+  /**
+   * Deprecated messages can be toggled to errors independently from everything else.
+   * Normally they are toggled with the --error flag but that behavior can
+   * be modified with the --allow-warnings.
+   */
+  if (getParam<bool>("error_deprecated") ||
+      (Moose::_warnings_are_errors && !getParam<bool>("allow_deprecated")))
+    Moose::_deprecated_is_error = true;
+  else
+    Moose::_deprecated_is_error = false;
+
+  // Toggle the color console off
   Moose::_color_console = !getParam<bool>("no_color");
 
-  if (getParam<bool>("help"))
+  // If there's no threading model active, but the user asked for
+  // --n-threads > 1 on the command line, throw a mooseError.  This is
+  // intended to prevent situations where the user has potentially
+  // built MOOSE incorrectly (neither TBB nor pthreads found) and is
+  // asking for multiple threads, not knowing that there will never be
+  // any threads launched.
+#if !LIBMESH_USING_THREADS
+  if (libMesh::command_line_value ("--n-threads", 1) > 1)
+    mooseError("You specified --n-threads > 1, but there is no threading model active!");
+#endif
+
+  // Build a minimal running application, ignoring the input file.
+  if (getParam<bool>("minimal"))
+    createMinimalApp();
+
+  else if (getParam<bool>("help"))
   {
+    Moose::perf_log.disable_logging();
+
     _command_line->printUsage();
     _ready_to_exit = true;
   }
   else if (isParamValid("dump"))
   {
+    Moose::perf_log.disable_logging();
+
     _parser.initSyntaxFormatter(Parser::INPUT_FILE, true);
 
     // Get command line argument following --dump on command line
@@ -204,6 +277,8 @@ MooseApp::setupOptions()
   }
   else if (isParamValid("yaml"))
   {
+    Moose::perf_log.disable_logging();
+
     _parser.initSyntaxFormatter(Parser::YAML, true);
 
     // Get command line argument following --yaml on command line
@@ -221,12 +296,12 @@ MooseApp::setupOptions()
   }
   else if (getParam<bool>("syntax"))
   {
+    Moose::perf_log.disable_logging();
+
     std::multimap<std::string, Syntax::ActionInfo> syntax = _syntax.getAssociatedActions();
     Moose::out << "**START SYNTAX DATA**\n";
-    for (std::multimap<std::string, Syntax::ActionInfo>::iterator it = syntax.begin(); it != syntax.end(); ++it)
-    {
-      Moose::out << it->first << "\n";
-    }
+    for (const auto & it : syntax)
+      Moose::out << it.first << "\n";
     Moose::out << "**END SYNTAX DATA**\n" << std::endl;
     _ready_to_exit = true;
   }
@@ -254,6 +329,8 @@ MooseApp::setupOptions()
   }
   else
   {
+    Moose::perf_log.disable_logging();
+
     if (_check_input)
       mooseError("You specified --check-input, but did not provide an input file. Add -i <inputfile> to your command line.");
 
@@ -277,6 +354,7 @@ MooseApp::getOutputFileBase()
 void
 MooseApp::runInputFile()
 {
+
   std::string mesh_file_name;
   if (isParamValid("mesh_only"))
   {
@@ -289,17 +367,14 @@ MooseApp::runInputFile()
     return;
 
   _action_warehouse.executeAllActions();
-  _executioner = _action_warehouse.executioner();
 
   if (getParam<bool>("list_constructed_objects"))
   {
     // TODO: ask multiapps for their constructed objects
     std::vector<std::string> obj_list = _factory.getConstructedObjects();
     Moose::out << "**START OBJECT DATA**\n";
-    for (unsigned int i = 0; i < obj_list.size(); ++i)
-    {
-      Moose::out << obj_list[i] << "\n";
-    }
+    for (const auto & name : obj_list)
+      Moose::out << name << "\n";
     Moose::out << "**END OBJECT DATA**\n" << std::endl;
     _ready_to_exit = true;
     return;
@@ -311,20 +386,16 @@ MooseApp::runInputFile()
 
   if (error_unused || warn_unused)
   {
-    // Check the input file parameters
-    std::vector<std::string> all_vars = _parser.getPotHandle()->get_variable_names();
-    _parser.checkUnidentifiedParams(all_vars, error_unused, true);
-
-    // Only check CLI parameters on the main application
-    // TODO: Add support for SubApp overrides and checks #4119
-    if (_name == "main")
+    MooseSharedPointer<FEProblem> fe_problem= _action_warehouse.problem();
+    if (fe_problem.get() && name() == "main" && !getParam<bool>("minimal"))
     {
       // Check the CLI parameters
-      all_vars = _command_line->getPot()->get_variable_names();
-      // Remove flags, they aren't "input" parameters
-      all_vars.erase( std::remove_if(all_vars.begin(), all_vars.end(), isFlag), all_vars.end() );
+      std::vector<std::string> all_vars = _command_line->getPot()->get_variable_names();
+      _parser.checkUnidentifiedParams(all_vars, error_unused, false, fe_problem);
 
-      _parser.checkUnidentifiedParams(all_vars, error_unused, false);
+      // Check the input file parameters
+      all_vars = _parser.getPotHandle()->get_variable_names();
+      _parser.checkUnidentifiedParams(all_vars, error_unused, true, fe_problem);
     }
   }
 
@@ -360,6 +431,24 @@ MooseApp::executeExecutioner()
     mooseError("No executioner was specified (go fix your input file)");
 }
 
+bool
+MooseApp::isRecovering() const
+{
+  return _recover;
+}
+
+bool
+MooseApp::isRestarting() const
+{
+  return _restart;
+}
+
+bool
+MooseApp::hasRecoverFileBase()
+{
+  return !_recover_base.empty();
+}
+
 void
 MooseApp::meshOnly(std::string mesh_file_name)
 {
@@ -369,8 +458,11 @@ MooseApp::meshOnly(std::string mesh_file_name)
    */
   _action_warehouse.executeActionsWithAction("set_global_params");
   _action_warehouse.executeActionsWithAction("setup_mesh");
+  _action_warehouse.executeActionsWithAction("add_partitioner");
+  _action_warehouse.executeActionsWithAction("init_mesh");
   _action_warehouse.executeActionsWithAction("prepare_mesh");
   _action_warehouse.executeActionsWithAction("add_mesh_modifier");
+  _action_warehouse.executeActionsWithAction("execute_mesh_modifiers");
   _action_warehouse.executeActionsWithAction("uniform_refine_mesh");
   _action_warehouse.executeActionsWithAction("setup_mesh_complete");
 
@@ -410,6 +502,40 @@ MooseApp::meshOnly(std::string mesh_file_name)
 }
 
 void
+MooseApp::registerRecoverableData(std::string name)
+{
+  _recoverable_data.insert(name);
+}
+
+MooseSharedPointer<Backup>
+MooseApp::backup()
+{
+  FEProblem & fe_problem = _executioner->feProblem();
+
+  RestartableDataIO rdio(fe_problem);
+
+  return rdio.createBackup();
+}
+
+void
+MooseApp::restore(MooseSharedPointer<Backup> backup, bool for_restart)
+{
+  // This means that a Backup is coming through to use for restart / recovery
+  // We should just cache it for now
+  if (!_executioner)
+  {
+    _cached_backup = backup;
+    return;
+  }
+
+  FEProblem & fe_problem = _executioner->feProblem();
+
+  RestartableDataIO rdio(fe_problem);
+
+  rdio.restoreBackup(backup, for_restart);
+}
+
+void
 MooseApp::setCheckUnusedFlag(bool warn_is_error)
 {
   _enable_unused_check = warn_is_error ? ERROR_UNUSED : WARN_UNUSED;
@@ -442,9 +568,15 @@ MooseApp::legacyUoInitializationDefault()
 void
 MooseApp::run()
 {
+  Moose::perf_log.push("Full Runtime", "Application");
+
+  Moose::perf_log.push("Application Setup", "Setup");
   setupOptions();
   runInputFile();
+  Moose::perf_log.pop("Application Setup", "Setup");
+
   executeExecutioner();
+  Moose::perf_log.pop("Full Runtime", "Application");
 }
 
 void
@@ -452,10 +584,61 @@ MooseApp::setOutputPosition(Point p)
 {
   _output_position_set = true;
   _output_position = p;
-  _output_warehouse->meshChanged();
+  _output_warehouse.meshChanged();
 
   if (_executioner.get() != NULL)
     _executioner->parentOutputPositionChanged();
+}
+
+std::list<std::string>
+MooseApp::getCheckpointFiles()
+{
+  // Extract the CommonOutputAction
+  const Action* common = _action_warehouse.getActionsByName("common_output")[0];
+
+  // Storage for the directory names
+  std::list<std::string> checkpoint_dirs;
+
+  // If file_base is set in CommonOutputAction, add this file to the list of potential checkpoint files
+  if (common->isParamValid("file_base"))
+    checkpoint_dirs.push_back(common->getParam<std::string>("file_base") + "_cp");
+  // Case for normal application or master in a Multiapp setting
+  else if (getOutputFileBase().empty())
+    checkpoint_dirs.push_back(FileOutput::getOutputFileBase(*this, "_out_cp"));
+  // Case for a sub app in a Multiapp setting
+  else
+    checkpoint_dirs.push_back(getOutputFileBase() + "_cp");
+
+  // Add the directories from any existing checkpoint objects
+  const std::vector<Action *> actions = _action_warehouse.getActionsByName("add_output");
+  for (const auto & action : actions)
+  {
+    // Get the parameters from the MooseObjectAction
+    MooseObjectAction * moose_object_action = static_cast<MooseObjectAction *>(action);
+    const InputParameters & params = moose_object_action->getObjectParams();
+
+    // Loop through the actions and add the necessary directories to the list to check
+    if (moose_object_action->getParam<std::string>("type") == "Checkpoint")
+    {
+      if (params.isParamValid("file_base"))
+        checkpoint_dirs.push_back(common->getParam<std::string>("file_base") + "_cp");
+      else
+      {
+        std::ostringstream oss;
+        oss << "_" << action->name() << "_cp";
+        checkpoint_dirs.push_back(FileOutput::getOutputFileBase(*this, oss.str()));
+      }
+    }
+  }
+
+  return MooseUtils::getFilesInDirs(checkpoint_dirs);
+}
+
+void
+MooseApp::setStartTime(const Real time)
+{
+  _start_time_set = true;
+  _start_time = time;
 }
 
 std::string
@@ -467,10 +650,7 @@ MooseApp::getFileName(bool stripLeadingPath) const
 OutputWarehouse &
 MooseApp::getOutputWarehouse()
 {
-  if (_alternate_output_warehouse == NULL)
-    return *_output_warehouse;
-  else
-    return *_alternate_output_warehouse;
+  return _output_warehouse;
 }
 
 std::string
@@ -498,6 +678,18 @@ MooseApp::libNameToAppName(const std::string & library_name) const
     mooseError("Invalid library name: " << app_name);
 
   return MooseUtils::underscoreToCamelCase(app_name, true);
+}
+
+
+void
+MooseApp::registerRestartableData(std::string name, RestartableDataValue * data, THREAD_ID tid)
+{
+  std::map<std::string, RestartableDataValue *> & restartable_data = _restartable_data[tid];
+
+  if (restartable_data.find(name) != restartable_data.end())
+    mooseError("Attempted to declare restartable twice with the same name: " << name);
+
+  restartable_data[name] = data;
 }
 
 void
@@ -583,11 +775,11 @@ MooseApp::dynamicRegistration(const Parameters & params)
   }
 
   // Attempt to dynamically load the library
-  for (std::vector<std::string>::const_iterator path_it = paths.begin(); path_it != paths.end(); ++path_it)
-    if (MooseUtils::checkFileReadable(*path_it + '/' + library_name, false, false))
-      loadLibraryAndDependencies(*path_it + '/' + library_name, params);
+  for (const auto & path : paths)
+    if (MooseUtils::checkFileReadable(path + '/' + library_name, false, false))
+      loadLibraryAndDependencies(path + '/' + library_name, params);
     else
-      mooseWarning("Unable to open library file \"" << *path_it + '/' + library_name << "\". Double check for spelling errors.");
+      mooseWarning("Unable to open library file \"" << path + '/' + library_name << "\". Double check for spelling errors.");
 }
 
 void
@@ -695,7 +887,7 @@ MooseApp::loadLibraryAndDependencies(const std::string & library_filename, const
         break;
       }
       default:
-        mooseError("Unhandled RegistrationTyep");
+        mooseError("Unhandled RegistrationType");
       }
 
       // Store the handle so we can close it later
@@ -709,8 +901,197 @@ MooseApp::getLoadedLibraryPaths() const
 {
   // Return the paths but not the open file handles
   std::set<std::string> paths;
-  for (std::map<std::pair<std::string, std::string>, void *>::const_iterator it = _lib_handles.begin(); it != _lib_handles.end(); ++it)
-    paths.insert(it->first.first);
+  for (const auto & it : _lib_handles)
+    paths.insert(it.first.first);
 
   return paths;
+}
+
+InputParameterWarehouse &
+MooseApp::getInputParameterWarehouse()
+{
+  return *_input_parameter_warehouse;
+}
+
+std::string
+MooseApp::header() const
+{
+  return std::string("");
+}
+
+void
+MooseApp::addMeshModifier(const std::string & modifier_name, const std::string & name, InputParameters parameters)
+{
+  MooseSharedPointer<MeshModifier> mesh_modifier = _factory.create<MeshModifier>(modifier_name, name, parameters);
+
+  _mesh_modifiers.insert(std::make_pair(MooseUtils::shortName(name), mesh_modifier));
+}
+
+const MeshModifier &
+MooseApp::getMeshModifier(const std::string & name) const
+{
+  return *_mesh_modifiers.find(MooseUtils::shortName(name))->second.get();
+}
+
+void
+MooseApp::executeMeshModifiers()
+{
+  DependencyResolver<MooseSharedPointer<MeshModifier> > resolver;
+
+  // Add all of the dependencies into the resolver and sort them
+  for (const auto & it : _mesh_modifiers)
+  {
+    // Make sure an item with no dependencies comes out too!
+    resolver.addItem(it.second);
+
+    std::vector<std::string> & modifiers = it.second->getDependencies();
+    for (const auto & depend_name : modifiers)
+    {
+      std::map<std::string, MooseSharedPointer<MeshModifier> >::const_iterator depend_it = _mesh_modifiers.find(depend_name);
+
+      if (depend_it == _mesh_modifiers.end())
+        mooseError("The MeshModifier \"" << depend_name << "\" was not created, did you make a spelling mistake or forget to include it in your input file?");
+
+      resolver.insertDependency(it.second, depend_it->second);
+    }
+  }
+
+  const std::vector<MooseSharedPointer<MeshModifier> > & ordered_modifiers = resolver.getSortedValues();
+
+  if (ordered_modifiers.size())
+  {
+    MooseMesh * mesh = _action_warehouse.mesh().get();
+    MooseMesh * displaced_mesh = _action_warehouse.displacedMesh().get();
+
+    // Run the MeshModifiers in the proper order
+    for (const auto & modifier : ordered_modifiers)
+      modifier->modifyMesh(mesh, displaced_mesh);
+
+    /**
+     * Set preparation flag after modifers are run. The final preparation
+     * will be handled by the SetupMeshComplete Action.
+     */
+    mesh->prepared(false);
+    if (displaced_mesh)
+      displaced_mesh->prepared(false);
+  }
+}
+
+void
+MooseApp::clearMeshModifiers()
+{
+  _mesh_modifiers.clear();
+}
+
+void
+MooseApp::setRestart(const bool & value)
+{
+  _restart = value;
+
+  MooseSharedPointer<FEProblem> fe_problem = _action_warehouse.problem();
+}
+
+void
+MooseApp::setRecover(const bool & value)
+{
+  _recover = value;
+}
+
+
+void
+MooseApp::restoreCachedBackup()
+{
+  if (!_cached_backup.get())
+    mooseError("No cached Backup to restore!");
+
+  restore(_cached_backup, isRestarting());
+
+  // Release our hold on this Backup
+  _cached_backup.reset();
+}
+
+
+void
+MooseApp::createMinimalApp()
+{
+  // SetupMeshAction (setup_mesh)
+  {
+    // Build the Action parameters
+    InputParameters action_params = _action_factory.getValidParams("SetupMeshAction");
+    action_params.set<std::string>("type") = "GeneratedMesh";
+    action_params.set<std::string>("task") = "setup_mesh";
+
+    // Create The Action
+    MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("SetupMeshAction", "Mesh", action_params));
+
+    // Set the object parameters
+    InputParameters & params = action->getObjectParams();
+    params.set<MooseEnum>("dim") = "1";
+    params.set<unsigned int>("nx") = 1;
+
+    // Add Action to the warehouse
+    _action_warehouse.addActionBlock(action);
+  }
+
+  // SetupMeshAction (init_mesh)
+  {
+    // Action parameters
+    InputParameters action_params = _action_factory.getValidParams("SetupMeshAction");
+    action_params.set<std::string>("type") = "GeneratedMesh";
+    action_params.set<std::string>("task") = "init_mesh";
+
+    // Build the action
+    MooseSharedPointer<Action> action = _action_factory.create("SetupMeshAction", "Mesh", action_params);
+    _action_warehouse.addActionBlock(action);
+  }
+
+  // Executioner
+  {
+    // Build the Action parameters
+    InputParameters action_params = _action_factory.getValidParams("CreateExecutionerAction");
+    action_params.set<std::string>("type") = "Transient";
+
+    // Create the action
+    MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("CreateExecutionerAction", "Executioner", action_params));
+
+    // Set the object parameters
+    InputParameters & params = action->getObjectParams();
+    params.set<unsigned int>("num_steps") = 1;
+    params.set<Real>("dt") = 1;
+
+    // Add Action to the warehouse
+    _action_warehouse.addActionBlock(action);
+  }
+
+  // Problem
+  {
+    // Build the Action parameters
+    InputParameters action_params = _action_factory.getValidParams("CreateProblemAction");
+    action_params.set<std::string>("type") = "FEProblem";
+
+    // Create the action
+    MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("CreateProblemAction", "Problem", action_params));
+
+    // Set the object parameters
+    InputParameters & params = action->getObjectParams();
+    params.set<bool>("solve") = false;
+
+    // Add Action to the warehouse
+    _action_warehouse.addActionBlock(action);
+  }
+
+  // Outputs
+  {
+    // Build the Action parameters
+    InputParameters action_params = _action_factory.getValidParams("CommonOutputAction");
+    action_params.set<bool>("console") = false;
+
+    // Create action
+    MooseSharedPointer<Action> action = _action_factory.create("CommonOutputAction", "Outputs", action_params);
+
+    // Add Action to the warehouse
+    _action_warehouse.addActionBlock(action);
+  }
+
+  _action_warehouse.build();
 }

@@ -21,10 +21,11 @@ InputParameters validParams<Convection>()
   return params;
 }
 
-Convection::Convection(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+Convection::Convection(const InputParameters & parameters) :
+    Kernel(parameters),
     _velocity(getParam<RealVectorValue>("velocity"))
-{}
+{
+}
 
 Real
 Convection::computeQpResidual()
@@ -37,4 +38,3 @@ Convection::computeQpJacobian()
 {
   return _test[_i][_qp]*(_velocity*_grad_phi[_j][_qp]);
 }
-

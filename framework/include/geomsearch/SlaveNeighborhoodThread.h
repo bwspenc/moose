@@ -15,19 +15,18 @@
 #ifndef SLAVENEIGHBORHOODTHREAD_H
 #define SLAVENEIGHBORHOODTHREAD_H
 
+// MOOSE includes
 #include "MooseTypes.h"
-#include "MooseMesh.h"
-// libMesh
-#include "libmesh/mesh_base.h"
-// System
-#include <set>
+
+// Forward declarations
+class MooseMesh;
 
 class SlaveNeighborhoodThread
 {
 public:
   SlaveNeighborhoodThread(const MooseMesh & mesh,
                           const std::vector<dof_id_type> & trial_master_nodes,
-                          std::map<dof_id_type, std::vector<dof_id_type> > & node_to_elem_map,
+                          const std::map<dof_id_type, std::vector<dof_id_type> > & node_to_elem_map,
                           const unsigned int patch_size);
 
 
@@ -55,7 +54,7 @@ protected:
   const std::vector<dof_id_type> & _trial_master_nodes;
 
   /// Node to elem map
-  std::map<dof_id_type, std::vector<dof_id_type> > & _node_to_elem_map;
+  const std::map<dof_id_type, std::vector<dof_id_type> > & _node_to_elem_map;
 
   /// The number of nodes to keep
   unsigned int _patch_size;

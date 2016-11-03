@@ -15,7 +15,7 @@
 class ComputeIsotropicElasticityTensor : public ComputeElasticityTensorBase
 {
 public:
-  ComputeIsotropicElasticityTensor(const std:: string & name, InputParameters parameters);
+  ComputeIsotropicElasticityTensor(const InputParameters & parameters);
 
 protected:
   virtual void computeQpElasticityTensor();
@@ -34,7 +34,7 @@ protected:
   Real _youngs_modulus;
 
   /// Individual elasticity tensor
-  ElasticityTensorR4 _Cijkl;
+  RankFourTensor _Cijkl;
 };
 
 #endif //COMPUTEISOTROPICELASTICITYTENSOR_H

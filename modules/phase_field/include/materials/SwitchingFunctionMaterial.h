@@ -25,8 +25,7 @@ InputParameters validParams<SwitchingFunctionMaterial>();
 class SwitchingFunctionMaterial : public OrderParameterFunctionMaterial
 {
 public:
-  SwitchingFunctionMaterial(const std::string & name,
-                            InputParameters parameters);
+  SwitchingFunctionMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();

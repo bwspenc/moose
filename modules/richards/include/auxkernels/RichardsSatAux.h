@@ -25,13 +25,13 @@ InputParameters validParams<RichardsSatAux>();
 class RichardsSatAux: public AuxKernel
 {
 public:
-  RichardsSatAux(const std::string & name, InputParameters parameters);
+  RichardsSatAux(const InputParameters & parameters);
 
 protected:
   virtual Real computeValue();
 
   /// effective saturation
-  VariableValue & _seff_var;
+  const VariableValue & _seff_var;
 
   /// User object defining saturation as a function of effective saturation
   const RichardsSat & _sat_UO;

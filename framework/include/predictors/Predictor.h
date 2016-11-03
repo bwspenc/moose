@@ -15,30 +15,37 @@
 #ifndef PREDICTOR_H
 #define PREDICTOR_H
 
+// MOOSE includes
 #include "MooseObject.h"
 #include "Restartable.h"
-#include "libmesh/numeric_vector.h"
 
+// Forward declarations
 class Predictor;
 class FEProblem;
 class NonlinearSystem;
+
+namespace libMesh
+{
+template <typename T> class NumericVector;
+}
 
 template<>
 InputParameters validParams<Predictor>();
 
 /**
- * Base class for predictors
- *
+ * Base class for predictors.
  */
 class Predictor :
   public MooseObject,
   public Restartable
 {
 public:
-  Predictor(const std::string & name, InputParameters parameters);
+  Predictor(const InputParameters & parameters);
   virtual ~Predictor();
 
   virtual int order() { return 0; }
+  virtual void timestepSetup();
+  virtual bool shouldApply();
   virtual void apply(NumericVector<Number> & sln) = 0;
 
   virtual NumericVector<Number> & solutionPredictor() { return _solution_predictor; }
@@ -55,8 +62,14 @@ protected:
   NumericVector<Number> & _solution_older;
   NumericVector<Number> & _solution_predictor;
 
-  ///
+  /// Amount by which to scale the predicted value.  Must be in [0,1].
   Real _scale;
+
+  /// Times for which the predictor should not be applied
+  std::vector<Real> _skip_times;
+
+  /// Old times for which the predictor should not be applied
+  std::vector<Real> _skip_times_old;
 };
 
 #endif /* PREDICTOR_H */

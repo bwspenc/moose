@@ -15,13 +15,16 @@
 #ifndef USEROBJECTINTERFACE_H
 #define USEROBJECTINTERFACE_H
 
-#include "InputParameters.h"
+// MOOSE includes
 #include "ParallelUniqueId.h"
-#include "MooseTypes.h"
 #include "FEProblem.h"
+#include "UserObject.h"
+
+// Forward declarations
+class InputParameters;
 
 /**
- * Interface for objects that need to use user objects
+ * Interface for objects that need to use UserObjects.
  */
 class UserObjectInterface
 {
@@ -32,7 +35,7 @@ public:
    *        but the object calling getUserObject only needs to use the name on the
    *        left hand side of the statement "user_object = user_object_name"
    */
-  UserObjectInterface(const InputParameters & params);
+  UserObjectInterface(const MooseObject * moose_object);
 
   /**
    * Get an user object with a given parameter name
@@ -65,14 +68,17 @@ public:
   const UserObject & getUserObjectBaseByName(const std::string & name);
 
 private:
+  /// Parameters of the object with this interface
+  const InputParameters & _uoi_params;
+
   /// Reference to the FEProblem instance
   FEProblem & _uoi_feproblem;
 
   /// Thread ID
   THREAD_ID _uoi_tid;
 
-  /// Parameters of the object with this interface
-  InputParameters _uoi_params;
+  /// Check if the user object is a DiscreteElementUserObject
+  bool isDiscreteUserObject(const UserObject & uo) const;
 };
 
 
@@ -80,14 +86,16 @@ template<class T>
 const T &
 UserObjectInterface::getUserObject(const std::string & name)
 {
-  return _uoi_feproblem.getUserObject<T>(_uoi_params.get<UserObjectName>(name));
+  unsigned int tid = isDiscreteUserObject(getUserObjectBase(name)) ? _uoi_tid : 0;
+  return _uoi_feproblem.getUserObject<T>(_uoi_params.get<UserObjectName>(name), tid);
 }
 
 template<class T>
 const T &
 UserObjectInterface::getUserObjectByName(const std::string & name)
 {
-  return _uoi_feproblem.getUserObject<T>(name);
+  unsigned int tid = isDiscreteUserObject(getUserObjectBaseByName(name)) ? _uoi_tid : 0;
+  return _uoi_feproblem.getUserObject<T>(name, tid);
 }
 
 #endif //USEROBJECTINTERFACE_H

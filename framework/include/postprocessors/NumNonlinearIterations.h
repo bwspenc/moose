@@ -30,20 +30,20 @@ InputParameters validParams<NumNonlinearIterations>();
 class NumNonlinearIterations : public GeneralPostprocessor
 {
 public:
-  NumNonlinearIterations(const std::string & name, InputParameters parameters);
+  NumNonlinearIterations(const InputParameters & parameters);
 
   /**
    * Initialization to be done at each timestep
    */
-  virtual void timestepSetup();
+  virtual void timestepSetup() override;
 
-  virtual void initialize() {}
-  virtual void execute() {}
+  virtual void initialize() override {}
+  virtual void execute() override {}
 
   /**
    * Get the numer of nonlinear iterations
    */
-  virtual Real getValue();
+  virtual Real getValue() override;
 
 protected:
   /// Pointer to the FEProblem

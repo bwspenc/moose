@@ -33,17 +33,14 @@ public:
 
   /**
    * Class constructor.
-   * @param name Name of the object
    * @param parameters Input parameters for this object
    */
-  MaterialRealAux(const std::string & name, InputParameters parameters);
+  MaterialRealAux(const InputParameters & parameters);
 
 protected:
 
-  /**
-   * Compute the material property and apply the factor and offset parameters
-   */
-  virtual Real computeValue();
+  /// Returns the material property values at quadrature points
+  virtual Real getRealValue();
 };
 
 #endif //MATERIALREALAUX_H

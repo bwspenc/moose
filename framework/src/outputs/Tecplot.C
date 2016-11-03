@@ -16,6 +16,7 @@
 #include "Tecplot.h"
 #include "MooseApp.h"
 #include "FEProblem.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/tecplot_io.h"
@@ -40,8 +41,8 @@ InputParameters validParams<Tecplot>()
   return params;
 }
 
-Tecplot::Tecplot(const std::string & name, InputParameters parameters) :
-    BasicOutput<OversampleOutput>(name, parameters),
+Tecplot::Tecplot(const InputParameters & parameters) :
+    BasicOutput<OversampleOutput>(parameters),
     _binary(getParam<bool>("binary")),
     _ascii_append(getParam<bool>("ascii_append")),
     _first_time(declareRestartableData<bool>("first_time", true))

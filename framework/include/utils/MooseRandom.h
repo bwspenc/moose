@@ -15,12 +15,16 @@
 #ifndef MOOSERANDOM_H
 #define MOOSERANDOM_H
 
-#include "randistrs.h"
-
+// MOOSE includes
 #include "MooseError.h"
 
+// libMesh includes
 #include "libmesh/libmesh_config.h"
 #include LIBMESH_INCLUDE_UNORDERED_MAP
+
+// External library includes
+#include "randistrs.h"
+
 
 /**
  * This class encapsulates a useful, consistent, cross-platform random number generator
@@ -74,7 +78,8 @@ public:
   /**
    * Return next random number drawn from a standard distribution.
    */
-  static inline double randNormal() {
+  static inline double randNormal()
+  {
     return randNormal(0.0, 1.0);
   }
 
@@ -94,7 +99,7 @@ public:
    */
   inline void seed(unsigned int i, unsigned int seed)
   {
-    mts_seed32new(&(_states[i]), seed);
+    mts_seed32new(&(_states[i].first), seed);
   }
 
   /**
@@ -105,7 +110,7 @@ public:
   inline double rand(unsigned int i)
   {
     mooseAssert(_states.find(i) != _states.end(), "No random state initialized for id: " << i);
-    return mts_ldrand(&(_states[i]));
+    return mts_ldrand(&(_states[i].first));
   }
 
   /**
@@ -119,13 +124,14 @@ public:
   inline double randNormal(unsigned int i, double mean, double sigma)
   {
     mooseAssert(_states.find(i) != _states.end(), "No random state initialized for id: " << i);
-    return rds_normal(&(_states[i]), mean, sigma);
+    return rds_normal(&(_states[i].first), mean, sigma);
   }
 
   /**
    * Return next random number drawn from a standard distribution.
    */
-  inline double randNormal(unsigned int i) {
+  inline double randNormal(unsigned int i)
+  {
     return randNormal(i, 0.0, 1.0);
   }
 
@@ -137,7 +143,7 @@ public:
   inline uint32_t randl(unsigned int i)
   {
     mooseAssert(_states.find(i) != _states.end(), "No random state initialized for id: " << i);
-    return mts_lrand(&(_states[i]));
+    return mts_lrand(&(_states[i].first));
   }
 
   /**
@@ -146,7 +152,9 @@ public:
    */
   void saveState()
   {
-    _old_states = _states;
+    for (LIBMESH_BEST_UNORDERED_MAP<unsigned int, std::pair<mt_state, mt_state> >::iterator it = _states.begin();
+         it != _states.end(); ++it)
+      it->second.second = it->second.first;
   }
 
   /**
@@ -154,12 +162,19 @@ public:
    */
   void restoreState()
   {
-    _states = _old_states;
+    for (LIBMESH_BEST_UNORDERED_MAP<unsigned int, std::pair<mt_state, mt_state> >::iterator it = _states.begin();
+         it != _states.end(); ++it)
+      it->second.first = it->second.second;
   }
 
 private:
-  LIBMESH_BEST_UNORDERED_MAP<unsigned int, mt_state> _states;
-  LIBMESH_BEST_UNORDERED_MAP<unsigned int, mt_state> _old_states;
+
+  /**
+   * We store a pair of states in this map. The first one is the active state, the
+   * second is the backup state. It is used to restore state at a later time
+   * to the active state.
+   */
+  LIBMESH_BEST_UNORDERED_MAP<unsigned int, std::pair<mt_state, mt_state> > _states;
 };
 
 #endif // MOOSERANDOM_H

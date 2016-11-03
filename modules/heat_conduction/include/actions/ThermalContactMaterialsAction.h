@@ -12,7 +12,7 @@
 class ThermalContactMaterialsAction : public Action
 {
 public:
-  ThermalContactMaterialsAction( const std::string & name, InputParameters params );
+  ThermalContactMaterialsAction( const InputParameters & params);
   virtual ~ThermalContactMaterialsAction(){}
   virtual void act();
 };

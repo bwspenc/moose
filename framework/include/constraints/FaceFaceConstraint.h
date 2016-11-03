@@ -15,10 +15,12 @@
 #ifndef FACEFACECONSTRAINT_H
 #define FACEFACECONSTRAINT_H
 
+// MOOSE includes
 #include "Constraint.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
+#include "MooseMesh.h"
 
-//Forward Declarations
+// Forward Declarations
 class FaceFaceConstraint;
 class FEProblem;
 
@@ -45,8 +47,7 @@ class FaceFaceConstraint :
   public CoupleableMooseVariableDependencyIntermediateInterface
 {
 public:
-  FaceFaceConstraint(const std::string & name, InputParameters parameters);
-  virtual ~FaceFaceConstraint();
+  FaceFaceConstraint(const InputParameters & parameters);
 
   /**
    * Evaluate variables, compute q-points, etc.
@@ -109,7 +110,7 @@ protected:
   /**
    * The values of Lagrange multipliers in quadrature points
    */
-  VariableValue & _lambda;
+  const VariableValue & _lambda;
 
   MooseMesh::MortarInterface & _iface;
   PenetrationLocator & _master_penetration_locator;
@@ -119,6 +120,8 @@ protected:
    * Values of the constrained variable on the master side
    */
   std::vector<Real> _u_master;
+  std::vector<RealGradient> _grad_u_master;
+
   /**
    * Physical points on the master side
    */
@@ -131,6 +134,8 @@ protected:
    * Values of test functions on the master side
    */
   const VariableTestValue & _test_master;
+  const VariableTestGradient & _grad_test_master;
+
   /**
    * Values of shape function on the master side
    */
@@ -140,6 +145,8 @@ protected:
    * Values of the constrained variable on the slave side
    */
   std::vector<Real> _u_slave;
+  std::vector<RealGradient> _grad_u_slave;
+
   /**
    * Physical points on the slave side
    */
@@ -152,6 +159,8 @@ protected:
    * Values of test functions on the slave side
    */
   const VariableTestValue & _test_slave;
+  const VariableTestGradient & _grad_test_slave;
+
   /**
    * Values of shape function on the slave side
    */

@@ -9,8 +9,8 @@
   ny = 10
   elem_type = QUAD4
   # This test uses ElementalVariableValue postprocessors on specific
-  # elements, if you use ParallelMesh the elements get renumbered.
-  distribution = serial
+  # elements, if you use DistributedMesh the elements get renumbered.
+  parallel_type = replicated
 []
 
 [Functions]
@@ -108,6 +108,4 @@
 [Outputs]
   exodus = true
   file_base = out
-  output_initial = true
-  print_perf_log = true
 []

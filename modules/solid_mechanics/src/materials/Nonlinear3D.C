@@ -4,26 +4,29 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "Nonlinear3D.h"
-
 #include "SolidModel.h"
-
 #include "Problem.h"
 #include "SymmIsotropicElasticityTensor.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 namespace SolidMechanics
 {
 
 Nonlinear3D::Nonlinear3D( SolidModel & solid_model,
                           const std::string & name,
-                          InputParameters parameters )
+                          const InputParameters & parameters )
   :Nonlinear( solid_model, name, parameters ),
    _grad_disp_x(coupledGradient("disp_x")),
    _grad_disp_y(coupledGradient("disp_y")),
    _grad_disp_z(coupledGradient("disp_z")),
    _grad_disp_x_old(coupledGradientOld("disp_x")),
    _grad_disp_y_old(coupledGradientOld("disp_y")),
-   _grad_disp_z_old(coupledGradientOld("disp_z"))
+   _grad_disp_z_old(coupledGradientOld("disp_z")),
+   _volumetric_locking_correction(_solid_model.getParam<bool>("volumetric_locking_correction"))
 {
 }
 
@@ -71,26 +74,29 @@ Nonlinear3D::computeIncrementalDeformationGradient( std::vector<ColumnMajorMatri
     Fhat[qp] = A * Fbar_inverse;
     Fhat[qp].addDiag( 1 );
 
+    if (_volumetric_locking_correction)
+    {
+      // Now include the contribution for the integration of Fhat over the element
+      Fhat_average += Fhat[qp] * _solid_model.JxW(qp);
 
-    // Now include the contribution for the integration of Fhat over the element
-    Fhat_average += Fhat[qp] * _solid_model.JxW(qp);
-
-    volume += _solid_model.JxW(qp);  // Accumulate original configuration volume
+      volume += _solid_model.JxW(qp);  // Accumulate original configuration volume
+    }
   }
 
-  Fhat_average /= volume;
-  const Real det_Fhat_average( detMatrix( Fhat_average ) );
-  const Real third( 1./3. );
-
-
-  // Finalize volumetric locking correction
-  for ( unsigned qp=0; qp < _solid_model.qrule()->n_points(); ++qp )
+  if (_volumetric_locking_correction)
   {
-    const Real det_Fhat( detMatrix( Fhat[qp] ) );
-    const Real factor( std::pow( det_Fhat_average/det_Fhat, third ) );
+    Fhat_average /= volume;
+    const Real det_Fhat_average( detMatrix( Fhat_average ) );
 
-    Fhat[qp] *= factor;
+    // Finalize volumetric locking correction
+    for ( unsigned qp=0; qp < _solid_model.qrule()->n_points(); ++qp )
+    {
+      const Real det_Fhat( detMatrix( Fhat[qp] ) );
+      const Real factor( std::cbrt( det_Fhat_average/det_Fhat) );
 
+      Fhat[qp] *= factor;
+
+    }
   }
 //    Moose::out << "Fhat(0,0)" << Fhat[0](0,0) << std::endl;
 }

@@ -22,8 +22,8 @@ InputParameters validParams<RichardsSeffPrimePrimeAux>()
   return params;
 }
 
-RichardsSeffPrimePrimeAux::RichardsSeffPrimePrimeAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+RichardsSeffPrimePrimeAux::RichardsSeffPrimePrimeAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _seff_UO(getUserObject<RichardsSeff>("seff_UO")),
     _wrt1(getParam<int>("wrtnum1")),
     _wrt2(getParam<int>("wrtnum2"))
@@ -50,3 +50,4 @@ RichardsSeffPrimePrimeAux::computeValue()
   _seff_UO.d2seff(_pressure_vals, _qp, _mat);
   return _mat[_wrt1][_wrt2];
 }
+

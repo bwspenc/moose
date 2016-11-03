@@ -1,8 +1,8 @@
 [Mesh]
   file = square-2x2-nodeids.e
   # This test uses a NodalVariableValue postprocessor, which
-  # only works with SerialMesh
-  distribution = serial
+  # only works with ReplicatedMesh
+  parallel_type = replicated
 []
 
 [Variables]
@@ -129,11 +129,10 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   [./console]
     type = Console
-    perf_log = true
     max_rows = 2
-    output_on = 'failed nonlinear linear timestep_end'
   [../]
 []

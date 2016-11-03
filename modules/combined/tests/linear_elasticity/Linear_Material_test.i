@@ -309,9 +309,9 @@
 [Materials]
   [./Anisotropic]
     type = LinearGeneralAnisotropicMaterial
-    block = 0
     disp_x = disp_x
     disp_y = disp_y
+    block = 0
 
     all_21 = true
     # reading   C_11  C_12  C_13  C_22  C_23  C_33  C_44  C_55  C_66
@@ -369,8 +369,5 @@
 
 [Outputs]
   file_base = Linear_General_Anisotropic_Material_out
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

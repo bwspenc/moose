@@ -1,3 +1,15 @@
+###########################################################
+# This is a simple test of the restart/recover capability.
+# The test object "RestartableTypesChecker" is used
+# to reload data from a previous simulation written out
+# with the object "RestartableTypes".
+#
+# See "restartable_types2.i"
+#
+# @Requirement F1.60
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -52,9 +64,7 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
   [./out]
     type = Checkpoint
     num_files = 1

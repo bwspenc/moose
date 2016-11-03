@@ -24,7 +24,7 @@ InputParameters validParams<SwitchingFunctionConstraintEta>();
 class SwitchingFunctionConstraintEta : public DerivativeMaterialInterface<Kernel>
 {
 public:
-  SwitchingFunctionConstraintEta(const std::string & name, InputParameters parameters);
+  SwitchingFunctionConstraintEta(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
@@ -32,15 +32,14 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int);
 
   /// Switching function name
-  std::string _h_name;
-  std::string _eta_name;
+  VariableName _eta_name;
 
   /// Switching function drivatives
   const MaterialProperty<Real> & _dh;
   const MaterialProperty<Real> & _d2h;
 
   /// Lagrange multiplier
-  VariableValue & _lambda;
+  const VariableValue & _lambda;
   unsigned int _lambda_var;
 };
 

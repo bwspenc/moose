@@ -15,55 +15,94 @@
 #ifndef TWOMATERIALPROPERTYINTERFACE_H
 #define TWOMATERIALPROPERTYINTERFACE_H
 
-#include <map>
-#include <string>
-
-#include "MaterialData.h"
 #include "MaterialPropertyInterface.h"
 
 // Forward Declarations
+class MaterialData;
+class TwoMaterialPropertyInterface;
+
+template<>
+InputParameters validParams<TwoMaterialPropertyInterface>();
+
 
 class TwoMaterialPropertyInterface : public MaterialPropertyInterface
 {
 public:
-  TwoMaterialPropertyInterface(const InputParameters & parameters);
+  ///@{
+  /**
+   * Constructor.
+   *
+   * @param parameters The objects input parameters
+   * @param block_ids A reference to the block ids (optional)
+   *
+   * This class has two constructors:
+   *   (1) not restricted to boundaries or blocks
+   *   (2) restricted to only blocks
+   */
+  TwoMaterialPropertyInterface(const MooseObject * moose_object);
+  TwoMaterialPropertyInterface(const MooseObject * moose_object, const std::set<SubdomainID> & block_ids);
+  ///@}
 
   /**
    * Retrieve the property named "name"
    */
   template<typename T>
-  MaterialProperty<T> & getNeighborMaterialProperty(const std::string & name);
+  const MaterialProperty<T> & getNeighborMaterialProperty(const std::string & name);
 
   template<typename T>
-  MaterialProperty<T> & getNeighborMaterialPropertyOld(const std::string & name);
+  const MaterialProperty<T> & getNeighborMaterialPropertyOld(const std::string & name);
 
   template<typename T>
-  MaterialProperty<T> & getNeighborMaterialPropertyOlder(const std::string & name);
+  const MaterialProperty<T> & getNeighborMaterialPropertyOlder(const std::string & name);
 
 protected:
-  MaterialData & _neighbor_material_data;
+  MooseSharedPointer<MaterialData> _neighbor_material_data;
 };
 
 
 template<typename T>
-MaterialProperty<T> &
+const MaterialProperty<T> &
 TwoMaterialPropertyInterface::getNeighborMaterialProperty(const std::string & name)
 {
-  return _neighbor_material_data.getProperty<T>(name);
+  // Check if the supplied parameter is a valid input parameter key
+  std::string prop_name = deducePropertyName(name);
+
+  // Check if it's just a constant
+  const MaterialProperty<T> * default_property = defaultMaterialProperty<T>(prop_name);
+  if (default_property)
+    return *default_property;
+  else
+    return _neighbor_material_data->getProperty<T>(prop_name);
 }
 
 template<typename T>
-MaterialProperty<T> &
+const MaterialProperty<T> &
 TwoMaterialPropertyInterface::getNeighborMaterialPropertyOld(const std::string & name)
 {
-  return _neighbor_material_data.getPropertyOld<T>(name);
+  // Check if the supplied parameter is a valid input parameter key
+  std::string prop_name = deducePropertyName(name);
+
+  // Check if it's just a constant
+  const MaterialProperty<T> * default_property = defaultMaterialProperty<T>(prop_name);
+  if (default_property)
+    return *default_property;
+  else
+    return _neighbor_material_data->getPropertyOld<T>(prop_name);
 }
 
 template<typename T>
-MaterialProperty<T> &
+const MaterialProperty<T> &
 TwoMaterialPropertyInterface::getNeighborMaterialPropertyOlder(const std::string & name)
 {
-  return _neighbor_material_data.getPropertyOlder<T>(name);
+  // Check if the supplied parameter is a valid input parameter key
+  std::string prop_name = deducePropertyName(name);
+
+  // Check if it's just a constant
+  const MaterialProperty<T> * default_property = defaultMaterialProperty<T>(prop_name);
+  if (default_property)
+    return *default_property;
+  else
+    return _neighbor_material_data->getPropertyOlder<T>(prop_name);
 }
 
 #endif //TWOMATERIALPROPERTYINTERFACE_H

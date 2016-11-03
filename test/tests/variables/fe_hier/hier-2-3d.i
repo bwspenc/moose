@@ -11,10 +11,10 @@
   ny = 1
   nz = 1
   elem_type = HEX27
-  # This problem only has 1 element, so using ParallelMesh in parallel
-  # isn't really an option, and we don't care that much about ParallelMesh
+  # This problem only has 1 element, so using DistributedMesh in parallel
+  # isn't really an option, and we don't care that much about DistributedMesh
   # in serial.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Functions]
@@ -54,6 +54,7 @@
     grad_x = 2*x
     grad_y = 2*y
     grad_z = 2*z
+  [../]
 []
 
 [Variables]
@@ -157,7 +158,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   csv = true
-  print_perf_log = true
 []

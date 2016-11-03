@@ -10,6 +10,10 @@
   elem_type = QUAD4
 []
 
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
 [Variables]
   [./disp_x]
     order = FIRST
@@ -51,8 +55,6 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
   [../]
   [./dummy]
     type = MatDiffusion
@@ -62,16 +64,37 @@
 []
 
 [Materials]
-  [./eigenstrain]
-    type = SimpleEigenStrainMaterial
+  [./elasticity_tensor]
+    type = ComputeElasticityTensor
     block = 0
-    epsilon0 = 0.05
-    c = c
-    disp_y = disp_y
-    disp_x = disp_x
-    C_ijkl = '3 1 1 3 1 3 1 1 1 '
     fill_method = symmetric9
+    C_ijkl = '3 1 1 3 1 3 1 1 1 '
   [../]
+  [./strain]
+    type = ComputeSmallStrain
+    block = 0
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress]
+    type = ComputeLinearElasticStress
+    block = 0
+  [../]
+  [./prefactor]
+    type = DerivativeParsedMaterial
+    block = 0
+    args = c
+    f_name = prefactor
+    constant_names       = 'epsilon0 c0'
+    constant_expressions = '0.05     0'
+    function = '(c - c0) * epsilon0'
+  [../]
+  [./eigenstrain]
+    type = ComputeVariableEigenstrain
+    eigen_base = '1'
+    args = c
+    prefactor = prefactor
+  [../]
+
   [./elasticenergy]
     type = ElasticEnergyMaterial
     block = 0
@@ -91,7 +114,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

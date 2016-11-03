@@ -15,10 +15,9 @@ InputParameters validParams<ParsedMaterial>()
   return params;
 }
 
-ParsedMaterial::ParsedMaterial(const std::string & name,
-                               InputParameters parameters) :
-    ParsedMaterialHelper(name, parameters, USE_MOOSE_NAMES),
-    ParsedMaterialBase(name, parameters)
+ParsedMaterial::ParsedMaterial(const InputParameters & parameters) :
+    ParsedMaterialHelper(parameters, USE_MOOSE_NAMES),
+    ParsedMaterialBase(parameters)
 {
   // Build function and optimize
   functionParse(_function,
@@ -26,3 +25,4 @@ ParsedMaterial::ParsedMaterial(const std::string & name,
                 getParam<std::vector<std::string> >("material_property_names"),
                 _tol_names, _tol_values);
 }
+

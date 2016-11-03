@@ -26,11 +26,10 @@ class AnalyticalIndicator :
   public ElementIntegralIndicator
 {
 public:
-  AnalyticalIndicator(const std::string & name, InputParameters parameters);
-  virtual ~AnalyticalIndicator(){};
+  AnalyticalIndicator(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpIntegral();
+  virtual Real computeQpIntegral() override;
 
   Function & _func;
 };

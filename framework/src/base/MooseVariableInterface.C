@@ -16,10 +16,14 @@
 #include "Problem.h"
 #include "SubProblem.h"
 #include "MooseTypes.h"
+#include "Assembly.h"
+#include "MooseError.h" // mooseDeprecated
 
-MooseVariableInterface::MooseVariableInterface(const InputParameters & parameters, bool nodal, std::string var_param_name) :
+MooseVariableInterface::MooseVariableInterface(const MooseObject * moose_object, bool nodal, std::string var_param_name) :
     _nodal(nodal)
 {
+  const InputParameters & parameters = moose_object->parameters();
+
   SubProblem & problem = *parameters.get<SubProblem *>("_subproblem");
 
   THREAD_ID tid = parameters.get<THREAD_ID>("_tid");
@@ -45,7 +49,7 @@ MooseVariableInterface::mooseVariable()
   return _variable;
 }
 
-VariableValue &
+const VariableValue &
 MooseVariableInterface::value()
 {
   if (_nodal)
@@ -54,7 +58,7 @@ MooseVariableInterface::value()
     return _variable->sln();
 }
 
-VariableValue &
+const VariableValue &
 MooseVariableInterface::valueOld()
 {
   if (_nodal)
@@ -63,7 +67,7 @@ MooseVariableInterface::valueOld()
     return _variable->slnOld();
 }
 
-VariableValue &
+const VariableValue &
 MooseVariableInterface::valueOlder()
 {
   if (_nodal)
@@ -72,7 +76,7 @@ MooseVariableInterface::valueOlder()
     return _variable->slnOlder();
 }
 
-VariableValue &
+const VariableValue &
 MooseVariableInterface::dot()
 {
   if (_nodal)
@@ -81,7 +85,7 @@ MooseVariableInterface::dot()
     return _variable->uDot();
 }
 
-VariableValue &
+const VariableValue &
 MooseVariableInterface::dotDu()
 {
   if (_nodal)
@@ -91,7 +95,7 @@ MooseVariableInterface::dotDu()
 }
 
 
-VariableGradient &
+const VariableGradient &
 MooseVariableInterface::gradient()
 {
   if (_nodal)
@@ -100,7 +104,7 @@ MooseVariableInterface::gradient()
   return _variable->gradSln();
 }
 
-VariableGradient &
+const VariableGradient &
 MooseVariableInterface::gradientOld()
 {
   if (_nodal)
@@ -109,7 +113,7 @@ MooseVariableInterface::gradientOld()
   return _variable->gradSlnOld();
 }
 
-VariableGradient &
+const VariableGradient &
 MooseVariableInterface::gradientOlder()
 {
   if (_nodal)
@@ -118,7 +122,7 @@ MooseVariableInterface::gradientOlder()
   return _variable->gradSlnOlder();
 }
 
-VariableSecond &
+const VariableSecond &
 MooseVariableInterface::second()
 {
   if (_nodal)
@@ -127,7 +131,7 @@ MooseVariableInterface::second()
   return _variable->secondSln();
 }
 
-VariableSecond &
+const VariableSecond &
 MooseVariableInterface::secondOld()
 {
   if (_nodal)
@@ -136,7 +140,7 @@ MooseVariableInterface::secondOld()
   return _variable->secondSlnOld();
 }
 
-VariableSecond &
+const VariableSecond &
 MooseVariableInterface::secondOlder()
 {
   if (_nodal)
@@ -145,131 +149,39 @@ MooseVariableInterface::secondOlder()
   return _variable->secondSlnOlder();
 }
 
-VariableTestSecond &
+const VariableTestSecond &
 MooseVariableInterface::secondTest()
 {
   if (_nodal)
     mooseError("Nodal variables do not have second derivatives");
 
-  return const_cast<VariableTestSecond &>(_variable->secondPhi());
+  return _variable->secondPhi();
 }
 
-VariablePhiSecond &
+const VariableTestSecond &
+MooseVariableInterface::secondTestFace()
+{
+  if (_nodal)
+    mooseError("Nodal variables do not have second derivatives");
+
+  return _variable->secondPhiFace();
+}
+
+
+const VariablePhiSecond &
 MooseVariableInterface::secondPhi()
 {
   if (_nodal)
     mooseError("Nodal variables do not have second derivatives");
 
-  return const_cast<VariablePhiSecond &>(_mvi_assembly->secondPhi());
+  return _mvi_assembly->secondPhi();
 }
 
-// Neighbor values
-
-NeighborMooseVariableInterface::NeighborMooseVariableInterface(InputParameters & parameters, bool nodal) :
-    MooseVariableInterface(parameters, nodal)
-{
-}
-
-NeighborMooseVariableInterface::~NeighborMooseVariableInterface()
-{
-}
-
-
-VariableValue &
-NeighborMooseVariableInterface::neighborValue()
-{
-  if (_nodal)
-    return _variable->nodalSlnNeighbor();
-  else
-    return _variable->slnNeighbor();
-}
-
-VariableValue &
-NeighborMooseVariableInterface::neighborValueOld()
-{
-  if (_nodal)
-    return _variable->nodalSlnOldNeighbor();
-  else
-    return _variable->slnOldNeighbor();
-}
-
-VariableValue &
-NeighborMooseVariableInterface::neighborValueOlder()
-{
-  if (_nodal)
-    return _variable->nodalSlnOlderNeighbor();
-  else
-    return _variable->slnOlderNeighbor();
-}
-
-VariableGradient &
-NeighborMooseVariableInterface::neighborGradient()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have gradients");
-
-  return _variable->gradSlnNeighbor();
-}
-
-VariableGradient &
-NeighborMooseVariableInterface::neighborGradientOld()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have gradients");
-
-  return _variable->gradSlnOldNeighbor();
-}
-
-VariableGradient &
-NeighborMooseVariableInterface::neighborGradientOlder()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have gradients");
-
-  return _variable->gradSlnOlderNeighbor();
-}
-
-VariableSecond &
-NeighborMooseVariableInterface::neighborSecond()
+const VariablePhiSecond &
+MooseVariableInterface::secondPhiFace()
 {
   if (_nodal)
     mooseError("Nodal variables do not have second derivatives");
 
-  return _variable->secondSlnNeighbor();
-}
-
-VariableSecond &
-NeighborMooseVariableInterface::neighborSecondOld()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have second derivatives");
-
-  return _variable->secondSlnOldNeighbor();
-}
-
-VariableSecond &
-NeighborMooseVariableInterface::neighborSecondOlder()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have second derivatives");
-
-  return _variable->secondSlnOlderNeighbor();
-}
-
-VariableTestSecond &
-NeighborMooseVariableInterface::neighborSecondTest()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have second derivatives");
-
-  return const_cast<VariableTestSecond &>(_variable->secondPhiFaceNeighbor());
-}
-
-VariablePhiSecond &
-NeighborMooseVariableInterface::neighborSecondPhi()
-{
-  if (_nodal)
-    mooseError("Nodal variables do not have second derivatives");
-
-  return const_cast<VariablePhiSecond &>(_mvi_assembly->secondPhiFaceNeighbor());
+  return _mvi_assembly->secondPhiFace();
 }

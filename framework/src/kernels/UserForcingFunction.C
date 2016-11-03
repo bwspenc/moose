@@ -23,8 +23,8 @@ InputParameters validParams<UserForcingFunction>()
   return params;
 }
 
-UserForcingFunction::UserForcingFunction(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+UserForcingFunction::UserForcingFunction(const InputParameters & parameters) :
+    Kernel(parameters),
     _func(getFunction("function"))
 {
 }
@@ -40,3 +40,4 @@ UserForcingFunction::computeQpResidual()
 {
   return -_test[_i][_qp] * f();
 }
+

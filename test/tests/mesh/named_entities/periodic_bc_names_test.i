@@ -8,9 +8,9 @@
   ymax = 40
   zmax = 0
   elem_type = QUAD4
-  # This test will not work in parallel with ParallelMesh enabled
+  # This test will not work in parallel with DistributedMesh enabled
   # due to a bug in PeriodicBCs.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -67,11 +67,6 @@
 []
 
 [Outputs]
-  interval = 1
+  execute_on = 'timestep_end'
   exodus = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

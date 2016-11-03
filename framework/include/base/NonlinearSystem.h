@@ -17,28 +17,37 @@
 
 #include "SystemBase.h"
 #include "KernelWarehouse.h"
-#include "BCWarehouse.h"
-#include "DiracKernelWarehouse.h"
-#include "DGKernelWarehouse.h"
-#include "DamperWarehouse.h"
 #include "ConstraintWarehouse.h"
-#include "SplitWarehouse.h"
-#include "TimeIntegrator.h"
-#include "Predictor.h"
+#include "MooseObjectWarehouse.h"
 
 // libMesh includes
 #include "libmesh/transient_system.h"
 #include "libmesh/nonlinear_implicit_system.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/sparse_matrix.h"
-#include "libmesh/petsc_matrix.h"
-#include "libmesh/coupling_matrix.h"
-#include "libmesh/libmesh_common.h"
-#include LIBMESH_INCLUDE_UNORDERED_MAP
 
+// Forward declarations
 class FEProblem;
 class MoosePreconditioner;
 class JacobianBlock;
+class TimeIntegrator;
+class Predictor;
+class ElementDamper;
+class GeneralDamper;
+class IntegratedBC;
+class NodalBC;
+class PresetNodalBC;
+class DGKernel;
+class InterfaceKernel;
+class ScalarKernel;
+class DiracKernel;
+class NodalKernel;
+class Split;
+
+// libMesh forward declarations
+namespace libMesh
+{
+template <typename T> class NumericVector;
+template <typename T> class SparseMatrix;
+}
 
 /**
  * Nonlinear system to be solved
@@ -52,9 +61,9 @@ public:
   NonlinearSystem(FEProblem & problem, const std::string & name);
   virtual ~NonlinearSystem();
 
-  virtual void init();
-  virtual void solve();
-  virtual void restoreSolutions();
+  virtual void init() override;
+  virtual void solve() override;
+  virtual void restoreSolutions() override;
 
   /**
    * Quit the current solve as soon as possible.
@@ -69,17 +78,13 @@ public:
 
   // Setup Functions ////
   virtual void initialSetup();
-  virtual void initialSetupBCs();
-  virtual void initialSetupKernels();
   virtual void timestepSetup();
 
   void setupFiniteDifferencedPreconditioner();
-  void setupDecomposition();
-  void setupSplitBasedPreconditioner();
+  void setupFieldDecomposition();
 
   bool haveFiniteDifferencedPreconditioner() {return _use_finite_differenced_preconditioner;}
-  bool haveSplitBasedPreconditioner()        {return _use_split_based_preconditioner;}
-  bool haveDecomposition()                   {return _have_decomposition;}
+  bool haveFieldSplitPreconditioner()        {return _use_field_split_preconditioner;}
 
   /**
    * Returns the convergence state
@@ -102,6 +107,14 @@ public:
    * @param parameters Kernel parameters
    */
   virtual void addKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
+
+  /**
+   * Adds a NodalKernel
+   * @param kernel_name The type of the nodal kernel
+   * @param name The name of the kernel
+   * @param parameters Kernel parameters
+   */
+  virtual void addNodalKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
 
   /**
    * Adds a scalar kernel
@@ -144,6 +157,14 @@ public:
   void addDGKernel(std::string dg_kernel_name, const std::string & name, InputParameters parameters);
 
   /**
+   * Adds an interface kernel
+   * @param interface_kernel_name The type of the interface kernel
+   * @param name The name of the interface kernel
+   * @param parameters interface kernel parameters
+   */
+  void addInterfaceKernel(std::string interface_kernel_name, const std::string & name, InputParameters parameters);
+
+  /**
    * Adds a damper
    * @param damper_name The type of the damper
    * @param name The name of the damper
@@ -163,22 +184,9 @@ public:
    * Retrieves a split by name
    * @param name The name of the split
    */
-  Split* getSplit(const std::string & name);
+  MooseSharedPointer<Split> getSplit(const std::string & name);
 
-
-  /**
-   * Adds a solution length vector to the system.
-   *
-   * @param vector_name The name of the vector.
-   * @param project Whether or not to project this vector when doing mesh refinement.
-   *                If the vector is just going to be recomputed then there is no need to project it.
-   * @param type What type of parallel vector.  This is usually either PARALLEL or GHOSTED.
-   *                                            GHOSTED is needed if you are going to be accessing off-processor entries.
-   *                                            The ghosting pattern is the same as the solution vector.
-   * @param zero_for_residual Whether or not to zero this vector at the beginning of computeResidual.  Useful when
-   *                          you are going to accumulate something into this vector during computeResidual
-   */
-  NumericVector<Number>& addVector(const std::string & vector_name, const bool project, const ParallelType type, bool zero_for_residual = false);
+  void zeroVectorForResidual(const std::string & vector_name);
 
   void setInitialSolution();
 
@@ -222,6 +230,10 @@ public:
    */
   void constraintJacobians(SparseMatrix<Number> & jacobian, bool displaced);
 
+  /// set all the global dof indices for a nonlinear variable
+  void setVariableGlobalDoFs(const std::string & var_name);
+  const std::vector<dof_id_type> & getVariableGlobalDoFs() { return _var_all_dof_indices; }
+
   /**
    * Computes Jacobian
    * @param jacobian Jacobian is formed in here
@@ -239,10 +251,17 @@ public:
 
   /**
    * Compute damping
-   * @param update
+   * @param solution The trail solution vector
+   * @param update The incremental update to the solution vector
    * @return returns The damping factor
    */
-  Real computeDamping(const NumericVector<Number>& update);
+  Real computeDamping(const NumericVector<Number> & solution,
+                      const NumericVector<Number> & update);
+
+  /**
+   * Computes the time derivative vector
+   */
+  void computeTimeDerivatives();
 
   /**
    * Called at the beginning of the time step
@@ -254,9 +273,15 @@ public:
    * @param subdomain ID of the new subdomain
    * @param tid Thread ID
    */
-  virtual void subdomainSetup(unsigned int subdomain, THREAD_ID tid);
+  virtual void subdomainSetup(SubdomainID subdomain, THREAD_ID tid);
 
   virtual void setSolution(const NumericVector<Number> & soln);
+
+
+  /**
+   * Update active objects of Warehouses owned by NonlinearSystem
+   */
+  void updateActive(THREAD_ID tid);
 
   /**
    * Set transient term used by residual and Jacobian evaluation.
@@ -265,20 +290,20 @@ public:
    */
   virtual void setSolutionUDot(const NumericVector<Number> & udot);
 
-  virtual NumericVector<Number> & solutionUDot();
-  virtual NumericVector<Number> & residualVector(Moose::KernelType type);
+  virtual NumericVector<Number> & solutionUDot() override;
+  virtual NumericVector<Number> & residualVector(Moose::KernelType type) override;
 
-  virtual const NumericVector<Number> * & currentSolution() { return _current_solution; }
+  virtual const NumericVector<Number> * & currentSolution() override { return _current_solution; }
 
   virtual void serializeSolution();
-  virtual NumericVector<Number> & serializedSolution();
+  virtual NumericVector<Number> & serializedSolution() override;
 
-  virtual NumericVector<Number> & residualCopy();
-  virtual NumericVector<Number> & residualGhosted();
+  virtual NumericVector<Number> & residualCopy() override;
+  virtual NumericVector<Number> & residualGhosted() override;
 
   virtual void augmentSparsity(SparsityPattern::Graph & sparsity,
                                std::vector<dof_id_type> & n_nz,
-                               std::vector<dof_id_type> & n_oz);
+                               std::vector<dof_id_type> & n_oz) override;
 
   /**
    * Sets a preconditioner
@@ -300,9 +325,9 @@ public:
   void setDecomposition(const std::vector<std::string>& decomposition);
 
   /**
-   * If called with true this system will use a split-based preconditioner matrix.
+   * If called with true this system will use a field split preconditioner matrix.
    */
-  void useSplitBasedPreconditioner(bool use = true) { _use_split_based_preconditioner = use; }
+  void useFieldSplitPreconditioner(bool use = true) { _use_field_split_preconditioner = use; }
 
   /**
    * If called with true this will add entries into the jacobian to link together degrees of freedom that are found to
@@ -323,14 +348,14 @@ public:
    */
   void setupDampers();
   /**
-   * Reinit dampers. Called before we use damping
+   * Compute the incremental change in variables for dampers. Called before we use damping
    * @param tid Thread ID
    */
-  void reinitDampers(THREAD_ID tid);
+  void reinitIncrementForDampers(THREAD_ID tid);
 
   ///@{
   /// System Integrity Checks
-  void checkKernelCoverage(const std::set<SubdomainID> & mesh_subdomains, bool check_kernel_coverage) const;
+  void checkKernelCoverage(const std::set<SubdomainID> & mesh_subdomains) const;
   bool containsTimeKernel();
   ///@}
 
@@ -404,23 +429,33 @@ public:
 
   //@{
   /**
-   * Updates the active kernels/dgkernels in the warehouse for the
-   * passed in subdomain_id and thread
-   */
-  void updateActiveKernels(SubdomainID subdomain_id, THREAD_ID tid);
-  void updateActiveDGKernels(Real t, Real dt, THREAD_ID tid);
-  //@}
-
-  //@{
-  /**
    * Access functions to Warehouses from outside NonlinearSystem
    */
-  const KernelWarehouse & getKernelWarehouse(THREAD_ID tid);
-  const DGKernelWarehouse & getDGKernelWarehouse(THREAD_ID tid);
-  const BCWarehouse & getBCWarehouse(THREAD_ID tid);
-  const DiracKernelWarehouse & getDiracKernelWarehouse(THREAD_ID tid);
-  const DamperWarehouse & getDamperWarehouse(THREAD_ID tid);
+  const KernelWarehouse & getKernelWarehouse() { return _kernels; }
+  const MooseObjectWarehouse<KernelBase> & getTimeKernelWarehouse() { return _time_kernels; }
+  const MooseObjectWarehouse<KernelBase> & getNonTimeKernelWarehouse() { return _non_time_kernels; }
+  const MooseObjectWarehouse<DGKernel> & getDGKernelWarehouse() { return _dg_kernels; }
+  const MooseObjectWarehouse<InterfaceKernel> & getInterfaceKernelWarehouse() { return _interface_kernels; }
+  const MooseObjectWarehouse<DiracKernel> & getDiracKernelWarehouse() { return _dirac_kernels; }
+  const MooseObjectWarehouse<NodalKernel> & getNodalKernelWarehouse(THREAD_ID tid);
+  const MooseObjectWarehouse<IntegratedBC> & getIntegratedBCWarehouse() { return _integrated_bcs; }
+  const MooseObjectWarehouse<ElementDamper> & getElementDamperWarehouse() { return _element_dampers; }
   //@}
+
+  /**
+   * Weather or not the nonlinear system has save-ins
+   */
+  bool hasSaveIn() const { return _has_save_in || _has_nodalbc_save_in; }
+
+  /**
+   * Weather or not the nonlinear system has diagonal Jacobian save-ins
+   */
+  bool hasDiagSaveIn() const { return _has_diag_save_in || _has_nodalbc_diag_save_in; }
+
+  /**
+   * The relative L2 norm of the difference between solution and old solution vector.
+   */
+  virtual Real relativeSolutionDifferenceNorm();
 
 public:
   FEProblem & _fe_problem;
@@ -435,11 +470,6 @@ public:
   bool _compute_initial_residual_before_preset_bcs;
 
 protected:
-  /**
-   * Computes the time derivative vector
-   */
-  void computeTimeDerivatives();
-
   /**
    * Compute the residual
    * @param type The type of kernels for which the residual is to be computed.
@@ -487,29 +517,50 @@ protected:
   /// residual vector for non-time contributions
   NumericVector<Number> & _Re_non_time;
 
-  // holders
-  /// Kernel storage for each thread
-  std::vector<KernelWarehouse> _kernels;
-  /// BC storage for each thread
-  std::vector<BCWarehouse> _bcs;
+  ///@{
+  /// Kernel Storage
+  KernelWarehouse _kernels;
+  MooseObjectWarehouse<ScalarKernel> _scalar_kernels;
+  MooseObjectWarehouse<ScalarKernel> _time_scalar_kernels;
+  MooseObjectWarehouse<ScalarKernel> _non_time_scalar_kernels;
+  MooseObjectWarehouse<DGKernel> _dg_kernels;
+  MooseObjectWarehouse<InterfaceKernel> _interface_kernels;
+  MooseObjectWarehouse<KernelBase> _time_kernels;
+  MooseObjectWarehouse<KernelBase> _non_time_kernels;
+
+  ///@}
+
+  ///@{
+  /// BoundaryCondition Warhouses
+  MooseObjectWarehouse<IntegratedBC> _integrated_bcs;
+  MooseObjectWarehouse<NodalBC> _nodal_bcs;
+  MooseObjectWarehouse<PresetNodalBC> _preset_nodal_bcs;
+  ///@}
+
   /// Dirac Kernel storage for each thread
-  std::vector<DiracKernelWarehouse> _dirac_kernels;
-  /// DG Kernel storage for each thread
-  std::vector<DGKernelWarehouse> _dg_kernels;
-  /// Dampers for each thread
-  std::vector<DamperWarehouse> _dampers;
+  MooseObjectWarehouse<DiracKernel> _dirac_kernels;
+
+  /// Element Dampers for each thread
+  MooseObjectWarehouse<ElementDamper> _element_dampers;
+
+  /// General Dampers
+  MooseObjectWarehouse<GeneralDamper> _general_dampers;
+
+  /// NodalKernels for each thread
+  MooseObjectWarehouse<NodalKernel> _nodal_kernels;
 
   /// Decomposition splits
-  SplitWarehouse _splits;
+  MooseObjectWarehouseBase<Split> _splits; // use base b/c there are no setup methods
 
-public:
-  /// Constraints for each thread
-  std::vector<ConstraintWarehouse> _constraints;
+  /// Constraints storage object
+  ConstraintWarehouse _constraints;
 
 
 protected:
   /// increment vector
   NumericVector<Number> * _increment_vec;
+  /// The difference of current and old solutions
+  NumericVector<Number> & _sln_diff;
   /// Preconditioner
   MooseSharedPointer<MoosePreconditioner> _preconditioner;
   /// Preconditioning side
@@ -525,7 +576,7 @@ protected:
   /// Name of the top-level split of the decomposition
   std::string _decomposition_split;
   /// Whether or not to use a FieldSplitPreconditioner matrix based on the decomposition
-  bool _use_split_based_preconditioner;
+  bool _use_field_split_preconditioner;
 
   /// Whether or not to add implicit geometric couplings to the Jacobian for FDP
   bool _add_implicit_geometric_coupling_entries_to_jacobian;
@@ -546,8 +597,8 @@ protected:
   /// true if DG is active (optimization reasons)
   bool _doing_dg;
 
-  /// NumericVectors that will be zeroed before a residual computation
-  std::vector<NumericVector<Number> *> _vecs_to_zero_for_residual;
+  /// vectors that will be zeroed before a residual computation
+  std::vector<std::string> _vecs_to_zero_for_residual;
 
   unsigned int _n_iters;
   unsigned int _n_linear_iters;
@@ -564,7 +615,21 @@ protected:
 
   bool _print_all_var_norms;
 
+  /// If there is any Kernel or IntegratedBC having save_in
+  bool _has_save_in;
+
+  /// If there is any Kernel or IntegratedBC having diag_save_in
+  bool _has_diag_save_in;
+
+  /// If there is a nodal BC having save_in
+  bool _has_nodalbc_save_in;
+
+  /// If there is a nodal BC having diag_save_in
+  bool _has_nodalbc_diag_save_in;
+
   void getNodeDofs(unsigned int node_id, std::vector<dof_id_type> & dofs);
+
+  std::vector<dof_id_type> _var_all_dof_indices;
 };
 
 #endif /* NONLINEARSYSTEM_H */

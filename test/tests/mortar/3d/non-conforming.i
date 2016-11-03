@@ -30,8 +30,8 @@
   [../]
 
   [./lm]
-    order = FIRST
-    family = LAGRANGE
+    order = CONSTANT
+    family = MONOMIAL
     block = middle
   [../]
 []
@@ -64,12 +64,6 @@
     boundary = '1 2 3 4 5 6'
     function = exact_fn
   [../]
-
-  [./mortar]
-    type = DiffusionFluxBC
-    variable = u
-    boundary = '100 101'
-  [../]
 []
 
 [Postprocessors]
@@ -96,6 +90,6 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
-  print_perf_log = true
 []

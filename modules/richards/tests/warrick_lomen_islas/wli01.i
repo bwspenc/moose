@@ -25,14 +25,14 @@
   [../]
   [./SeffBW]
     type = RichardsSeff1BWsmall
-    Sn = 0.0 # use Sn=0.1 later
+    Sn = 0.0
     Ss = 1.0
     C = 1.5
     las = 2
   [../]
   [./RelPermBW]
     type = RichardsRelPermBW
-    Sn = 0.0 # use Sn=0.1 later
+    Sn = 0.0
     Ss = 1.0
     Kn = 0
     Ks = 1
@@ -136,20 +136,12 @@
   petsc_options = '-snes_converged_reason'
   end_time = 1000
   dt = 1
-
-  #[./TimeStepper]
-  #  type = FunctionDT
-  #  time_dt = '1E-5 1E-2 1E-2 1E-1'
-  #  time_t = '0 1E-5 1 10'
-  #[../]
 []
 
 
 [Outputs]
   file_base = wli01
   interval = 10000
-  output_initial = true
-  output_final = true
+  execute_on = 'timestep_end final'
   exodus = true
-  print_perf_log = true
 []

@@ -23,8 +23,8 @@ InputParameters validParams<PostprocessorDirichletBC>()
 }
 
 
-PostprocessorDirichletBC::PostprocessorDirichletBC(const std::string & name, InputParameters parameters) :
-  NodalBC(name, parameters),
+PostprocessorDirichletBC::PostprocessorDirichletBC(const InputParameters & parameters) :
+  NodalBC(parameters),
   _postprocessor_value(getPostprocessorValue("postprocessor"))
 {}
 
@@ -33,3 +33,4 @@ PostprocessorDirichletBC::computeQpResidual()
 {
   return _u[_qp] - _postprocessor_value;
 }
+

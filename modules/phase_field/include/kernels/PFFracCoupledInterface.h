@@ -26,15 +26,15 @@ class PFFracCoupledInterface : public KernelGrad
 {
 public:
 
-  PFFracCoupledInterface(const std::string & name, InputParameters parameters);
+  PFFracCoupledInterface(const InputParameters & parameters);
 
 protected:
   virtual RealGradient precomputeQpResidual();
   virtual RealGradient precomputeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  VariableValue & _c;
-  VariableGradient & _grad_c;
+  const VariableValue & _c;
+  const VariableGradient & _grad_c;
   unsigned int _c_var;
 
 private:

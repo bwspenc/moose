@@ -23,7 +23,7 @@ InputParameters validParams<NSMomentumInviscidSpecifiedPressureBC>();
 class NSMomentumInviscidSpecifiedPressureBC : public NSMomentumInviscidBC
 {
 public:
-  NSMomentumInviscidSpecifiedPressureBC(const std::string & name, InputParameters parameters);
+  NSMomentumInviscidSpecifiedPressureBC(const InputParameters & parameters);
 
   virtual ~NSMomentumInviscidSpecifiedPressureBC(){}
 
@@ -34,7 +34,7 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned jvar);
 
   // The specified value of the pressure.  This must be passed to the parent's
-  // pressure_qp_residual function.
+  // pressureQpResidualHelper function.
   Real _specified_pressure;
 };
 

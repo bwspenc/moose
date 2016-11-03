@@ -22,7 +22,7 @@ class PointerLoadError;
 template<>
 InputParameters validParams<PointerLoadError>();
 
-class Stupid
+class TypeWithNoLoad
 {
 public:
   int _i;
@@ -31,7 +31,7 @@ public:
 /// Store but no Load!
 template<>
 inline void
-dataStore(std::ostream & stream, Stupid * & v, void * context)
+dataStore(std::ostream & stream, TypeWithNoLoad * & v, void * context)
 {
   dataStore(stream, v->_i, context);
 }
@@ -40,7 +40,7 @@ dataStore(std::ostream & stream, Stupid * & v, void * context)
 class PointerLoadError : public GeneralUserObject
 {
 public:
-  PointerLoadError(const std::string & name, InputParameters params);
+  PointerLoadError(const InputParameters & params);
   virtual ~PointerLoadError();
 
   virtual void initialSetup();
@@ -51,7 +51,7 @@ public:
   virtual void finalize() {};
 
 protected:
-  Stupid * & _pointer_data;
+  TypeWithNoLoad * & _pointer_data;
 };
 
 

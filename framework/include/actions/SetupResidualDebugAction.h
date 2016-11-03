@@ -29,10 +29,9 @@ InputParameters validParams<SetupResidualDebugAction>();
 class SetupResidualDebugAction : public Action
 {
 public:
-  SetupResidualDebugAction(const std::string & name, InputParameters parameters);
-  virtual ~SetupResidualDebugAction();
+  SetupResidualDebugAction(InputParameters parameters);
 
-  virtual void act();
+  virtual void act() override;
 
 protected:
   std::vector<NonlinearVariableName> _show_var_residual;

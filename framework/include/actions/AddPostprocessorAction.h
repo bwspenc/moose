@@ -16,7 +16,6 @@
 #define ADDPOSTPROCESSORACTION_H
 
 #include "MooseObjectAction.h"
-#include "ExecStore.h"
 
 class AddPostprocessorAction;
 
@@ -27,9 +26,9 @@ InputParameters validParams<AddPostprocessorAction>();
 class AddPostprocessorAction: public MooseObjectAction
 {
 public:
-  AddPostprocessorAction(const std::string & name, InputParameters params);
+  AddPostprocessorAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif //ADDPOSTPROCESSORACTION_H

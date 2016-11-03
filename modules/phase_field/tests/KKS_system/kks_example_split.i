@@ -31,14 +31,14 @@
     family = LAGRANGE
   [../]
 
-  # chemical potential
-  [./w]
+  # hydrogen concentration
+  [./c]
     order = FIRST
     family = LAGRANGE
   [../]
 
-  # hydrogen concentration
-  [./c]
+  # chemical potential
+  [./w]
     order = FIRST
     family = LAGRANGE
   [../]
@@ -67,7 +67,6 @@
     invalue = 0.2
     outvalue = 0.1
     int_width = 0.75
-    block = 0
   [../]
   [./c]
     variable = c
@@ -78,7 +77,6 @@
     invalue = 0.6
     outvalue = 0.4
     int_width = 0.75
-    block = 0
   [../]
 []
 
@@ -96,7 +94,6 @@
   # Free energy of the matrix
   [./fm]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = fm
     args = 'cm'
     function = '(0.1-cm)^2'
@@ -105,7 +102,6 @@
   # Free energy of the delta phase
   [./fd]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = fd
     args = 'cd'
     function = '(0.9-cd)^2'
@@ -114,7 +110,6 @@
   # h(eta)
   [./h_eta]
     type = SwitchingFunctionMaterial
-    block = 0
     h_order = HIGH
     eta = eta
   [../]
@@ -122,7 +117,6 @@
   # g(eta)
   [./g_eta]
     type = BarrierFunctionMaterial
-    block = 0
     g_order = SIMPLE
     eta = eta
   [../]
@@ -130,7 +124,6 @@
   # constant properties
   [./constants]
     type = GenericConstantMaterial
-    block = 0
     prop_names  = 'M   L   kappa'
     prop_values = '0.7 0.7 0.4  '
   [../]
@@ -172,7 +165,7 @@
   [../]
 
   [./dcdt]
-    type = CoupledImplicitEuler
+    type = CoupledTimeDerivative
     variable = w
     v = c
   [../]
@@ -190,6 +183,7 @@
     variable = eta
     fa_name  = fm
     fb_name  = fd
+    args     = 'cm cd'
     w        = 0.4
   [../]
   [./ACBulkC]
@@ -224,6 +218,8 @@
 [Executioner]
   type = Transient
   solve_type = 'PJFNK'
+  petsc_options_iname = '-pc_factor_shift_type'
+  petsc_options_value = 'nonzero'
 
   l_max_its = 100
   nl_max_its = 100
@@ -245,7 +241,5 @@
 
 [Outputs]
   file_base = kks_example_split
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

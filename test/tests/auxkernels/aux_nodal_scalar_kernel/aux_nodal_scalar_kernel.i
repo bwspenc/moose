@@ -4,7 +4,7 @@
   xmin = 0
   xmax = 1
   nx = 10
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -64,6 +64,5 @@
 
 [Outputs]
   exodus = true
-  output_initial = true
   hide = bc_sum
 []

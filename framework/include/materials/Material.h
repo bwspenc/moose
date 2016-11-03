@@ -15,93 +15,94 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+// MOOOSE includes
 #include "MooseObject.h"
+#include "BlockRestrictable.h"
+#include "BoundaryRestrictable.h"
 #include "SetupInterface.h"
 #include "Coupleable.h"
-#include "ScalarCoupleable.h"
 #include "MooseVariableDependencyInterface.h"
+#include "ScalarCoupleable.h"
 #include "FunctionInterface.h"
 #include "UserObjectInterface.h"
 #include "TransientInterface.h"
-#include "PostprocessorInterface.h"
-#include "MaterialProperty.h"
 #include "MaterialPropertyInterface.h"
-#include "MaterialData.h"
-#include "ParallelUniqueId.h"
-#include "Problem.h"
-#include "SubProblem.h"
+#include "PostprocessorInterface.h"
 #include "DependencyResolverInterface.h"
-#include "Function.h"
-#include "BlockRestrictable.h"
-#include "BoundaryRestrictable.h"
 #include "Restartable.h"
 #include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
 #include "OutputInterface.h"
-
-// libMesh includes
-#include "libmesh/quadrature_gauss.h"
-#include "libmesh/elem.h"
+#include "RandomInterface.h"
+#include "MaterialProperty.h"
 
 // forward declarations
 class Material;
 class MooseMesh;
-
-/**
- * Holds a data structure used to compute material properties at a Quadrature point
- */
-struct QpData
-{
-  virtual ~QpData(){}
-
-  inline virtual QpData& operator=(const QpData &) { return *this; }
-};
-
+class MaterialData;
+class SubProblem;
 
 template<>
 InputParameters validParams<Material>();
 
 /**
- * Holds material properties that are assigned to blocks.
+ * Materials compute MaterialProperties.
  */
 class Material :
-  public MooseObject,
-  public BlockRestrictable,
-  public BoundaryRestrictable,
-  public SetupInterface,
-  public Coupleable,
-  public MooseVariableDependencyInterface,
-  public ScalarCoupleable,
-  public FunctionInterface,
-  public UserObjectInterface,
-  public TransientInterface,
-  public MaterialPropertyInterface,
-  public PostprocessorInterface,
-  public DependencyResolverInterface,
-  public Restartable,
-  public ZeroInterface,
-  public MeshChangedInterface,
-  public OutputInterface
+    public MooseObject,
+    public BlockRestrictable,
+    public BoundaryRestrictable,
+    public SetupInterface,
+    public Coupleable,
+    public MooseVariableDependencyInterface,
+    public ScalarCoupleable,
+    public FunctionInterface,
+    public UserObjectInterface,
+    public TransientInterface,
+    public MaterialPropertyInterface,
+    public PostprocessorInterface,
+    public DependencyResolverInterface,
+    public Restartable,
+    public ZeroInterface,
+    public MeshChangedInterface,
+    public OutputInterface,
+    public RandomInterface
 {
 public:
-  Material(const std::string & name, InputParameters parameters);
-
-  virtual ~Material();
 
   /**
-   * All materials must override this virtual.
-   * This is where they fill up the vectors with values.
+   * Constructor
    */
-  virtual void computeProperties();
+  Material(const InputParameters & parameters);
 
   /**
    * Initialize stateful properties (if material has some)
    */
   virtual void initStatefulProperties(unsigned int n_points);
 
+  /**
+   * Performs the quadrature point loop, calling computeQpProperties
+   */
+  virtual void computeProperties();
+
+  /**
+   * Resets the properties at each quadrature point (see resetQpProperties), only called if 'compute = false'.
+   *
+   * This method is called internally by MOOSE, you probably don't want to mess with this.
+   */
+  virtual void resetProperties();
+
+  /**
+   * A method for (re)computing the properties of a Material.
+   *
+   * This is intended to be called from other objects, by first calling
+   * MaterialPropertyInterface::getMaterial and then calling this method on the Material object returned.
+   */
+  virtual void computePropertiesAtQp(unsigned int qp);
+
   ///@{
   /**
-   * Retrieve the property throgh a given input parameter key with a fallback
+   * Retrieve the property through a given input parameter key with a fallback
    * to getting it by name
    */
   template<typename T>
@@ -137,12 +138,19 @@ public:
   ///@}
 
   /**
+   * Return a material property that is initialized to zero by default and does
+   * not need to (but can) be declared by another material.
+   */
+  template<typename T>
+  const MaterialProperty<T> & getZeroMaterialProperty(const std::string & prop_name);
+
+  /**
    * Return a set of properties accessed with getMaterialProperty
    * @return A reference to the set of properties with calls to getMaterialProperty
    */
   virtual
   const std::set<std::string> &
-  getRequestedItems() { return _requested_props; }
+  getRequestedItems() override { return _requested_props; }
 
   /**
    * Return a set of properties accessed with declareProperty
@@ -150,22 +158,9 @@ public:
    */
   virtual
   const std::set<std::string> &
-  getSuppliedItems() { return _supplied_props; }
+  getSuppliedItems() override { return _supplied_props; }
 
   void checkStatefulSanity() const;
-
-  /**
-   * Check if a material property is valid for all blocks of this Material
-   *
-   * This method returns true if the supplied property name has been declared
-   * in a Material object on the block ids for this object.
-   *
-   * @param prop_name the name of the property to query
-   * @return true if the property exists for all block ids of the object, otherwise false
-   *
-   * @see BlockRestrictable::hasBlockMaterialPropertyHelper
-   */
-  virtual bool hasBlockMaterialPropertyHelper(const std::string & prop_name);
 
   /**
    * Get the list of output objects that this class is restricted
@@ -173,15 +168,42 @@ public:
    */
   std::set<OutputName> getOutputs();
 
+  /**
+   * Returns true of the MaterialData type is not associated with volume data
+   */
+  bool isBoundaryMaterial() const { return _bnd; }
+
 protected:
+
+  /**
+   * Users must override this method.
+   */
+  virtual void computeQpProperties();
+
+  /**
+   * Resets the properties prior to calculation of traditional materials (only if 'compute = false').
+   *
+   * This method must be overridden in your class. This is called just prior to the re-calculation of
+   * traditional material properties to ensure that the properties are in a proper state for calculation.
+   */
+  virtual void resetQpProperties();
+
+  /**
+   * Initialize stateful properties at quadrature points.  Note when using this function you only need to address
+   * the "current" material properties not the old ones directly, i.e. if you have a property named "_diffusivity"
+   * and an older property named "_diffusivity_old".  You only need to initialize diffusivity.  MOOSE will use
+   * copy that initial value to the old and older values as necessary.
+   */
+  virtual void initQpStatefulProperties();
+
   SubProblem & _subproblem;
 
   FEProblem & _fe_problem;
   THREAD_ID _tid;
   Assembly & _assembly;
+
   bool _bnd;
   bool _neighbor;
-  MaterialData & _material_data;
 
   unsigned int _qp;
 
@@ -208,6 +230,9 @@ protected:
   /// Set of properties declared
   std::set<std::string> _supplied_props;
 
+  /// If False MOOSE does not compute this property
+  const bool _compute;
+
   enum QP_Data_Type {
     CURR,
     PREV
@@ -221,34 +246,13 @@ protected:
   };
   std::map<std::string, int> _props_to_flags;
 
-  /**
-   * Initialize stateful properties at quadrature points.  Note when using this function you only need to address
-   * the "current" material properties not the old ones directly, i.e. if you have a property named "_diffusivity"
-   * and an older property named "_diffusivity_old".  You only need to initialize diffusivity.  MOOSE will use
-   * copy that initial value to the old and older values as necessary.
-   */
-  virtual void initQpStatefulProperties();
-
-  /**
-   * Compute material properties in quadrature point
-   * Materials has to redefine this.
-   */
-  virtual void computeQpProperties();
-
-  /**
-   * This function is called to create the data structure that will be associated
-   * with a quadrature point
-   */
-  virtual QpData * createData();
-
-  std::map<unsigned int, std::vector<QpData *> > _qp_prev;
-  std::map<unsigned int, std::vector<QpData *> > _qp_curr;
 
 private:
-  /**
-   * Small helper function to call storeMatPropName
-   */
+  /// Small helper function to call storeMatPropName
   void registerPropName(std::string prop_name, bool is_get, Prop_State state);
+
+  /// Check and throw an error if the execution has progerssed past the construction stage
+  void checkExecutionStage();
 
   bool _has_stateful_property;
 };
@@ -302,11 +306,12 @@ template<typename T>
 const MaterialProperty<T> &
 Material::getMaterialPropertyByName(const std::string & prop_name)
 {
+  checkExecutionStage();
   // The property may not exist yet, so declare it (declare/getMaterialProperty are referencing the same memory)
   _requested_props.insert(prop_name);
   registerPropName(prop_name, true, Material::CURRENT);
   _fe_problem.markMatPropRequested(prop_name);
-  return _material_data.getProperty<T>(prop_name);
+  return _material_data->getProperty<T>(prop_name);
 }
 
 template<typename T>
@@ -316,7 +321,7 @@ Material::getMaterialPropertyOldByName(const std::string & prop_name)
   _requested_props.insert(prop_name);
   registerPropName(prop_name, true, Material::OLD);
   _fe_problem.markMatPropRequested(prop_name);
-  return _material_data.getPropertyOld<T>(prop_name);
+  return _material_data->getPropertyOld<T>(prop_name);
 }
 
 template<typename T>
@@ -326,7 +331,7 @@ Material::getMaterialPropertyOlderByName(const std::string & prop_name)
   _requested_props.insert(prop_name);
   registerPropName(prop_name, true, Material::OLDER);
   _fe_problem.markMatPropRequested(prop_name);
-  return _material_data.getPropertyOlder<T>(prop_name);
+  return _material_data->getPropertyOlder<T>(prop_name);
 }
 
 
@@ -335,7 +340,7 @@ MaterialProperty<T> &
 Material::declareProperty(const std::string & prop_name)
 {
   registerPropName(prop_name, false, Material::CURRENT);
-  return _material_data.declareProperty<T>(prop_name);
+  return _material_data->declareProperty<T>(prop_name);
 }
 
 template<typename T>
@@ -343,7 +348,7 @@ MaterialProperty<T> &
 Material::declarePropertyOld(const std::string & prop_name)
 {
   registerPropName(prop_name, false, Material::OLD);
-  return _material_data.declarePropertyOld<T>(prop_name);
+  return _material_data->declarePropertyOld<T>(prop_name);
 }
 
 template<typename T>
@@ -351,8 +356,33 @@ MaterialProperty<T> &
 Material::declarePropertyOlder(const std::string & prop_name)
 {
   registerPropName(prop_name, false, Material::OLDER);
-  return _material_data.declarePropertyOlder<T>(prop_name);
+  return _material_data->declarePropertyOlder<T>(prop_name);
 }
 
+template<typename T>
+const MaterialProperty<T> &
+Material::getZeroMaterialProperty(const std::string & prop_name)
+{
+  checkExecutionStage();
+  MaterialProperty<T> & preload_with_zero = _material_data->getProperty<T>(prop_name);
 
-#endif //MATERIAL_H
+  _requested_props.insert(prop_name);
+  registerPropName(prop_name, true, Material::CURRENT);
+  _fe_problem.markMatPropRequested(prop_name);
+
+  // Register this material on these blocks and boundaries as a zero property with relaxed consistency checking
+  for (std::set<SubdomainID>::const_iterator it = blockIDs().begin(); it != blockIDs().end(); ++it)
+    _fe_problem.storeZeroMatProp(*it, prop_name);
+  for (std::set<BoundaryID>::const_iterator it = boundaryIDs().begin(); it != boundaryIDs().end(); ++it)
+    _fe_problem.storeZeroMatProp(*it, prop_name);
+
+  // set values for all qpoints to zero
+  unsigned int nqp = _mi_feproblem.getMaxQps();
+  preload_with_zero.resize(nqp);
+  for (unsigned int qp = 0; qp < nqp; ++qp)
+    mooseSetToZero<T>(preload_with_zero[qp]);
+
+  return preload_with_zero;
+}
+
+#endif // MATERIAL_H

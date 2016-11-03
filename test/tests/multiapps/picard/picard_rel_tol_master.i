@@ -3,7 +3,7 @@
   dim = 2
   nx = 10
   ny = 10
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -62,10 +62,7 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
 
 [MultiApps]
@@ -88,7 +85,6 @@
   [./u_to_sub]
     type = MultiAppNearestNodeTransfer
     direction = to_multiapp
-    execute_on = timestep_end
     multi_app = sub
     source_variable = u
     variable = u

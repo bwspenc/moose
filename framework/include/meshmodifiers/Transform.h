@@ -18,6 +18,7 @@
 #include "MeshModifier.h"
 #include "MooseEnum.h"
 
+// libMesh includes
 #include "libmesh/vector_value.h"
 
 class Transform;
@@ -28,12 +29,10 @@ InputParameters validParams<Transform>();
 class Transform : public MeshModifier
 {
 public:
-  Transform(const std::string & name, InputParameters parameters);
-
-  virtual ~Transform();
+  Transform(const InputParameters & parameters);
 
 protected:
-  void modify();
+  void modify() override;
 
   MooseEnum _transform;
   RealVectorValue _vector_value;

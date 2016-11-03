@@ -18,9 +18,12 @@ InputParameters validParams<AddPrimarySpeciesAction>();
 class AddPrimarySpeciesAction : public Action
 {
 public:
-  AddPrimarySpeciesAction(const std::string & name, InputParameters params);
+  AddPrimarySpeciesAction(const InputParameters & params);
 
   virtual void act();
+
+private:
+  const std::vector<NonlinearVariableName> _vars;
 
 };
 

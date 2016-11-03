@@ -11,7 +11,9 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 #include "MMSForcing.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<MMSForcing>()
@@ -20,8 +22,8 @@ InputParameters validParams<MMSForcing>()
   return params;
 }
 
-MMSForcing::MMSForcing(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+MMSForcing::MMSForcing(const InputParameters & parameters) :
+    Kernel(parameters),
     _mesh_dimension(_mesh.dimension())
 {
 }

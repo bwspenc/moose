@@ -19,12 +19,14 @@
 #include "AdvancedOutput.h"
 #include "OversampleOutput.h"
 
-// libMesh includes
-#include "libmesh/exodusII.h"
-#include "libmesh/exodusII_io.h"
-
 // Forward declarations
 class Exodus;
+
+// libMesh forward declarations
+namespace libMesh
+{
+class ExodusII_IO;
+}
 
 template<>
 InputParameters validParams<Exodus>();
@@ -39,28 +41,23 @@ public:
   /**
    * Class constructor
    */
-  Exodus(const std::string & name, InputParameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~Exodus();
+  Exodus(const InputParameters & parameters);
 
   /**
    * Overload the OutputBase::output method, this is required for ExodusII
    * output due to the method utilized for outputing single/global parameters
    */
-  virtual void output(const ExecFlagType & type);
+  virtual void output(const ExecFlagType & type) override;
 
   /**
    * Performs basic error checking and initial setup of ExodusII_IO output object
    */
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
   /**
    * Set flag indicating that the mesh has changed
    */
-  virtual void meshChanged();
+  virtual void meshChanged() override;
 
   /**
    * Performs the necessary deletion and re-creating of ExodusII_IO object
@@ -82,44 +79,39 @@ public:
    */
   virtual void sequence(bool state);
 
-  /**
-   * Return the time for writting to the file
-   */
-  virtual Real time();
-
 protected:
 
   /**
    * Outputs nodal, nonlinear variables
    */
-  virtual void outputNodalVariables();
+  virtual void outputNodalVariables() override;
 
   /**
    * Outputs elemental, nonlinear variables
    */
-  virtual void outputElementalVariables();
+  virtual void outputElementalVariables() override;
 
   /**
    * Writes postprocessor values to global output parameters
    */
-  virtual void outputPostprocessors();
+  virtual void outputPostprocessors() override;
 
   /**
    * Writes scalar AuxVariables to global output parameters
    */
-  virtual void outputScalarVariables();
+  virtual void outputScalarVariables() override;
 
   /**
    * Writes the input file to the ExodusII output
    */
-  virtual void outputInput();
+  virtual void outputInput() override;
 
   /**
    * Returns the current filename, this method handles the -s000 suffix
    * common to ExodusII files.
    * @return A string containing the current filename to be written
    */
-  std::string filename();
+  virtual std::string filename() override;
 
   /// Pointer to the libMesh::ExodusII_IO object that performs the actual data output
   MooseSharedPointer<ExodusII_IO> _exodus_io_ptr;
@@ -166,8 +158,8 @@ private:
   /// Sequence flag, if true each timestep is written to a new file
   bool _sequence;
 
-  /// Flag for using EnSignt compatible time
-  bool _ensight_time;
+  /// Flag for overwriting timesteps
+  bool _overwrite;
 };
 
 #endif /* EXODUS_H */

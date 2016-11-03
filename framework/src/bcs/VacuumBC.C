@@ -22,8 +22,8 @@ InputParameters validParams<VacuumBC>()
   return params;
 }
 
-VacuumBC::VacuumBC(const std::string & name, InputParameters parameters) :
-    IntegratedBC(name, parameters),
+VacuumBC::VacuumBC(const InputParameters & parameters) :
+    IntegratedBC(parameters),
     _alpha(getParam<Real>("alpha"))
 {}
 
@@ -38,3 +38,4 @@ VacuumBC::computeQpJacobian()
 {
   return _test[_i][_qp]*_alpha*_phi[_j][_qp]/2.;
 }
+

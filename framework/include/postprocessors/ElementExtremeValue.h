@@ -37,17 +37,17 @@ public:
 
   /**
    * Class constructor
-   * @param name The name of the postprocessor
    * @param parameters The input parameters
    */
-  ElementExtremeValue(const std::string & name, InputParameters parameters);
-  virtual void initialize();
-  virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
+  ElementExtremeValue(const InputParameters & parameters);
+
+  virtual void initialize() override;
+  virtual Real getValue() override;
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
   /// Get the extreme value at each quadrature point
-  virtual void computeQpValue();
+  virtual void computeQpValue() override;
 
   /// The extreme value type
   ExtremeType _type;

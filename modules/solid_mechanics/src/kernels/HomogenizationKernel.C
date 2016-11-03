@@ -12,16 +12,16 @@ template<>
 InputParameters validParams<HomogenizationKernel>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addRequiredParam<unsigned int>("component", "An integer corresponding to the direction the variable this kernel acts in. (0 for x, 1 for y, 2 for z)");
-  params.addRequiredParam<unsigned int>("column", "An integer corresponding to the direction the variable this kernel acts in. (0 for xx, 1 for yy, 2 for zz, 3 for xy, 4 for yz, 5 for zx)");
+  params.addRequiredRangeCheckedParam<unsigned int>("component", "component >= 0 & component < 3", "An integer corresponding to the direction the variable this kernel acts in. (0 for x, 1 for y, 2 for z)");
+  params.addRequiredRangeCheckedParam<unsigned int>("column", "column >= 0 & column < 6", "An integer corresponding to the direction the variable this kernel acts in. (0 for xx, 1 for yy, 2 for zz, 3 for xy, 4 for yz, 5 for zx)");
   params.addParam<std::string>("appended_property_name", "", "Name appended to material properties to make them unique");
 
   return params;
 }
 
 
-HomogenizationKernel::HomogenizationKernel(const std::string & name, InputParameters parameters)
-  :Kernel(name, parameters),
+HomogenizationKernel::HomogenizationKernel(const InputParameters & parameters)
+  :Kernel(parameters),
 
    _elasticity_tensor(getMaterialProperty<SymmElasticityTensor>("elasticity_tensor" + getParam<std::string>("appended_property_name"))),
    _component(getParam<unsigned int>("component")),
@@ -31,7 +31,7 @@ HomogenizationKernel::HomogenizationKernel(const std::string & name, InputParame
 Real
 HomogenizationKernel::computeQpResidual()
 {
-  unsigned k, l;
+  unsigned k=0, l=0;
 
   if (_column == 0)
   {

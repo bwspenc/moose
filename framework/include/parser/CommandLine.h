@@ -16,18 +16,24 @@
 #define COMMANDLINE_H
 
 // Moose Includes
-#include "InputParameters.h"
 #include "MooseError.h"
 
+// libMesh includes
+#include "libmesh/getpot.h"
+
+// C++ includes
 #include <vector>
 #include <string>
 #include <map>
 #include <set>
-#include "libmesh/getpot.h"
 
 // Forward Declaration
-class Parser;
+class InputParameters;
 
+/**
+ * This class wraps a GetPot object associated with the command line
+ * used to run the code.
+ */
 class CommandLine
 {
 public:
@@ -47,7 +53,6 @@ public:
     /// This gets filled in automagicaly when calling addOption()
     std::vector<std::string> cli_switch;
   };
-
 
   CommandLine(int argc, char * argv[]);
   virtual ~CommandLine();
@@ -90,12 +95,29 @@ public:
   GetPot * getPot() { return _get_pot; }
 
   /**
-   * Check if we have a variable on the command line
+   * Check if we have a variable on the command line. Note that a call to this
+   * method can modify the prefix unless the optional Boolean is set to false.
+   *
    * @param name The name of the variable
    * @return True if the variable was defined on the command line
    */
-  bool haveVariable(const std::string & name);
+  bool haveVariable(const std::string & name, bool allow_prefix_change=true);
 
+  /**
+   * Sets the prefix for the CommandLine object. This is used for passing
+   * parameters to Multiapps
+   */
+  void setPrefix(const std::string & name, const std::string & num="");
+
+  /**
+   * Resets the prefix to the value set with the last call to setPrefix.
+   * Generally you do not need to call this method unless you wish
+   * to reset the prefix after calling haveVariable before retrieving a
+   * raw pointer to the GetPot object.
+   */
+  void resetPrefix();
+
+  // Dump the contents of the GetPot object
   void print(const char * prefix, std::ostream & out_stream, unsigned int skip_count);
 
 protected:
@@ -105,6 +127,13 @@ protected:
   std::map<std::string, Option> _cli_options;
   /// This is a set of all "extra" options on the command line
   std::set<std::string> _command_line_vars;
+
+  /// The base prefix for this CommandLine object
+  std::string _base_prefix;
+  /// The number added to the prefix to point it at a specific Multiapp
+  std::string _prefix_num;
+  /// Boolean indicating whether we have prefixes set on this CommandLine Object
+  bool _has_prefix;
 };
 
 template <typename T>

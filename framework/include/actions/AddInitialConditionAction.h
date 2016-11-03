@@ -26,9 +26,9 @@ InputParameters validParams<AddInitialConditionAction>();
 class AddInitialConditionAction : public MooseObjectAction
 {
 public:
-  AddInitialConditionAction(const std::string & name, InputParameters params);
+  AddInitialConditionAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // ADDINITIALCONDITIONACTION_H

@@ -15,29 +15,24 @@
 #ifndef OUTPUTWAREHOUSE_H
 #define OUTPUTWAREHOUSE_H
 
-// Standard includes
-#include <vector>
-
 // MOOSE includes
 #include "Output.h"
-#include "Warehouse.h"
-#include "InputParameters.h"
 
 // Forward declarations
-class Checkpoint;
 class FEProblem;
+class InputParameters;
 
 /**
  * Class for storing and utilizing output objects
  */
-class OutputWarehouse : public Warehouse<Output>
+class OutputWarehouse
 {
 public:
 
   /**
    * Class constructor
    */
-  OutputWarehouse();
+  OutputWarehouse(MooseApp & app);
 
   /*
    * Class destructor
@@ -54,16 +49,17 @@ public:
   void addOutput(MooseSharedPointer<Output> & output);
 
   /**
-   * Get a complete list of all output objects
-   * @return A vector of pointers to each of the output objects
-   */
-  const std::vector<Output *> & getOutputs() const;
-
-  /**
    * Get a complete set of all output object names
    * @return A set of output names for each output object
+   *
+   * Note, if this method is called prior to the creation of outputs in AddOutputAction it will
+   * create the proxy list of names from the action system. The main use is for the OutputInterface,
+   * specifically, when used with Postprocessors in the UserObjects block of the input file.
+   * UserObjects are created prior to Outputs objects, but OutputInterface needs the list
+   * of output names to operate correctly.
+   *
    */
-  const std::set<OutputName> & getOutputNames() const;
+  const std::set<OutputName> & getOutputNames();
 
   /**
    * Returns true if the output object exists
@@ -123,7 +119,7 @@ public:
 
   /**
    * Test that the output names exist
-   * @param A vector of names to check
+   * @param names A vector of names to check
    * This method will produce an error if any of the supplied
    * names do not exist in the warehouse. Reserved names are not considered.
    */
@@ -131,8 +127,8 @@ public:
 
   /**
    * Return an Output object by name
-   * @tparam T The Output object type to return
-   * @param The name of the output object
+   * @tparam T The Out put object type to return
+   * @param name The name of the output object
    * @return A pointer to the output object
    */
   template<typename T>
@@ -177,22 +173,21 @@ public:
   bool isReservedName(const std::string & name);
 
   /**
-   * Sends the supplied message to Console output objects
-   * @param message A string containing the message to write
+   * Send current output buffer to Console output objects
    */
   void mooseConsole();
-
-  /**
-   * The multiapp level
-   * @return A writable reference to the current number of levels from the master app
-   */
-  unsigned int & multiappLevel() { return _multiapp_level; }
 
   /**
    * The buffered messages stream for Console objects
    * @return Reference to the stream storing cached messages from calls to _console
    */
   std::ostringstream & consoleBuffer() { return _console_buffer; }
+
+  /**
+   * Set if the outputs to Console before its construction are to be buffered or to screen directly
+   * @param buffer Ture to buffer
+   */
+  void bufferConsoleOutputsBeforeConstruction(bool buffer) { _buffer_action_console_outputs = buffer; }
 
 private:
 
@@ -232,7 +227,6 @@ private:
    * Adds the file name to the list of filenames being output
    * The main function of this object is to test that the same output file
    * does not already exist to protect against output files overwriting each other
-   * @param ptr Pointer to the Output object
    * @param filename Name of an output file (extracted from filename() method of the objects)
    */
   void addOutputFilename(const OutFileBase & filename);
@@ -274,9 +268,9 @@ private:
   void subdomainSetup();
 
   /**
-   * Insert a variable name for hiding via the OutoutInterface
+   * Insert variable names for hiding via the OutoutInterface
    * @param output_name The name of the output object on which the variable is to be hidden
-   * @param variable_name The name of the variable to be hidden
+   * @param variable_names The names of the variables to be hidden
    *
    * This is a private method used by the OutputInterface system, it is not intended for any
    * other purpose.
@@ -296,6 +290,15 @@ private:
    * before buffered content. It is private because people shouldn't be messing with it.
    */
   void flushConsoleBuffer();
+
+  /// MooseApp
+  MooseApp & _app;
+
+  /// All instances of objects (raw pointers)
+  std::vector<Output *> _all_objects;
+
+  /// True to buffer console outputs in actions
+  bool _buffer_action_console_outputs;
 
   /// A map of the output pointers
   std::map<OutputName, Output *> _object_map;
@@ -324,10 +327,7 @@ private:
   /// List of reserved names
   std::set<std::string> _reserved;
 
-  /// Level of multiapp, the master is level 0. This used by the Console to indent output
-  unsigned int _multiapp_level;
-
-  /// Stream for holding messages passed to _console prior to Output object construction
+  /// The stream for holding messages passed to _console prior to Output object construction
   std::ostringstream _console_buffer;
 
   /// Storage for variables to hide as prescribed by the object via the OutputInterface

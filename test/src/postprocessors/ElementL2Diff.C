@@ -21,8 +21,8 @@ InputParameters validParams<ElementL2Diff>()
   return params;
 }
 
-ElementL2Diff::ElementL2Diff(const std::string & name, InputParameters parameters) :
-    ElementIntegralVariablePostprocessor(name, parameters),
+ElementL2Diff::ElementL2Diff(const InputParameters & parameters) :
+    ElementIntegralVariablePostprocessor(parameters),
     _u_old(valueOld())
 {
 }

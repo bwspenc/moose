@@ -13,8 +13,11 @@
 /****************************************************************/
 
 #include "UserObject.h"
-
 #include "SubProblem.h"
+#include "Assembly.h"
+
+// libMesh includes
+#include "libmesh/sparse_matrix.h"
 
 template<>
 InputParameters validParams<UserObject>()
@@ -28,17 +31,20 @@ InputParameters validParams<UserObject>()
   params.addParam<bool>("use_displaced_mesh", false, "Whether or not this object should use the displaced mesh for computation.  Note that in the case this is true but no displacements are provided in the Mesh block the undisplaced mesh will still be used.");
   params.addParamNamesToGroup("use_displaced_mesh", "Advanced");
 
+  params.declareControllable("enable");
+
   params.registerBase("UserObject");
 
   return params;
 }
 
-UserObject::UserObject(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
-    SetupInterface(parameters),
-    FunctionInterface(parameters),
+UserObject::UserObject(const InputParameters & parameters) :
+    MooseObject(parameters),
+    SetupInterface(this),
+    FunctionInterface(this),
     Restartable(parameters, "UserObjects"),
     MeshChangedInterface(parameters),
+    ScalarCoupleable(this),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
     _fe_problem(*parameters.get<FEProblem *>("_fe_problem")),
     _tid(parameters.get<THREAD_ID>("_tid")),

@@ -23,8 +23,8 @@ InputParameters validParams<JIntegral>()
   return params;
 }
 
-JIntegral::JIntegral(const std::string & name, InputParameters parameters):
-    ElementIntegralPostprocessor(name, parameters),
+JIntegral::JIntegral(const InputParameters & parameters):
+    ElementIntegralPostprocessor(parameters),
     _scalar_q(coupledValue("q")),
     _grad_of_scalar_q(coupledGradient("q")),
     _crack_front_definition(&getUserObject<CrackFrontDefinition>("crack_front_definition")),

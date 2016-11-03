@@ -1,13 +1,13 @@
 [Tests]
-  [./old]
-    type = 'Exodiff'
-    input = 'finite_strain_elastic_test.i'
-    exodiff = 'finite_strain_elastic_test_out.e'
-  [../]
   [./new]
     type = 'Exodiff'
     input = 'finite_strain_elastic_new_test.i'
     exodiff = 'finite_strain_elastic_new_test_out.e'
+  [../]
+  [./fake_plastic]
+    type = 'Exodiff'
+    input = 'finite_strain_fake_plastic.i'
+    exodiff = 'finite_strain_fake_plastic_out.e'
   [../]
   [./rotation_new]
     type = 'Exodiff'

@@ -15,8 +15,8 @@
 #include "PostprocessorData.h"
 #include "FEProblem.h"
 
-PostprocessorData::PostprocessorData(FEProblem & fe_problem, THREAD_ID tid) :
-    Restartable("values", "PostprocessorData", fe_problem, tid)
+PostprocessorData::PostprocessorData(FEProblem & fe_problem) :
+    Restartable("values", "PostprocessorData", fe_problem, 0)
 {
 }
 
@@ -76,9 +76,9 @@ PostprocessorData::storeValue(const std::string & name, PostprocessorValue value
 void
 PostprocessorData::copyValuesBack()
 {
-  for (std::map<std::string, PostprocessorValue*>::iterator it = _values.begin(); it != _values.end(); ++it)
+  for (const auto & it : _values)
   {
-    getPostprocessorValueOlder(it->first) = getPostprocessorValueOld(it->first);
-    getPostprocessorValueOld(it->first) = getPostprocessorValue(it->first);
+    getPostprocessorValueOlder(it.first) = getPostprocessorValueOld(it.first);
+    getPostprocessorValueOld(it.first) = getPostprocessorValue(it.first);
   }
 }

@@ -1,0 +1,58 @@
+[Tests]
+  [./regular_grid_const_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_rc.i'
+    exodiff = '2d_square_bond_rc.e'
+    map = false
+    unique_id = true
+  [../]
+  [./regular_grid_vary_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_rv.i'
+    exodiff = '2d_square_bond_rv.e'
+    map = false
+    unique_id = true
+  [../]
+  [./regular_grid_const_state]
+    type = 'Exodiff'
+    input = '2d_square_state_rc.i'
+    exodiff = '2d_square_state_rc.e'
+    map = false
+    unique_id = true
+  [../]
+  [./regular_grid_vary_state]
+    type = 'Exodiff'
+    input = '2d_square_state_rv.i'
+    exodiff = '2d_square_state_rv.e'
+    map = false
+    unique_id = true
+  [../]
+  [./irregular_grid_const_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_ic.i'
+    exodiff = '2d_square_bond_ic.e'
+    map = false
+    unique_id = true
+  [../]
+  [./irregular_grid_vary_bond]
+    type = 'Exodiff'
+    input = '2d_square_bond_iv.i'
+    exodiff = '2d_square_bond_iv.e'
+    map = false
+    unique_id = true
+  [../]
+  [./irregular_grid_const_state]
+    type = 'Exodiff'
+    input = '2d_square_state_ic.i'
+    exodiff = '2d_square_state_ic.e'
+    map = false
+    unique_id = true
+  [../]
+  [./irregular_grid_vary_state]
+    type = 'Exodiff'
+    input = '2d_square_state_iv.i'
+    exodiff = '2d_square_state_iv.e'
+    map = false
+    unique_id = true
+  [../]
+[]

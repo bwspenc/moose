@@ -44,8 +44,7 @@ class RichardsExcavGeom : public Function
 {
 public:
 
-  RichardsExcavGeom(const std::string & name,
-                        InputParameters parameters);
+  RichardsExcavGeom(const InputParameters & parameters);
 
   virtual Real value(Real t, const Point & p);
 

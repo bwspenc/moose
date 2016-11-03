@@ -67,7 +67,7 @@
     variable = temp2
     master = 3
     slave = 2
-    coord_type = XYZ
+    gap_geometry_type = PLATE
     appended_property_name = 2
   [../]
 []
@@ -259,8 +259,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

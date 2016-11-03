@@ -22,7 +22,8 @@ InputParameters validParams<GeneralPostprocessor>()
   return params;
 }
 
-GeneralPostprocessor::GeneralPostprocessor(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
-    Postprocessor(name, parameters)
+GeneralPostprocessor::GeneralPostprocessor(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
+    Postprocessor(parameters)
 {}
+

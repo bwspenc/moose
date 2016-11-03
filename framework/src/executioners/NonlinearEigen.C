@@ -27,22 +27,29 @@ InputParameters validParams<NonlinearEigen>()
   return params;
 }
 
-NonlinearEigen::NonlinearEigen(const std::string & name, InputParameters parameters)
-    :EigenExecutionerBase(name, parameters),
-     // local static memebers
+NonlinearEigen::NonlinearEigen(const InputParameters & parameters) :
+    EigenExecutionerBase(parameters),
      _free_iter(getParam<unsigned int>("free_power_iterations")),
      _abs_tol(getParam<Real>("source_abs_tol")),
      _rel_tol(getParam<Real>("source_rel_tol")),
      _pfactor(getParam<Real>("pfactor")),
      _output_after_pi(getParam<bool>("output_after_power_iterations"))
 {
-  _eigenvalue = getParam<Real>("k0");
+  if (!_app.isRecovering() && ! _app.isRestarting())
+    _eigenvalue = getParam<Real>("k0");
+
   addAttributeReporter("eigenvalue", _eigenvalue, "initial timestep_end");
 }
 
 void
 NonlinearEigen::init()
 {
+  if (_app.isRecovering())
+  {
+    _console << "\nCannot recover NonlinearEigen solves!\nExiting...\n" << std::endl;
+    return;
+  }
+
   EigenExecutionerBase::init();
 
   if (_free_iter>0)
@@ -51,7 +58,7 @@ NonlinearEigen::init()
     _problem.advanceState();
 
     // free power iterations
-    _console << std::endl << " Free power iteration starts"  << std::endl;
+    _console << " Free power iteration starts"  << std::endl;
 
     Real initial_res;
     inversePowerIteration(_free_iter, _free_iter, _pfactor, false,
@@ -59,10 +66,9 @@ NonlinearEigen::init()
                           "", std::numeric_limits<Real>::max(),
                           _eigenvalue, initial_res);
 
-    _problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::PRE_AUX);
+
     _problem.onTimestepEnd();
-    _problem.computeAuxiliaryKernels(EXEC_TIMESTEP_END);
-    _problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::POST_AUX);
+    _problem.execute(EXEC_TIMESTEP_END);
 
     if (_output_after_pi)
     {
@@ -79,6 +85,9 @@ NonlinearEigen::init()
 void
 NonlinearEigen::execute()
 {
+  if (_app.isRecovering())
+    return;
+
   preExecute();
 
   takeStep();
@@ -91,20 +100,19 @@ NonlinearEigen::takeStep()
 {
   _console << " Nonlinear iteration starts"  << std::endl;
 
-  // nonlinear solve
-  _problem.computeUserObjects(EXEC_TIMESTEP_BEGIN, UserObjectWarehouse::PRE_AUX);
   preSolve();
   _problem.timestepSetup();
   _problem.advanceState();
-  _problem.computeUserObjects(EXEC_TIMESTEP_BEGIN, UserObjectWarehouse::POST_AUX);
+  _problem.execute(EXEC_TIMESTEP_BEGIN);
 
   nonlinearSolve(_rel_tol, _abs_tol, _pfactor, _eigenvalue);
-
   postSolve();
-  printEigenvalue();
 
-  _problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::PRE_AUX);
-  _problem.onTimestepEnd();
-  _problem.computeAuxiliaryKernels(EXEC_TIMESTEP_END);
-  _problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::POST_AUX);
+  if (lastSolveConverged())
+  {
+    printEigenvalue();
+
+    _problem.onTimestepEnd();
+    _problem.execute(EXEC_TIMESTEP_END);
+  }
 }

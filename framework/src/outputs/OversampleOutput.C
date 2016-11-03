@@ -19,6 +19,11 @@
 #include "FileMesh.h"
 #include "MooseApp.h"
 
+// libMesh includes
+#include "libmesh/equation_systems.h"
+#include "libmesh/mesh_function.h"
+
+
 template<>
 InputParameters validParams<OversampleOutput>()
 {
@@ -41,8 +46,8 @@ InputParameters validParams<OversampleOutput>()
   return params;
 }
 
-OversampleOutput::OversampleOutput(const std::string & name, InputParameters & parameters) :
-    FileOutput(name, parameters),
+OversampleOutput::OversampleOutput(const InputParameters & parameters) :
+    FileOutput(parameters),
     _mesh_ptr(getParam<bool>("use_displaced") ?
               &_problem_ptr->getDisplacedProblem()->mesh() : &_problem_ptr->mesh()),
     _refinements(getParam<unsigned int>("refinements")),
@@ -68,14 +73,15 @@ OversampleOutput::~OversampleOutput()
   // they are owned by other objects.
   if (_oversample || _change_position)
   {
-    // Delete the mesh and equation system pointers
-    delete _mesh_ptr;
-    delete _es_ptr;
-
     // Delete the mesh functions
     for (unsigned int sys_num=0; sys_num < _mesh_functions.size(); ++sys_num)
       for (unsigned int var_num=0; var_num < _mesh_functions[sys_num].size(); ++var_num)
         delete _mesh_functions[sys_num][var_num];
+
+    // Delete the mesh and equation system pointers, in the correct
+    // order.
+    delete _es_ptr;
+    delete _mesh_ptr;
   }
 }
 
@@ -213,11 +219,13 @@ OversampleOutput::cloneMesh()
   // Create the new mesh from a file
   if (isParamValid("file"))
   {
-    InputParameters mesh_params = _problem_ptr->mesh().parameters();
+    InputParameters mesh_params = emptyInputParameters();
+    mesh_params += _problem_ptr->mesh().parameters();
     mesh_params.set<MeshFileName>("file") = getParam<MeshFileName>("file");
     mesh_params.set<bool>("nemesis") = false;
     mesh_params.set<bool>("skip_partitioning") = false;
-    _mesh_ptr = new FileMesh("output_problem_mesh", mesh_params);
+    mesh_params.set<std::string>("_object_name") = "output_problem_mesh";
+    _mesh_ptr = new FileMesh(mesh_params);
     _mesh_ptr->allowRecovery(false); // We actually want to reread the initial mesh
     _mesh_ptr->init();
     _mesh_ptr->prepare();

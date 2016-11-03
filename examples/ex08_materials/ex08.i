@@ -25,7 +25,7 @@
 [Kernels]
   # This Kernel consumes a real-gradient material property from the active material
   [./convection]
-    type = Convection
+    type = ExampleConvection
     variable = convected
   [../]
 
@@ -105,21 +105,14 @@
 
 [Executioner]
   type = Transient
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
-
   dt = 0.1
   num_steps = 10
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

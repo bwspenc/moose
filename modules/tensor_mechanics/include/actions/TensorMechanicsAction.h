@@ -17,12 +17,23 @@ InputParameters validParams<TensorMechanicsAction>();
 class TensorMechanicsAction : public Action
 {
 public:
-  TensorMechanicsAction(const std::string & name, InputParameters params);
+  TensorMechanicsAction(const InputParameters & params);
 
   virtual void act();
 
-private:
+protected:
+  virtual std::string getKernelType();
+  virtual InputParameters getParameters(std::string type);
 
+  std::vector<NonlinearVariableName> _displacements;
+  unsigned int _ndisp;
+
+  std::vector<VariableName> _coupled_displacements;
+
+  std::vector<AuxVariableName> _save_in;
+  std::vector<AuxVariableName> _diag_save_in;
+
+  Moose::CoordinateSystemType _coord_system;
 };
 
 #endif //TENSORMECHANICSACTION_H

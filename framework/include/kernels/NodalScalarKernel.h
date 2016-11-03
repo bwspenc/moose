@@ -33,11 +33,10 @@ class NodalScalarKernel :
   public MooseVariableDependencyInterface
 {
 public:
-  NodalScalarKernel(const std::string & name, InputParameters parameters);
-  virtual ~NodalScalarKernel();
+  NodalScalarKernel(const InputParameters & parameters);
 
-  virtual void reinit();
-  virtual void computeOffDiagJacobian(unsigned int jvar);
+  virtual void reinit() override;
+  virtual void computeOffDiagJacobian(unsigned int jvar) override;
 
 protected:
   /// List of node IDs

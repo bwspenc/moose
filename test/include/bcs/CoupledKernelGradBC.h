@@ -25,7 +25,7 @@ InputParameters validParams<CoupledKernelGradBC>();
 class CoupledKernelGradBC : public IntegratedBC
 {
 public:
-  CoupledKernelGradBC(const std::string & name, InputParameters parameters);
+  CoupledKernelGradBC(const InputParameters & parameters);
 
   virtual ~CoupledKernelGradBC();
 
@@ -33,7 +33,7 @@ protected:
   virtual Real computeQpResidual();
 
   RealVectorValue _beta;
-  VariableValue & _var2;
+  const VariableValue & _var2;
 };
 
 #endif /* COUPLEDKERNELGRADBC_H */

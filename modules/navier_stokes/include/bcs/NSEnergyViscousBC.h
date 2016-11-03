@@ -31,14 +31,10 @@ InputParameters validParams<NSEnergyViscousBC>();
  */
 class NSEnergyViscousBC : public NSIntegratedBC
 {
-
 public:
-  NSEnergyViscousBC(const std::string & name, InputParameters parameters);
-
-  virtual ~NSEnergyViscousBC(){}
+  NSEnergyViscousBC(const InputParameters & parameters);
 
 protected:
-
   /**
    * Just like other kernels, we must overload the Residual and Jacobian contributions...
    */
@@ -47,7 +43,7 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned jvar);
 
   // Coupled gradients
-  VariableGradient& _grad_temperature;
+  const VariableGradient & _grad_temperature;
 
   // Material properties
   const MaterialProperty<Real>& _thermal_conductivity;
@@ -70,8 +66,7 @@ protected:
 
   // Single vector to refer to all gradients.  Initialized in
   // the ctor.
-  std::vector<VariableGradient*> _gradU;
+  std::vector<const VariableGradient *> _gradU;
 };
-
 
 #endif // NSENERGYVISCOUSBC_H

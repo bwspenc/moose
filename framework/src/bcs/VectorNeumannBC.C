@@ -22,8 +22,8 @@ InputParameters validParams<VectorNeumannBC>()
   return params;
 }
 
-VectorNeumannBC::VectorNeumannBC(const std::string & name, InputParameters parameters) :
-    IntegratedBC(name, parameters),
+VectorNeumannBC::VectorNeumannBC(const InputParameters & parameters) :
+    IntegratedBC(parameters),
     _value(getParam<RealVectorValue>("vector_value"))
 {}
 
@@ -32,4 +32,5 @@ VectorNeumannBC::computeQpResidual()
 {
   return -_test[_i][_qp]*(_value*_normals[_qp]);
 }
+
 

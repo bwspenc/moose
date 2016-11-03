@@ -2,18 +2,10 @@
 ############################ COMMON MODULES ###################################
 ###############################################################################
 
-
-###############################################################################
-#
-# New Module Step 5.
-#       MODULENAME                := yes
-#
-# Add to list
-# MODULE_LIST := ... MODULENAME
-###############################################################################
 ifeq ($(ALL_MODULES),yes)
         CHEMICAL_REACTIONS        := yes
         CONTACT                   := yes
+        FLUID_PROPERTIES          := yes
         HEAT_CONDUCTION           := yes
         LINEAR_ELASTICITY         := yes
         MISC                      := yes
@@ -21,30 +13,30 @@ ifeq ($(ALL_MODULES),yes)
         PHASE_FIELD               := yes
         RICHARDS                  := yes
         SOLID_MECHANICS           := yes
+        PERIDYNAMICS              := yes
         TENSOR_MECHANICS          := yes
         WATER_STEAM_EOS           := yes
+        XFEM                      := yes
+        POROUS_FLOW               := yes
 endif
 
-ifeq ($(PHASE_FIELD),yes)
+ifeq ($(SOLID_MECHANICS),yes)
         TENSOR_MECHANICS          := yes
+endif
+
+ifeq ($(XFEM),yes)
+        SOLID_MECHANICS           := yes
+endif
+
+ifeq ($(POROUS_FLOW),yes)
+        TENSOR_MECHANICS           := yes
 endif
 
 # The master list of all moose modules
-MODULE_NAMES := "chemical_reactions contact heat_conduction linear_elasticity misc navier_stokes phase_field richards solid_mechanics tensor_mechanics water_steam_eos"
+MODULE_NAMES := "chemical_reactions contact heat_conduction linear_elasticity misc navier_stokes phase_field peridynamics richards solid_mechanics tensor_mechanics water_steam_eos xfem porous_flow"
 
 ###############################################################################
 ########################## MODULE REGISTRATION ################################
-###############################################################################
-#
-# New Module Step 6.
-#
-# ifeq ($(MODULENAME),yes)
-# APPLICATION_DIR    := $(MOOSE_DIR)/modules/modulename
-# APPLICATION_NAME   := modulename
-# include $(FRAMEWORK_DIR)/app.mk
-# libmesh_CXXFLAGS   += -DMODULENAME
-# endif
-#
 ###############################################################################
 
 ifeq ($(CHEMICAL_REACTIONS),yes)
@@ -56,6 +48,12 @@ endif
 ifeq ($(CONTACT),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/contact
   APPLICATION_NAME   := contact
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(FLUID_PROPERTIES),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/fluid_properties
+  APPLICATION_NAME   := fluid_properties
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
@@ -99,6 +97,12 @@ ifeq ($(PHASE_FIELD),yes)
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
+ifeq ($(PERIDYNAMICS),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/peridynamics
+  APPLICATION_NAME   := peridynamics
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
 ifeq ($(RICHARDS),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/richards
   APPLICATION_NAME   := richards
@@ -108,12 +112,33 @@ endif
 ifeq ($(SOLID_MECHANICS),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/solid_mechanics
   APPLICATION_NAME   := solid_mechanics
+
+  #Dependency on tensor mechanics
+  DEPEND_MODULES     := tensor_mechanics
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
 ifeq ($(WATER_STEAM_EOS),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/water_steam_eos
   APPLICATION_NAME   := water_steam_eos
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(XFEM),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/xfem
+  APPLICATION_NAME   := xfem
+
+  #Dependency on solid_mechanics
+  DEPEND_MODULES     := solid_mechanics
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(POROUS_FLOW),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/porous_flow
+  APPLICATION_NAME   := porous_flow
+
+  #Dependency on tensor_mechanics
+  DEPEND_MODULES     := tensor_mechanics
   include $(FRAMEWORK_DIR)/app.mk
 endif
 

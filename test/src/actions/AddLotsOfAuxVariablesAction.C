@@ -12,6 +12,7 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "AddLotsOfAuxVariablesAction.h"
 #include "Parser.h"
 #include "FEProblem.h"
@@ -19,9 +20,7 @@
 #include "MooseEnum.h"
 #include "AddVariableAction.h"
 #include "Conversion.h"
-
-#include <sstream>
-#include <stdexcept>
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/libmesh.h"
@@ -31,6 +30,10 @@
 #include "libmesh/explicit_system.h"
 #include "libmesh/string_to_enum.h"
 #include "libmesh/fe.h"
+
+// System includes
+#include <sstream>
+#include <stdexcept>
 
 // class static initialization
 const Real AddLotsOfAuxVariablesAction::_abs_zero_tol = 1e-12;
@@ -52,8 +55,8 @@ InputParameters validParams<AddLotsOfAuxVariablesAction>()
 }
 
 
-AddLotsOfAuxVariablesAction::AddLotsOfAuxVariablesAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+AddLotsOfAuxVariablesAction::AddLotsOfAuxVariablesAction(const InputParameters & parameters) :
+    Action(parameters)
 {
 }
 
@@ -64,7 +67,7 @@ AddLotsOfAuxVariablesAction::act()
   unsigned int number = getParam<unsigned int>("number");
   for (unsigned int cur_num = 0; cur_num < number; cur_num++)
   {
-    std::string var_name = getShortName() + Moose::stringify(cur_num);
+    std::string var_name = name() + Moose::stringify(cur_num);
     FEType fe_type(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
                    Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family")));
 

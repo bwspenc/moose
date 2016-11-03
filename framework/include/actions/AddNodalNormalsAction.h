@@ -36,10 +36,9 @@ InputParameters validParams<AddNodalNormalsAction>();
 class AddNodalNormalsAction : public Action
 {
 public:
-  AddNodalNormalsAction(const std::string & name, InputParameters parameters);
-  virtual ~AddNodalNormalsAction();
+  AddNodalNormalsAction(InputParameters parameters);
 
-  virtual void act();
+  virtual void act() override;
 
 protected:
   /// The supplied boundary name from the user

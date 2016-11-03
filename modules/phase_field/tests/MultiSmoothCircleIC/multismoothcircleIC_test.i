@@ -60,7 +60,6 @@
     type = GenericConstantMaterial
     prop_names = D_v
     prop_values = 0.074802
-    block = 0
   [../]
 []
 
@@ -93,8 +92,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

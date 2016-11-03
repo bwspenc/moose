@@ -14,11 +14,12 @@
 
 #include "MultiAppPostprocessorToAuxScalarTransfer.h"
 
-// Moose
+// MOOSE includes
 #include "MooseTypes.h"
 #include "FEProblem.h"
+#include "MultiApp.h"
 
-// libMesh
+// libMesh includes
 #include "libmesh/meshfree_interpolation.h"
 #include "libmesh/system.h"
 
@@ -32,8 +33,8 @@ InputParameters validParams<MultiAppPostprocessorToAuxScalarTransfer>()
   return params;
 }
 
-MultiAppPostprocessorToAuxScalarTransfer::MultiAppPostprocessorToAuxScalarTransfer(const std::string & name, InputParameters parameters) :
-    MultiAppTransfer(name, parameters),
+MultiAppPostprocessorToAuxScalarTransfer::MultiAppPostprocessorToAuxScalarTransfer(const InputParameters & parameters) :
+    MultiAppTransfer(parameters),
     _from_pp_name(getParam<PostprocessorName>("from_postprocessor")),
     _to_aux_name(getParam<VariableName>("to_aux_scalar"))
 {
@@ -42,6 +43,8 @@ MultiAppPostprocessorToAuxScalarTransfer::MultiAppPostprocessorToAuxScalarTransf
 void
 MultiAppPostprocessorToAuxScalarTransfer::execute()
 {
+  _console << "Beginning PostprocessorToAuxScalarTransfer " << name() << std::endl;
+
   // Perform action based on the transfer direction
   switch (_direction)
   {
@@ -49,7 +52,7 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
     case TO_MULTIAPP:
     {
       // Extract the postprocessor that is being transferd
-      FEProblem & from_problem = *_multi_app->problem();
+      FEProblem & from_problem = _multi_app->problem();
       Real pp_value = from_problem.getPostprocessorValue(_from_pp_name);
 
       // Loop through each of the sub apps
@@ -57,7 +60,7 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
         if (_multi_app->hasLocalApp(i))
         {
           // Get reference to the AuxVariable where the postprocessor will be passed
-          MooseVariableScalar & scalar =  _multi_app->appProblem(i)->getScalarVariable(_tid, _to_aux_name);
+          MooseVariableScalar & scalar =  _multi_app->appProblem(i).getScalarVariable(_tid, _to_aux_name);
 
           scalar.reinit();
 
@@ -78,7 +81,7 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
       unsigned int num_apps = _multi_app->numGlobalApps();
 
       // The AuxVariable for storing the postprocessor values from the sub app
-      MooseVariableScalar & scalar =  _multi_app->problem()->getScalarVariable(_tid, _to_aux_name);
+      MooseVariableScalar & scalar =  _multi_app->problem().getScalarVariable(_tid, _to_aux_name);
 
       // Ensure that the variable is up to date
       scalar.reinit();
@@ -94,11 +97,13 @@ MultiAppPostprocessorToAuxScalarTransfer::execute()
       for (unsigned int i=0; i<_multi_app->numGlobalApps(); i++)
         if (_multi_app->hasLocalApp(i) && _multi_app->isRootProcessor())
           // Note: This can't be done using MooseScalarVariable::insert() because different processors will be setting dofs separately.
-          scalar.sys().solution().set(dof[i], _multi_app->appProblem(i)->getPostprocessorValue(_from_pp_name));
+          scalar.sys().solution().set(dof[i], _multi_app->appProblem(i).getPostprocessorValue(_from_pp_name));
 
       scalar.sys().solution().close();
 
       break;
     }
   }
+
+  _console << "Finished PostprocessorToAuxScalarTransfer " << name() << std::endl;
 }

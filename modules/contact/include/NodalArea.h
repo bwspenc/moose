@@ -12,7 +12,7 @@
 class NodalArea : public SideIntegralVariableUserObject
 {
 public:
-  NodalArea(const std::string & name, InputParameters parameters);
+  NodalArea(const InputParameters & parameters);
   virtual ~NodalArea();
 
   virtual void threadJoin(const UserObject & uo);

@@ -63,7 +63,6 @@
 [Materials]
   [./Copper]
     type = GBEvolution
-    block = 0
     T = 500 # K
     wGB = 60 # nm
     GBmob0 = 2.5e-6 #m^4/(Js) from Schoenfelder 1997
@@ -103,7 +102,4 @@
 [Outputs]
   file_base = voronoi3D
   exodus = true
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

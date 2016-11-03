@@ -37,9 +37,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -266,6 +264,8 @@
     yield_function_tolerance = 1.0
     shift = 1.0
     internal_constraint_tolerance = 1.0E-7
+    use_custom_returnMap = false
+    use_custom_cto = false
   [../]
   [./tensile_smooth]
     type = TensorMechanicsPlasticTensile
@@ -319,9 +319,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./multi]
     type = ComputeMultiPlasticityStress
@@ -329,97 +327,13 @@
     ep_plastic_tolerance = 1E-7
 
     plastic_models = 'tensile_smooth mc_smooth wpt wps'
-    #
-    # following is for optimized_to_safe_to_dumb
-    # with min_stepsize = 1E-5 and max_stepsize_for_dumb = 1E-5
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    26.98   3024         0.00263
-    # 50     25.75   3045         0.00263
-    # 40     25.57   3057         0.00263
-    # 30     26.85   3147         0.00263
-    # 20     27.87   3549         0.00039
-    # 15     27.51   4188         0.00039
-    # 10     27.7    5793         0.00039
-    #
-    # following is for safe_to_dumb
-    # with min_stepsize = 1E-5 and max_stepsize_for_dumb = 1E-5
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    28.19   1794         0.00195
-    # 50     24.66   1848         0.00195
-    # 40     24.36   1971         0.00195
-    # 30     24.20   2169         0.00195
-    # 20     25.82   3207         0.00195
-    # 15     31.16   5196         0.00195
-    # 10     30.68   8733         0.00195
-    # for ten-times bigger system (10k quadpoints)
-    # 30     207.04   19077         0.00175
-    #
-    # following is for safe_to_dumb
-    # with min_stepsize = 1E-5 and max_stepsize_for_dumb = 1E-2
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    28.34   1794         0.00195
-    # 50     25.00   1845         0.00195
-    # 40     25.67   1968         0.00195
-    # 30     24.50   2166         0.00195
-    # 20     27.40   3240         0.00195
-    # 15     35.67   5394         0.00195
-    # 10     37.60   9195         0.00195
-    #
-    # following is for safe_to_dumb
-    # with min_stepsize = 1E-5 and max_stepsize_for_dumb = 1
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    47.07   1077         0.00195
-    # 50     42.31   1095         0.00195
-    # 40     41.44   1113         0.00195
-    # 30     45.08   1260         0.00195
-    # 20     50.71   1629         0.00195
-    # 15     61.05   2430         0.00195
-    # 10     79.68   4677         0.00195
-    #
-    # following is for optimized
-    # with min_stepsize = 1E-6 and max_stepsize_for_dumb = 1E-6
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    19.95   6114         0.00263
-    # 50     19.94   6114         0.00263
-    # 40     18.72   6114         3.14866e-05
-    # 30     18.58   6213         3.14866e-05
-    # 20     19.18   6213         3.14866e-05
-    # 15     18.53   6381         3.14866e-05
-    # 10     18.79   7308         3.14866e-05
-    # for ten-times bigger system (10k quadpoints)
-    # 30     150.27   51129         1.52588e-05
-    # for hundred-times bigger system (100k quadpoints)
-    # 30     1440.45  484776         ??
-    #
-    # following is for optimized_to_dumb
-    # with min_stepsize = 1E-6 and max_stepsize_for_dumb = 1
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    48.52   978          0.00675
-    # 50     43.57   996          0.00675
-    # 40     41.40   1014         0.00675
-    # 30     46.58   1161         0.00675
-    # 20     54.31   1524         0.00675
-    # 15     62.19   2256         0.00675
-    # 10     75.79   4146         0.00390625
-    #
-    # following is for optimized_to_dumb
-    # with min_stepsize = 1E-6 and max_stepsize_for_dumb = 1E-2
-    # max_NR time(s) timestepcuts mintimestep
-    # 100    42.00   7074
-    # 50     40.83   7074
-    # 40     42.41   7074
-    # 30     39.75   7083
-    # 20     37.52   7176
-    # 15     37.77   7347
-    # 10     40.92   8436
-    #
     max_NR_iterations = 30
     specialIC = 'none'
     deactivation_scheme = 'optimized'
     min_stepsize = 1E-6
     max_stepsize_for_dumb = 1E-2
 
-    debug_fspb = 1
+    debug_fspb = crash
     debug_jac_at_stress = '10 0 0 0 10 0 0 0 10'
     debug_jac_at_pm = '1 1 1 1'
     debug_jac_at_intnl = '1 1 1 1'
@@ -440,13 +354,5 @@
 [Outputs]
   file_base = paper3
   exodus = false
-  output_on = 'initial timestep_end'
-  [./console]
-    type = Console
-    perf_log = true
-  [../]
-  [./csv]
-    type = CSV
-    interval = 1
-  [../]
+  csv = true
 []

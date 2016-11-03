@@ -14,6 +14,7 @@
 
 #include "MooseError.h"
 #include "Axisymmetric2D3DSolutionFunction.h"
+#include "SolutionUserObject.h"
 
 
 template<>
@@ -28,6 +29,7 @@ InputParameters validParams<Axisymmetric2D3DSolutionFunction>()
 
   params.addParam<Real>("scale_factor", 1.0, "Scale factor (a) to be applied to the solution (x): ax+b, where b is the 'add_factor'");
   params.addParam<Real>("add_factor", 0.0, "Add this value (b) to the solution (x): ax+b, where a is the 'scale_factor'");
+  params.addParam<Real>("axial_dimension_ratio", 1.0, "Ratio of the axial dimension in the 3d model to that in the 2d model. Optinally permits the 3d model to be larger than the 2d model in that dimension, and scales vector solutions in that direction by this factor.");
 
   params.addParam<RealVectorValue>("2d_axis_point1", RealVectorValue(0,0,0), "Start point for axis of symmetry for the 2d model");
   params.addParam<RealVectorValue>("2d_axis_point2", RealVectorValue(0,1,0), "End point for axis of symmetry for the 2d model");
@@ -41,11 +43,12 @@ InputParameters validParams<Axisymmetric2D3DSolutionFunction>()
   return params;
 }
 
-Axisymmetric2D3DSolutionFunction::Axisymmetric2D3DSolutionFunction(const std::string & name, InputParameters parameters) :
-    Function(name, parameters),
+Axisymmetric2D3DSolutionFunction::Axisymmetric2D3DSolutionFunction(const InputParameters & parameters) :
+    Function(parameters),
     _solution_object_ptr(NULL),
     _scale_factor(getParam<Real>("scale_factor")),
     _add_factor(getParam<Real>("add_factor")),
+    _axial_dim_ratio(getParam<Real>("axial_dimension_ratio")),
     _2d_axis_point1(getParam<RealVectorValue>("2d_axis_point1")),
     _2d_axis_point2(getParam<RealVectorValue>("2d_axis_point2")),
     _3d_axis_point1(getParam<RealVectorValue>("3d_axis_point1")),
@@ -78,10 +81,6 @@ Axisymmetric2D3DSolutionFunction::Axisymmetric2D3DSolutionFunction(const std::st
     mooseError("2d_axis_point1 and 2d_axis_point2 must be different points");
 }
 
-Axisymmetric2D3DSolutionFunction::~Axisymmetric2D3DSolutionFunction()
-{
-}
-
 void
 Axisymmetric2D3DSolutionFunction::initialSetup()
 {
@@ -106,6 +105,10 @@ Axisymmetric2D3DSolutionFunction::initialSetup()
     mooseError("3rd component of 2d_axis_point1 must be zero");
   if (_2d_axis_point2(2) != 0)
     mooseError("3rd component of 2d_axis_point2 must be zero");
+
+  _solution_object_var_indices.resize(_var_names.size());
+  for (unsigned int i = 0; i < _var_names.size(); ++i)
+    _solution_object_var_indices[i] = _solution_object_ptr->getLocalVarIndex(_var_names[i]);
 }
 
 Real
@@ -124,7 +127,7 @@ Axisymmetric2D3DSolutionFunction::value(Real t, const Point & p)
     z_dir_2d(1) = 1;
     r_dir_3d = p;
     r_dir_3d(1) = 0;
-    Real r = r_dir_3d.size();
+    Real r = r_dir_3d.norm();
     if (MooseUtils::absoluteFuzzyGreaterThan(r,0.0))
     {
       r_gt_zero = true;
@@ -132,18 +135,18 @@ Axisymmetric2D3DSolutionFunction::value(Real t, const Point & p)
     }
     z_dir_3d(1) = 1;
     xypoint(0) = std::sqrt(p(0)*p(0) + p(2)*p(2));
-    xypoint(1) = p(1);
+    xypoint(1) = p(1)/_axial_dim_ratio;
   }
   else
   {
     //Find the r, z coordinates of the point in the 3D model relative to the 3D axis
     z_dir_3d =  _3d_axis_point2 - _3d_axis_point1;
-    z_dir_3d /= z_dir_3d.size();
+    z_dir_3d /= z_dir_3d.norm();
     Point v3dp1p(p - _3d_axis_point1);
     Real z = z_dir_3d * v3dp1p;
     Point axis_proj = _3d_axis_point1 + z*z_dir_3d;  //projection of point onto axis
     Point axis_proj_to_p = p - axis_proj;
-    Real r = axis_proj_to_p.size();
+    Real r = axis_proj_to_p.norm();
     if (MooseUtils::absoluteFuzzyGreaterThan(r,0.0))
     {
       r_gt_zero = true;
@@ -152,18 +155,18 @@ Axisymmetric2D3DSolutionFunction::value(Real t, const Point & p)
 
     //Convert point in r, z coordinates into x, y coordinates
     z_dir_2d = _2d_axis_point2 - _2d_axis_point1;
-    z_dir_2d /= z_dir_2d.size();
+    z_dir_2d /= z_dir_2d.norm();
     Point out_of_plane_vec(0,0,1);
     r_dir_2d = z_dir_2d.cross(out_of_plane_vec);
-    r_dir_2d /= r_dir_2d.size();  //size should be 1, maybe this isn't necessary
-    xypoint = _2d_axis_point1 + z * z_dir_2d + r * r_dir_2d;
+    r_dir_2d /= r_dir_2d.norm();  //size should be 1, maybe this isn't necessary
+    xypoint = _2d_axis_point1 + z/_axial_dim_ratio * z_dir_2d + r * r_dir_2d;
   }
 
   Real val;
   if (_has_component)
   {
-    Real val_x = _solution_object_ptr->pointValue(t, xypoint, _var_names[0]);
-    Real val_y = _solution_object_ptr->pointValue(t, xypoint, _var_names[1]);
+    Real val_x = _solution_object_ptr->pointValue(t, xypoint, _solution_object_var_indices[0]);
+    Real val_y = _solution_object_ptr->pointValue(t, xypoint, _solution_object_var_indices[1]);
 
     // val_vec_rz contains the value vector converted from x,y to r,z coordinates
     Point val_vec_rz;
@@ -176,7 +179,7 @@ Axisymmetric2D3DSolutionFunction::value(Real t, const Point & p)
     val = val_vec_3d(_component);
   }
   else
-    val = _solution_object_ptr->pointValue(t, xypoint, _var_names[0]);
+    val = _solution_object_ptr->pointValue(t, xypoint, _solution_object_var_indices[0]);
 
   return _scale_factor * val + _add_factor;
 }

@@ -27,11 +27,10 @@ InputParameters validParams<LinearStrainHardening>()
 }
 
 
-LinearStrainHardening::LinearStrainHardening( const std::string & name,
-                                              InputParameters parameters )
-  :SolidModel( name, parameters )
+LinearStrainHardening::LinearStrainHardening( const InputParameters & parameters)
+  :SolidModel(parameters)
 {
 
-  createConstitutiveModel("IsotropicPlasticity", parameters);
+  createConstitutiveModel("IsotropicPlasticity");
 
 }

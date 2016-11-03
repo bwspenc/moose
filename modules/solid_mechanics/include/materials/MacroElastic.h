@@ -12,8 +12,7 @@
 class MacroElastic : public Elastic
 {
 public:
-  MacroElastic( const std::string & name,
-                InputParameters parameters );
+  MacroElastic( const InputParameters & parameters);
   virtual ~MacroElastic();
 
 protected:

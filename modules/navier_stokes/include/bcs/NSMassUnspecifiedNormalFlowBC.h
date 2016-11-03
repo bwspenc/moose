@@ -23,18 +23,12 @@ InputParameters validParams<NSMassUnspecifiedNormalFlowBC>();
 class NSMassUnspecifiedNormalFlowBC : public NSMassBC
 {
 public:
-
-  NSMassUnspecifiedNormalFlowBC(const std::string & name, InputParameters parameters);
-
-  virtual ~NSMassUnspecifiedNormalFlowBC(){}
+  NSMassUnspecifiedNormalFlowBC(const InputParameters & parameters);
 
 protected:
-
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned jvar);
 };
-
-
 
 #endif // NSMASSUNSPECIFIEDNORMALFLOWBC_H

@@ -12,10 +12,11 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NumResidualEvaluations.h"
-
 #include "FEProblem.h"
 #include "SubProblem.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<NumResidualEvaluations>()
@@ -24,8 +25,8 @@ InputParameters validParams<NumResidualEvaluations>()
   return params;
 }
 
-NumResidualEvaluations::NumResidualEvaluations(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters)
+NumResidualEvaluations::NumResidualEvaluations(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters)
 {}
 
 Real
@@ -33,3 +34,4 @@ NumResidualEvaluations::getValue()
 {
   return _fe_problem.getNonlinearSystem().nResidualEvaluations();
 }
+

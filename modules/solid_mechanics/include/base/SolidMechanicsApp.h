@@ -17,7 +17,8 @@ InputParameters validParams<SolidMechanicsApp>();
 class SolidMechanicsApp : public MooseApp
 {
 public:
-  SolidMechanicsApp(const std::string & name, InputParameters parameters);
+  SolidMechanicsApp(const InputParameters & parameters);
+
   virtual ~SolidMechanicsApp();
 
   static void registerApps();

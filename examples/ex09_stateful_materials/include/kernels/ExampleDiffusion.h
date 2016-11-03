@@ -27,12 +27,11 @@ class ExampleDiffusion : public Diffusion
 {
 public:
 
-  ExampleDiffusion(const std::string & name,
-                   InputParameters parameters);
+  ExampleDiffusion(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
+  virtual Real computeQpResidual() override;
+  virtual Real computeQpJacobian() override;
 
   const MaterialProperty<Real> & _diffusivity;
 };

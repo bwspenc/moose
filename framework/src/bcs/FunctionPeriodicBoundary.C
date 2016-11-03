@@ -12,9 +12,16 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "FunctionPeriodicBoundary.h"
 #include "FEProblem.h"
 #include "Function.h"
+#include "MooseMesh.h"
+
+// A mutex we can acquire to prevent simultaneous ParsedFunction
+// evaluation on multiple threads.  ParsedFunction evaluation is
+// currently not thread-safe.
+Threads::spin_mutex parsed_function_mutex;
 
 FunctionPeriodicBoundary::FunctionPeriodicBoundary(FEProblem & feproblem, std::vector<std::string> fn_names) :
     _dim(fn_names.size()),
@@ -45,6 +52,9 @@ FunctionPeriodicBoundary::FunctionPeriodicBoundary(const FunctionPeriodicBoundar
 Point
 FunctionPeriodicBoundary::get_corresponding_pos(const Point & pt) const
 {
+  // Force thread-safe evaluation of what could be ParsedFunctions.
+  Threads::spin_mutex::scoped_lock lock(parsed_function_mutex);
+
   Real t = 0.;
   Point p;
   switch (_dim)
@@ -69,12 +79,12 @@ FunctionPeriodicBoundary::get_corresponding_pos(const Point & pt) const
   return pt;
 }
 
-UniquePtr<PeriodicBoundaryBase> FunctionPeriodicBoundary::clone(TransformationType t) const
+std::unique_ptr<PeriodicBoundaryBase> FunctionPeriodicBoundary::clone(TransformationType t) const
 {
   if (t==INVERSE)
     mooseError("No way to automatically clone() an inverse FunctionPeriodicBoundary object");
 
-  return UniquePtr<PeriodicBoundaryBase>(new FunctionPeriodicBoundary(*this));
+  return std::unique_ptr<PeriodicBoundaryBase>(new FunctionPeriodicBoundary(*this));
 }
 
 void

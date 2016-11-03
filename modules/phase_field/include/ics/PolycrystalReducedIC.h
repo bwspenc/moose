@@ -32,12 +32,9 @@ public:
   /**
    * Constructor
    *
-   * @param name The name given to the initial condition in the input file.
    * @param parameters The parameters object holding data for the class to use.
-   * @param var_name The variable this InitialCondtion is supposed to provide values for.
    */
-  PolycrystalReducedIC(const std::string & name,
-                InputParameters parameters);
+  PolycrystalReducedIC(const InputParameters & parameters);
 
   /**
    * The value of the variable at a point.
@@ -48,7 +45,16 @@ public:
 
   virtual void initialSetup();
 
+protected:
+  bool assignColors(const AdjacencyGraph & adjacency_matrix, std::vector<unsigned int> & colors, unsigned int grain) const;
+
+  bool isGraphValid(const AdjacencyGraph & adjacency_matrix, std::vector<unsigned int> & colors, unsigned int grain, unsigned int color) const;
+
   MooseMesh & _mesh;
+
+  /// mesh dimension
+  unsigned int _dim;
+
   /// A reference to the nonlinear system
   NonlinearSystem & _nl;
 
@@ -65,8 +71,10 @@ public:
   Point _top_right;
   Point _range;
 
+  bool _advanced_op_assignment;
+
   std::vector<Point> _centerpoints;
-  std::vector<Real> _assigned_op;
+  std::vector<unsigned int> _assigned_op;
 };
 
 #endif //POLYCRYSTALREDUCEDIC_H

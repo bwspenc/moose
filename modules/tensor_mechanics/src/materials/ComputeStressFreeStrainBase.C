@@ -15,9 +15,8 @@ InputParameters validParams<ComputeStressFreeStrainBase>()
   return params;
 }
 
-ComputeStressFreeStrainBase::ComputeStressFreeStrainBase(const std::string & name,
-                                                 InputParameters parameters) :
-    DerivativeMaterialInterface<Material>(name, parameters),
+ComputeStressFreeStrainBase::ComputeStressFreeStrainBase(const InputParameters & parameters) :
+    Material(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : "" ),
     _incremental_form(getParam<bool>("incremental_form")),
     _stress_free_strain(declareProperty<RankTwoTensor>(_base_name + "stress_free_strain")),
@@ -46,4 +45,3 @@ ComputeStressFreeStrainBase::computeQpProperties()
   else
     _stress_free_strain_increment[_qp].zero();
 }
-

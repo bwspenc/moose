@@ -23,8 +23,8 @@ InputParameters validParams<ConstantPointSource>()
   return params;
 }
 
-ConstantPointSource::ConstantPointSource(const std::string & name, InputParameters parameters) :
-    DiracKernel(name, parameters),
+ConstantPointSource::ConstantPointSource(const InputParameters & parameters) :
+    DiracKernel(parameters),
     _value(getParam<Real>("value")),
     _point_param(getParam<std::vector<Real> >("point"))
 {
@@ -53,4 +53,5 @@ ConstantPointSource::computeQpResidual()
 //  This is negative because it's a forcing function that has been brought over to the left side
   return -_test[_i][_qp]*_value;
 }
+
 

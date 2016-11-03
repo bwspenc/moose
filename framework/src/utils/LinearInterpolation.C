@@ -13,12 +13,13 @@
 /****************************************************************/
 
 #include "LinearInterpolation.h"
-#include "MooseError.h"
-#include "libmesh/libmesh_common.h"
+
+#include <stdexcept>
+#include <cassert>
 
 int LinearInterpolation::_file_number = 0;
 
-LinearInterpolation::LinearInterpolation(const std::vector<double> & x, const std::vector<double> & y) :
+LinearInterpolation::LinearInterpolation(const std::vector<Real> & x, const std::vector<Real> & y) :
     _x(x),
     _y(y)
 {
@@ -28,48 +29,41 @@ LinearInterpolation::LinearInterpolation(const std::vector<double> & x, const st
 void
 LinearInterpolation::errorCheck()
 {
+  if (_x.size() != _y.size())
+    throw std::domain_error("Vectors are not the same length");
 
-  if ( _x.size() != _y.size() )
-  {
-    mooseError("LinearInterpolation: Vectors are not the same length");
-  }
-
-
-  bool error(false);
-  for (unsigned i(0); !error && !_x.empty() && i < _x.size()-1; ++i)
-  {
-    if ( _x[i] >= _x[i+1] )
+  for (unsigned int i = 0; i + 1 < _x.size(); ++i)
+    if (_x[i] >= _x[i+1])
     {
-      error = true;
+      std::ostringstream oss;
+      oss << "x-values are not strictly increasing: x[" << i << "]: " << _x[i] << " x[" << i + 1 << "]: " << _x[i + 1];
+      throw std::domain_error(oss.str());
     }
-  }
-  if (error)
-  {
-    mooseError( "x-values are not strictly increasing" );
-  }
 }
 
-double
-LinearInterpolation::sample(double x) const
+Real
+LinearInterpolation::sample(Real x) const
 {
+  // sanity check (empty LinearInterpolations get constructed in many places
+  // so we cannot put this into the errorCheck)
+  assert(_x.size() > 0);
+
   // endpoint cases
   if (x <= _x[0])
     return _y[0];
-  if (x >= _x[_x.size()-1])
-    return _y[_y.size()-1];
+  if (x >= _x.back())
+    return _y.back();
 
-  for (unsigned int i=0; i < _x.size()-1; ++i)
+  for (unsigned int i = 0; i + 1 < _x.size(); ++i)
     if (x >= _x[i]  && x < _x[i+1])
-    {
       return _y[i] + (_y[i+1]-_y[i])*(x-_x[i])/(_x[i+1]-_x[i]);
-    }
 
-  mooseError("Unreachable?");
+  throw std::out_of_range("Unreachable");
   return 0;
 }
 
-double
-LinearInterpolation::sampleDerivative(double x) const
+Real
+LinearInterpolation::sampleDerivative(Real x) const
 {
   // endpoint cases
   if (x < _x[0])
@@ -77,42 +71,38 @@ LinearInterpolation::sampleDerivative(double x) const
   if (x >= _x[_x.size()-1])
     return 0.0;
 
-  for (unsigned int i=0; i < _x.size()-1; ++i)
+  for (unsigned int i = 0; i + 1 < _x.size(); ++i)
     if (x >= _x[i]  && x < _x[i+1])
-    {
       return (_y[i+1]-_y[i])/(_x[i+1]-_x[i]);
-    }
 
-  mooseError("Unreachable?");
+  throw std::out_of_range("Unreachable");
   return 0;
 }
 
-double
+Real
 LinearInterpolation::integrate()
 {
-  double answer(0);
-  for (unsigned int i(1); i < _x.size(); ++i)
-  {
+  Real answer = 0;
+  for (unsigned int i = 1; i < _x.size(); ++i)
     answer += 0.5*(_y[i]+_y[i-1])*(_x[i]-_x[i-1]);
-  }
 
   return answer;
 }
 
-double
+Real
 LinearInterpolation::domain(int i) const
 {
   return _x[i];
 }
 
-double
+Real
 LinearInterpolation::range(int i) const
 {
   return _y[i];
 }
 
 void
-LinearInterpolation::dumpSampleFile(std::string base_name, std::string x_label, std::string y_label, float xmin, float xmax, float ymin, float ymax)
+LinearInterpolation::dumpSampleFile(std::string base_name, std::string x_label, std::string y_label, Real xmin, Real xmax, Real ymin, Real ymax)
 {
   std::stringstream filename, filename_pts;
   const unsigned char fill_character = '0';
@@ -158,10 +148,10 @@ LinearInterpolation::dumpSampleFile(std::string base_name, std::string x_label, 
   out << "\nplot f(x) with lines, '" << filename_pts.str() << "' using 1:2 title \"Points\"\n";
   out.close();
 
-  libmesh_assert(_x.size() == _y.size());
+  assert(_x.size() == _y.size());
 
   out.open(filename_pts.str().c_str());
-  /* Next dump the data points into a seperate file */
+  /* Next dump the data points into a separate file */
   for (unsigned int i = 0; i<_x.size(); ++i)
     out << _x[i] << " " << _y[i] << "\n";
   out << std::endl;

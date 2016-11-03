@@ -48,6 +48,7 @@ InputParameters validParams<CommonOutputAction>()
    params.addParam<bool>("gnuplot", false, "Output the scalar and postprocessor results using the default settings for GNUPlot output");
    params.addParam<bool>("solution_history", false, "Print a solution history file (.slh) using the default settings");
    params.addParam<bool>("dofmap", false, "Create the dof map .json output file");
+   params.addParam<bool>("controls", false, "Enable the screen output of Control systems.");
 
    // Common parameters
 
@@ -57,48 +58,28 @@ InputParameters validParams<CommonOutputAction>()
    params.addParam<std::vector<std::string> >("output_if_base_contains", "If this is supplied then output will only be done in the case that the output base contains one of these strings.  This is helpful in outputting only a subset of outputs when using MultiApps.");
    params.addParam<unsigned int>("interval", 1, "The interval at which timesteps are output to the solution file");
    params.addParam<std::vector<Real> >("sync_times", std::vector<Real>(), "Times at which the output and solution is forced to occur");
+   params.addParam<bool>("append_date", false, "When true the date and time are appended to the output filename.");
+   params.addParam<std::string>("append_date_format", "The format of the date/time to append (see http://www.cplusplus.com/reference/ctime/strftime).");
 
    params.addParam<std::vector<VariableName> >("hide", "A list of the variables and postprocessors that should NOT be output to the Exodus file (may include Variables, ScalarVariables, and Postprocessor names).");
    params.addParam<std::vector<VariableName> >("show", "A list of the variables and postprocessors that should be output to the Exodus file (may include Variables, ScalarVariables, and Postprocessor names).");
 
-  // Add the 'output_on' input parameter
-  params.addParam<MultiMooseEnum>("output_on", Output::getExecuteOptions("timestep_end"), "Set to (initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to execute only at that moment (default: timestep_end)");
-
-  // Add common output toggles
-  params.addParam<bool>("output_initial", false, "Request that the initial condition is output to the solution file");
-  params.addParam<bool>("output_timestep_end", true, "Request that data be output at the end of the timestep");
-  params.addDeprecatedParam<bool>("output_intermediate", true, "Request that all intermediate steps (not initial or final) are output",
-                                  "replace by adding 'timestep_end' to the 'output_on' option");
-  params.addParam<bool>("output_final", false, "Force the final time step to be output, regardless of output interval");
+  // Add the 'execute_on' input parameter
+  params.addParam<MultiMooseEnum>("execute_on", Output::getExecuteOptions("initial timestep_end"), "Set to (initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to execute only at that moment (default: 'initial timestep_end')");
 
   // Add special Console flags
-  params.addParam<bool>("print_linear_residuals", false, "Enable printing of linear residuals to the screen (Console)");
   params.addParam<bool>("print_perf_log", false, "Enable printing of the performance log to the screen (Console)");
   params.addParam<bool>("print_mesh_changed_info", false, "When true, each time the mesh is changed the mesh information is printed");
+  params.addParam<bool>("print_linear_residuals", true, "Enable printing of linear residuals to the screen (Console)");
 
   // Return object
   return params;
 }
 
-CommonOutputAction::CommonOutputAction(const std::string & name, InputParameters params) :
-    Action(name, params),
+CommonOutputAction::CommonOutputAction(InputParameters params) :
+    Action(params),
     _action_params(_action_factory.getValidParams("AddOutputAction"))
 {
-  // Set the ActionWarehouse pointer in the parameters that will be passed to the actions created with this action
-  _action_params.set<ActionWarehouse *>("awh") = &_awh;
-
-  // Support quick output toggles
-  MultiMooseEnum & output_on = _pars.set<MultiMooseEnum>("output_on");
-  if (getParam<bool>("output_initial"))
-    output_on.push_back("initial");
-  if (getParam<bool>("output_timestep_end"))
-    output_on.push_back("timestep_end");
-  if (getParam<bool>("output_final"))
-    output_on.push_back("final");
-
-  // **** DEPRECATED PARAMETER SUPPORT ****
-  if (getParam<bool>("output_intermediate"))
-    output_on.push_back("timestep_end");
 }
 
 void
@@ -165,6 +146,9 @@ CommonOutputAction::act()
   if (getParam<bool>("dofmap"))
     create("DOFMap");
 
+  if (getParam<bool>("controls") || _app.getParam<bool>("show_controls"))
+    create("ControlOutput");
+
   if (!getParam<bool>("color"))
     Moose::_color_console = false;
 }
@@ -177,11 +161,9 @@ CommonOutputAction::create(std::string object_type)
 
   // Create the complete object name (uses lower case of type)
   std::transform(object_type.begin(), object_type.end(), object_type.begin(), ::tolower);
-  std::string long_name("Outputs/");
-  long_name += object_type;
 
   // Create the action
-  MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("AddOutputAction", long_name, _action_params));
+  MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("AddOutputAction", object_type, _action_params));
 
   // Set flag indicating that the object to be created was created with short-cut syntax
   action->getObjectParams().set<bool>("_built_by_moose") = true;

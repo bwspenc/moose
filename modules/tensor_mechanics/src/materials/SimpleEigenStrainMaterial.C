@@ -19,12 +19,12 @@ InputParameters validParams<SimpleEigenStrainMaterial>()
   return params;
 }
 
-SimpleEigenStrainMaterial::SimpleEigenStrainMaterial(const std::string & name,
-                                                     InputParameters parameters) :
-    EigenStrainBaseMaterial(name, parameters),
+SimpleEigenStrainMaterial::SimpleEigenStrainMaterial(const InputParameters & parameters) :
+    EigenStrainBaseMaterial(parameters),
     _epsilon0(getParam<Real>("epsilon0")),
     _c0(getParam<Real>("c0"))
 {
+  mooseDeprecated("SimpleEigenStrainMaterial is deprecated. Refer to http://mooseframework.org/wiki/PhysicsModules/TensorMechanics/Deprecations/SimpleEigenStrainMaterial to convert this input file.");
 }
 
 void SimpleEigenStrainMaterial::computeEigenStrain()

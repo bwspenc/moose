@@ -31,7 +31,7 @@ InputParameters validParams<FunctionDirichletBC>();
 class FunctionDirichletBC : public NodalBC
 {
 public:
-  FunctionDirichletBC(const std::string & name, InputParameters parameters);
+  FunctionDirichletBC(const InputParameters & parameters);
 
 protected:
   /**
@@ -39,10 +39,7 @@ protected:
    */
   Real f();
 
-  /**
-   * returns (u - the function)
-   */
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   /// The function being used for evaluation
   Function & _func;

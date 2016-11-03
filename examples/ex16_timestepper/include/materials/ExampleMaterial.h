@@ -29,11 +29,10 @@ InputParameters validParams<ExampleMaterial>();
 class ExampleMaterial : public Material
 {
 public:
-  ExampleMaterial(const std::string & name,
-                  InputParameters parameters);
+  ExampleMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpProperties();
+  virtual void computeQpProperties() override;
 
 private:
   Real _input_diffusivity;

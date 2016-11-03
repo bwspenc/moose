@@ -17,16 +17,17 @@
 #include "SystemBase.h"
 #include "Assembly.h"
 #include "NonlinearSystem.h"
-#include "Assembly.h"
 #include "MooseMesh.h"
 
 // libMesh
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/elem.h"
+#include "libmesh/quadrature.h"
+#include "libmesh/dense_vector.h"
 
 MooseVariable::MooseVariable(unsigned int var_num, const FEType & fe_type, SystemBase & sys, Assembly & assembly, Moose::VarKindType var_kind) :
-    MooseVariableBase(var_num, sys, assembly, var_kind),
-    _fe_type(fe_type),
+    MooseVariableBase(var_num, fe_type, sys, assembly, var_kind),
 
     _qrule(_assembly.qRule()),
     _qrule_face(_assembly.qRuleFace()),
@@ -71,6 +72,9 @@ MooseVariable::MooseVariable(unsigned int var_num, const FEType & fe_type, Syste
 
     _phi_face(_assembly.fePhiFace(_fe_type)),
     _grad_phi_face(_assembly.feGradPhiFace(_fe_type)),
+
+    _phi_neighbor(_assembly.fePhiNeighbor(_fe_type)),
+    _grad_phi_neighbor(_assembly.feGradPhiNeighbor(_fe_type)),
 
     _phi_face_neighbor(_assembly.fePhiFaceNeighbor(_fe_type)),
     _grad_phi_face_neighbor(_assembly.feGradPhiFaceNeighbor(_fe_type)),
@@ -198,6 +202,9 @@ MooseVariable::prepareIC()
 {
   _dof_map.dof_indices(_elem, _dof_indices, _var_num);
   _nodal_u.resize(_dof_indices.size());
+
+  unsigned int nqp = _qrule->n_points();
+  _u.resize(nqp);
 }
 
 void
@@ -244,7 +251,6 @@ MooseVariable::reinitAux()
   {
     // FIXME: check if the following is equivalent with '_nodal_dof_index = _dof_indices[0];'?
     _nodal_dof_index = _elem->dof_number(_sys.number(), _var_num, 0);
-
     libmesh_assert(_dof_indices.size());
     _nodal_u.resize(_dof_indices.size());
     _sys.currentSolution()->get(_dof_indices, &_nodal_u[0]);
@@ -282,15 +288,11 @@ MooseVariable::reinitAuxNeighbor()
 void
 MooseVariable::reinitNodes(const std::vector<dof_id_type> & nodes)
 {
-  // Store only DOFs that are on this processor and have the variable defined here
   _dof_indices.clear();
-  for (unsigned int i = 0; i < nodes.size(); i++)
+  for (const auto & node_id : nodes)
   {
-    // The MeshBase::query_node_ptr() routine will return NULL if the requested
-    // node is non-local.
-    Node * nd = _subproblem.mesh().getMesh().query_node_ptr(nodes[i]);
-
-    if (nd && (_subproblem.mesh().getMesh().processor_id() == nd->processor_id()))
+    Node * nd = _subproblem.mesh().getMesh().query_node_ptr(node_id);
+    if (nd && (_subproblem.mesh().isSemiLocal(nd)))
     {
       if (nd->n_dofs(_sys.number(), _var_num) > 0)
       {
@@ -304,6 +306,29 @@ MooseVariable::reinitNodes(const std::vector<dof_id_type> & nodes)
     _is_defined = true;
   else
     _is_defined = false;
+}
+
+void
+MooseVariable::reinitNodesNeighbor(const std::vector<dof_id_type> & nodes)
+{
+  _dof_indices_neighbor.clear();
+  for (const auto & node_id : nodes)
+  {
+    Node * nd = _subproblem.mesh().getMesh().query_node_ptr(node_id);
+    if (nd && (_subproblem.mesh().isSemiLocal(nd)))
+    {
+      if (nd->n_dofs(_sys.number(), _var_num) > 0)
+      {
+        dof_id_type dof = nd->dof_number(_sys.number(), _var_num, 0);
+        _dof_indices_neighbor.push_back(dof);
+      }
+    }
+  }
+
+  if (_dof_indices_neighbor.size() > 0)
+    _is_defined_neighbor = true;
+  else
+    _is_defined_neighbor = false;
 }
 
 void
@@ -371,6 +396,25 @@ MooseVariable::secondPhiFace()
 }
 
 const VariablePhiValue &
+MooseVariable::phiNeighbor()
+{
+  return _phi_neighbor;
+}
+
+const VariablePhiGradient &
+MooseVariable::gradPhiNeighbor()
+{
+  return _grad_phi_neighbor;
+}
+
+const VariablePhiSecond &
+MooseVariable::secondPhiNeighbor()
+{
+  _second_phi_neighbor = &_assembly.feSecondPhiNeighbor(_fe_type);
+  return *_second_phi_neighbor;
+}
+
+const VariablePhiValue &
 MooseVariable::phiFaceNeighbor()
 {
   return _phi_face_neighbor;
@@ -389,7 +433,7 @@ MooseVariable::secondPhiFaceNeighbor()
   return *_second_phi_face_neighbor;
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValue()
 {
   if (isNodal())
@@ -401,7 +445,7 @@ MooseVariable::nodalValue()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueOld()
 {
   if (isNodal())
@@ -413,7 +457,7 @@ MooseVariable::nodalValueOld()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueOlder()
 {
   if (isNodal())
@@ -425,7 +469,7 @@ MooseVariable::nodalValueOlder()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueDot()
 {
   if (isNodal())
@@ -437,7 +481,7 @@ MooseVariable::nodalValueDot()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueNeighbor()
 {
   if (isNodal())
@@ -449,7 +493,7 @@ MooseVariable::nodalValueNeighbor()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueOldNeighbor()
 {
   if (isNodal())
@@ -461,7 +505,7 @@ MooseVariable::nodalValueOldNeighbor()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueOlderNeighbor()
 {
   if (isNodal())
@@ -473,7 +517,7 @@ MooseVariable::nodalValueOlderNeighbor()
     mooseError("Nodal values can be requested only on nodal variables, variable '" << name() << "' is not nodal.");
 }
 
-VariableValue &
+const VariableValue &
 MooseVariable::nodalValueDotNeighbor()
 {
   if (isNodal())
@@ -967,6 +1011,9 @@ MooseVariable::computeElemValuesFace()
     _u[i] = 0;
     _grad_u[i] = 0;
 
+    if (_need_second)
+      _second_u[i] = 0;
+
     if (_subproblem.isTransient())
     {
       _u_dot[i] = 0;
@@ -983,9 +1030,6 @@ MooseVariable::computeElemValuesFace()
 
       if (_need_grad_older)
         _grad_u_older[i] = 0;
-
-      if (_need_second)
-        _second_u[i] = 0;
 
       if (_need_second_old)
         _second_u_old[i] = 0;
@@ -1293,6 +1337,9 @@ MooseVariable::computeNeighborValues()
     _u_neighbor[i] = 0;
     _grad_u_neighbor[i] = 0;
 
+    if (_need_second_neighbor)
+      _second_u_neighbor[i] = 0;
+
     if (_subproblem.isTransient())
     {
       if (_need_u_old_neighbor)
@@ -1333,7 +1380,6 @@ MooseVariable::computeNeighborValues()
   const NumericVector<Real> & solution_old     = _sys.solutionOld();
   const NumericVector<Real> & solution_older   = _sys.solutionOlder();
   const NumericVector<Real> & u_dot            = _sys.solutionUDot();
-  const Real & du_dot_du                       = _sys.duDotDu();
 
   dof_id_type idx;
   Real soln_local;
@@ -1370,11 +1416,11 @@ MooseVariable::computeNeighborValues()
 
     for (unsigned int qp=0; qp < nqp; ++qp)
     {
-      phi_local = _phi_face_neighbor[i][qp];
-      dphi_local = _grad_phi_face_neighbor[i][qp];
+      phi_local = _phi_neighbor[i][qp];
+      dphi_local = _grad_phi_neighbor[i][qp];
 
       if (_need_second_neighbor || _need_second_old_neighbor || _need_second_older_neighbor)
-        d2phi_local = (*_second_phi_face_neighbor)[i][qp];
+        d2phi_local = (*_second_phi_neighbor)[i][qp];
 
       _u_neighbor[qp]      += phi_local * soln_local;
       _grad_u_neighbor[qp] += dphi_local * soln_local;
@@ -1470,26 +1516,32 @@ MooseVariable::computeNodalNeighborValues()
       }
     }
   }
+  else
+  {
+    _nodal_u_neighbor.resize(0);
+    if (_subproblem.isTransient())
+    {
+      _nodal_u_old_neighbor.resize(0);
+      _nodal_u_older_neighbor.resize(0);
+      _nodal_u_dot_neighbor.resize(0);
+      _nodal_du_dot_du_neighbor.resize(0);
+    }
+  }
 }
 
 void
 MooseVariable::setNodalValue(const DenseVector<Number> & values)
 {
-  for (unsigned int i=0; i<values.size(); i++)
+  for (unsigned int i = 0; i < values.size(); i++)
     _nodal_u[i] = values(i);
 
   _has_nodal_value = true;
 
-  if (isNodal())
-    mooseError("Variable " + name() + " has to be nodal!");
-  else
+  for (unsigned int qp = 0; qp < _u.size(); qp++)
   {
-    for (unsigned int qp=0; qp<_u.size(); qp++)
-    {
-      _u[qp] = 0;
-      for (unsigned int i=0; i < _nodal_u.size(); i++)
-        _u[qp] += _phi[i][qp] * _nodal_u[i];
-    }
+    _u[qp] = 0;
+    for (unsigned int i = 0; i < _nodal_u.size(); i++)
+      _u[qp] += _phi[i][qp] * _nodal_u[i];
   }
 }
 
@@ -1519,11 +1571,9 @@ MooseVariable::setNodalValue(Number value, unsigned int idx/* = 0*/)
   _nodal_u[idx] = value;                  // update variable nodal value
   _has_nodal_value = true;
 
-  if (!isNodal()) // If this is an elemental variable, then update the qp values as well
-  {
-    for (unsigned int qp=0; qp<_u.size(); qp++)
-      _u[qp] = value;
-  }
+  // Update the qp values as well
+  for (unsigned int qp = 0; qp < _u.size(); qp++)
+    _u[qp] = value;
 }
 
 void
@@ -1540,7 +1590,7 @@ MooseVariable::setNodalValueNeighbor(Number value)
 }
 
 void
-MooseVariable::computeDamping(const NumericVector<Number> & increment_vec)
+MooseVariable::computeIncrement(const NumericVector<Number> & increment_vec)
 {
   unsigned int nqp = _qrule->n_points();
 
@@ -1617,6 +1667,30 @@ MooseVariable::getValue(const Elem * elem, const std::vector<std::vector<Real> >
   {
     mooseAssert(dof_indices.size() == 1, "Wrong size for dof indices");
     value = (*_sys.currentSolution())(dof_indices[0]);
+  }
+
+  return value;
+}
+
+RealGradient
+MooseVariable::getGradient(const Elem * elem, const std::vector<std::vector<RealGradient> > & grad_phi) const
+{
+  std::vector<dof_id_type> dof_indices;
+  _dof_map.dof_indices(elem, dof_indices, _var_num);
+
+  RealGradient value;
+  if (isNodal())
+  {
+    for (unsigned int i = 0; i < dof_indices.size(); ++i)
+    {
+      //The zero index is because we only have one point that the phis are evaluated at
+      value += grad_phi[i][0] * (*_sys.currentSolution())(dof_indices[i]);
+    }
+  }
+  else
+  {
+    mooseAssert(dof_indices.size() == 1, "Wrong size for dof indices");
+    value = 0.0;
   }
 
   return value;

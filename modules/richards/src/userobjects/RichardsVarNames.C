@@ -22,12 +22,11 @@ InputParameters validParams<RichardsVarNames>()
   return params;
 }
 
-RichardsVarNames::RichardsVarNames(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
-    Coupleable(parameters, false),
+RichardsVarNames::RichardsVarNames(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
+    Coupleable(this, false),
     ZeroInterface(parameters),
     _num_v(coupledComponents("richards_vars")),
-    _the_names(std::string()),
     _var_types(getParam<MooseEnum>("var_types"))
 {
   unsigned int max_moose_var_num_seen = 0;
@@ -38,7 +37,6 @@ RichardsVarNames::RichardsVarNames(const std::string & name, InputParameters par
   _moose_nodal_var_value.resize(_num_v);
   _moose_nodal_var_value_old.resize(_num_v);
   _moose_grad_var.resize(_num_v);
-  _moose_raw_var.resize(_num_v);
   for (unsigned int i = 0; i < _num_v; ++i)
   {
     _moose_var_num[i] = coupled("richards_vars", i);
@@ -48,10 +46,7 @@ RichardsVarNames::RichardsVarNames(const std::string & name, InputParameters par
     _moose_nodal_var_value[i] = &coupledNodalValue("richards_vars", i); // coupledNodalValue returns a reference (an alias) to a VariableValue, and the & turns it into a pointer
     _moose_nodal_var_value_old[i] = (_is_transient ? &coupledNodalValueOld("richards_vars", i) : &_zero);
     _moose_grad_var[i] = &coupledGradient("richards_vars", i);
-    _moose_raw_var[i] = getVar("richards_vars", i);
-    _the_names += getVar("richards_vars", i)->name() + " ";
   }
-  _the_names.erase(_the_names.end() - 1, _the_names.end()); // remove trailing space
 
   _ps_var_num.resize(max_moose_var_num_seen + 1);
   for (unsigned int i = 0 ; i < max_moose_var_num_seen + 1 ; ++i)
@@ -80,14 +75,6 @@ RichardsVarNames::num_v() const
 }
 
 unsigned int
-RichardsVarNames::moose_var_num(unsigned int richards_var_num) const
-{
-  if (richards_var_num >= _moose_var_num.size())
-    mooseError("The richards variable number " << richards_var_num << " is out of bounds according to the RichardsVarNames UserObject");
-  return _moose_var_num[richards_var_num];
-}
-
-unsigned int
 RichardsVarNames::richards_var_num(unsigned int moose_var_num) const
 {
   if (moose_var_num >= _ps_var_num.size() || _ps_var_num[moose_var_num] == _num_v)
@@ -103,34 +90,22 @@ RichardsVarNames::not_richards_var(unsigned int moose_var_num) const
   return false;
 }
 
-std::string
-RichardsVarNames::richards_names() const
-{
-  return _the_names;
-}
-
-VariableValue *
+const VariableValue *
 RichardsVarNames::richards_vals(unsigned int richards_var_num) const
 {
   return _moose_var_value[richards_var_num]; // moose_var_value is a vector of pointers to VariableValuees
 }
 
-VariableValue *
+const VariableValue *
 RichardsVarNames::richards_vals_old(unsigned int richards_var_num) const
 {
   return _moose_var_value_old[richards_var_num];
 }
 
-VariableGradient *
+const VariableGradient *
 RichardsVarNames::grad_var(unsigned int richards_var_num) const
 {
   return _moose_grad_var[richards_var_num];
-}
-
-MooseVariable *
-RichardsVarNames::raw_var(unsigned int richards_var_num) const
-{
-  return _moose_raw_var[richards_var_num];
 }
 
 std::string
@@ -139,15 +114,14 @@ RichardsVarNames::var_types() const
   return _var_types;
 }
 
-VariableValue *
+const VariableValue *
 RichardsVarNames::nodal_var(unsigned int richards_var_num) const
 {
   return _moose_nodal_var_value[richards_var_num];
 }
 
-VariableValue *
+const VariableValue *
 RichardsVarNames::nodal_var_old(unsigned int richards_var_num) const
 {
   return _moose_nodal_var_value_old[richards_var_num];
 }
-

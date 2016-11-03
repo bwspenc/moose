@@ -8,6 +8,10 @@
   elem_type = QUAD4
 []
 
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
 [Variables]
   [./disp_x]
     order = FIRST
@@ -51,22 +55,20 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
   [../]
 []
 
 [AuxKernels]
   [./strain11]
     type = RankTwoAux
-    rank_two_tensor = total_strain
+    rank_two_tensor = mechanical_strain
     index_i = 0
     index_j = 0
     variable = strain11
   [../]
   [./stress11]
     type = RankTwoAux
-    rank_two_tensor = total_strain
+    rank_two_tensor = mechanical_strain
     index_i = 1
     index_j = 1
     variable = stress11
@@ -109,8 +111,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
+    displacements = 'disp_x disp_y'
   [../]
   [./stress]
     type = ComputeFiniteStrainElasticStress
@@ -161,11 +162,6 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
-  output_on = timestep_end
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'initial timestep_end failed nonlinear'
-  [../]
 []

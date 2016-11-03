@@ -23,8 +23,8 @@ InputParameters validParams<RandomHitUserObject>()
   return params;
 }
 
-RandomHitUserObject::RandomHitUserObject(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
+RandomHitUserObject::RandomHitUserObject(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
     _num_hits(parameters.get<unsigned int>("num_hits")),
     _hit_positions(_num_hits)
 {
@@ -49,5 +49,9 @@ void
 RandomHitUserObject::execute()
 {
   for (unsigned int i=0; i<_num_hits; i++)
-    _hit_positions[i] = Point(_random.rand(),_random.rand(),0);
+  {
+    Real rand_x = _random.rand();
+    Real rand_y = _random.rand();
+    _hit_positions[i] = Point(rand_x, rand_y, 0);
+  }
 }

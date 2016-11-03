@@ -34,36 +34,30 @@ class PointValue : public GeneralPostprocessor
 public:
   /**
    * Constructor.
-   * @param name The name of this PointValue postprocessor
    * @param parameters The input file parameters for this object
    */
-  PointValue(const std::string & name, InputParameters parameters);
-
-  /**
-   * Destructor
-   */
-  virtual ~PointValue(){};
+  PointValue(const InputParameters & parameters);
 
   /**
    * Empty method, no initialization needed
    */
-  virtual void initialize(){};
+  virtual void initialize() override {}
 
   /**
    * Determines what element contains the specified point
    */
-  virtual void execute();
+  virtual void execute() override;
 
   /**
    * Returns the value of the variable at the specified location
    */
-  virtual Real getValue();
+  virtual Real getValue() override;
 
   /**
    * Performs the necessary parallel communication as well as computes
    * the value to return in the getValue method.
    */
-  virtual void finalize();
+  virtual void finalize() override;
 
 protected:
 
@@ -71,10 +65,10 @@ protected:
   MooseVariable & _var;
 
   /// The value of the desired variable
-  VariableValue & _u;
+  const VariableValue & _u;
 
-  /// A convenience reference to the libMesh::MeshBase object
-  MeshBase & _mesh;
+  /// A convenience reference to the Mesh this object operates on
+  MooseMesh & _mesh;
 
   /// The point to locate, stored as a vector for use with reinitElemPhys
   std::vector<Point> _point_vec;
@@ -87,7 +81,6 @@ protected:
 
   /// The element that contains the located point
   dof_id_type _elem_id;
-
 };
 
 #endif /* POINTVALUE_H */

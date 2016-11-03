@@ -107,6 +107,7 @@
     variable = u
     function = slnu
     boundary = 'left right top bottom'
+    penalty = 1e6
   [../]
   [./bc_v]
     type = FunctionDirichletBC
@@ -120,6 +121,7 @@
     variable = u
     function = slnu
     boundary = 'left right top bottom'
+    penalty = 1e6
   [../]
   [./bc_u_tb]
     type = CoupledKernelGradBC
@@ -207,7 +209,7 @@
 []
 
 [Outputs]
-  print_perf_log = true
+  execute_on = 'timestep_end'
 []
 
 [Debug]

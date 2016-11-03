@@ -20,8 +20,8 @@ InputParameters validParams<RichardsDensityIdeal>()
   return params;
 }
 
-RichardsDensityIdeal::RichardsDensityIdeal(const std::string & name, InputParameters parameters) :
-    RichardsDensity(name, parameters),
+RichardsDensityIdeal::RichardsDensityIdeal(const InputParameters & parameters) :
+    RichardsDensity(parameters),
     _slope(getParam<Real>("slope")),
     _p0(getParam<Real>("p0"))
 {}
@@ -44,4 +44,5 @@ RichardsDensityIdeal::d2density(Real /*p*/) const
 {
   return 0.0;
 }
+
 

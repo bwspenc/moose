@@ -28,11 +28,10 @@ InputParameters validParams<BoxMarker>();
 class BoxMarker : public Marker
 {
 public:
-  BoxMarker(const std::string & name, InputParameters parameters);
-  virtual ~BoxMarker(){};
+  BoxMarker(const InputParameters & parameters);
 
 protected:
-  virtual MarkerValue computeElementMarker();
+  virtual MarkerValue computeElementMarker() override;
 
   MarkerValue _inside;
   MarkerValue _outside;

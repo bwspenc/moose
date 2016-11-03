@@ -18,8 +18,8 @@ InputParameters validParams<RichardsPlotQuantity>()
   return params;
 }
 
-RichardsPlotQuantity::RichardsPlotQuantity(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+RichardsPlotQuantity::RichardsPlotQuantity(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _total_mass(getUserObject<RichardsSumQuantity>("uo"))
 {
 }
@@ -43,3 +43,4 @@ RichardsPlotQuantity::getValue()
 {
   return _total_mass.getValue();
 }
+

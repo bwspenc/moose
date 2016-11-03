@@ -35,10 +35,10 @@ InputParameters validParams<GenericConstantMaterial>();
 class GenericConstantMaterial : public Material
 {
 public:
-  GenericConstantMaterial(const std::string & name, InputParameters parameters);
+  GenericConstantMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpProperties();
+  virtual void computeQpProperties() override;
 
   std::vector<std::string> _prop_names;
   std::vector<Real> _prop_values;

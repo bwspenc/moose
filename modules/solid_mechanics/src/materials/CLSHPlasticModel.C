@@ -20,9 +20,8 @@ InputParameters validParams<CLSHPlasticModel>()
    return params;
 }
 
-CLSHPlasticModel::CLSHPlasticModel(std::string name,
-                                         InputParameters parameters)
-  :ReturnMappingModel(name, parameters),
+CLSHPlasticModel::CLSHPlasticModel(const InputParameters & parameters)
+  :ReturnMappingModel(parameters),
    _yield_stress(parameters.get<Real>("yield_stress")),
    _hardening_constant(parameters.get<Real>("hardening_constant")),
    _c_alpha(parameters.get<Real>("c_alpha")),

@@ -4,25 +4,27 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
+// Navier-Stokes includes
 #include "NSEnergyInviscidFlux.h"
+#include "NS.h"
+
+// FluidProperties includes
+#include "IdealGasFluidProperties.h"
 
 template<>
 InputParameters validParams<NSEnergyInviscidFlux>()
 {
   InputParameters params = validParams<NSKernel>();
-
-  params.addRequiredCoupledVar("enthalpy", "");
-
+  params.addRequiredCoupledVar(NS::enthalpy, "total enthalpy");
   return params;
 }
 
-NSEnergyInviscidFlux::NSEnergyInviscidFlux(const std::string & name, InputParameters parameters)
-  : NSKernel(name, parameters),
-    _enthalpy(coupledValue("enthalpy"))
-{}
-
-
-
+NSEnergyInviscidFlux::NSEnergyInviscidFlux(const InputParameters & parameters) :
+    NSKernel(parameters),
+    _enthalpy(coupledValue(NS::enthalpy))
+{
+}
 
 Real
 NSEnergyInviscidFlux::computeQpResidual()
@@ -41,36 +43,34 @@ NSEnergyInviscidFlux::computeQpResidual()
   vel *= (_rho[_qp] * _enthalpy[_qp]);
 
   // Return -1 * vel * grad(phi_i)
-  return -(vel*_grad_test[_i][_qp]);
+  return -(vel * _grad_test[_i][_qp]);
 }
-
-
-
 
 Real
 NSEnergyInviscidFlux::computeQpJacobian()
 {
   // Derivative of this kernel wrt rho*E
-  RealVectorValue vel(_u_vel[_qp], _v_vel[_qp], _w_vel[_qp]);
+  const RealVectorValue vel(_u_vel[_qp], _v_vel[_qp], _w_vel[_qp]);
+
+  // Ratio of specific heats
+  const Real gam = _fp.gamma();
 
   // -gamma * phi_j * (U*grad(phi_i))
-  return -_gamma * _phi[_j][_qp] * (vel*_grad_test[_i][_qp]);
+  return -gam * _phi[_j][_qp] * (vel * _grad_test[_i][_qp]);
 }
-
-
-
 
 Real
 NSEnergyInviscidFlux::computeQpOffDiagJacobian(unsigned int jvar)
 {
   RealVectorValue vel(_u_vel[_qp], _v_vel[_qp], _w_vel[_qp]);
-  Real V2 = vel.size_sq();
+  Real V2 = vel.norm_sq();
+
+  // Ratio of specific heats
+  const Real gam = _fp.gamma();
 
   // Derivative wrt density
   if (jvar == _rho_var_number)
-  {
-    return -((0.5*(_gamma-1)*V2 - _enthalpy[_qp]) * _phi[_j][_qp] * (vel * _grad_test[_i][_qp]));
-  }
+    return -((0.5 * (gam - 1) * V2 - _enthalpy[_qp]) * _phi[_j][_qp] * (vel * _grad_test[_i][_qp]));
 
   // Derivatives wrt momentums
   else if ((jvar == _rhou_var_number) || (jvar == _rhov_var_number) || (jvar == _rhow_var_number))
@@ -84,13 +84,13 @@ NSEnergyInviscidFlux::computeQpOffDiagJacobian(unsigned int jvar)
       jlocal = 2;
 
     // Scale the velocity vector by the scalar (1-gamma)*vel(jlocal)
-    vel *= (1.-_gamma)*vel(jlocal);
+    vel *= (1.0 - gam) * vel(jlocal);
 
     // Add in the enthalpy in the jlocal'th entry
     vel(jlocal) += _enthalpy[_qp];
 
     // Return -1 * (vel * grad(phi_i)) * phi_j
-    return -(vel*_grad_test[_i][_qp]) * _phi[_j][_qp];
+    return -(vel * _grad_test[_i][_qp]) * _phi[_j][_qp];
   }
 
   else
@@ -109,4 +109,3 @@ NSEnergyInviscidFlux::computeQpOffDiagJacobian(unsigned int jvar)
   // Won't get here!
   return 0;
 }
-

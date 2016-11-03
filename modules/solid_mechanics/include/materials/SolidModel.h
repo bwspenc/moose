@@ -31,8 +31,7 @@ InputParameters validParams<SolidModel>();
 class SolidModel : public DerivativeMaterialInterface<Material>
 {
 public:
-  SolidModel( const std::string & name,
-              InputParameters parameters );
+  SolidModel( const InputParameters & parameters);
   virtual ~SolidModel();
 
   virtual void initStatefulProperties( unsigned n_points );
@@ -87,6 +86,8 @@ protected:
   const CRACKING_RELEASE _cracking_release;
   Real _cracking_stress;
   const Real _cracking_residual_stress;
+  const Real _cracking_beta;
+  const std::string _compute_method;
   Function * const _cracking_stress_function;
 
   Real _cracking_alpha;
@@ -97,9 +98,9 @@ protected:
   // std::map<Point, unsigned> _cracked_this_step;
 
   const bool _has_temp;
-  VariableValue & _temperature;
-  VariableValue & _temperature_old;
-  VariableGradient & _temp_grad;
+  const VariableValue & _temperature;
+  const VariableValue & _temperature_old;
+  const VariableGradient & _temp_grad;
   const Real _alpha;
   Function * _alpha_function;
   PiecewiseLinear * _piecewise_linear_alpha_function;
@@ -108,12 +109,13 @@ protected:
   bool _mean_alpha_function;
   Real _ref_temp;
 
-  std::map<SubdomainID, std::vector<VolumetricModel*> > _volumetric_models;
+  std::map<SubdomainID, std::vector<MooseSharedPointer<VolumetricModel> > > _volumetric_models;
   std::set<std::string> _dep_matl_props;
 
   MaterialProperty<SymmTensor> & _stress;
 private:
   MaterialProperty<SymmTensor> & _stress_old_prop;
+
 protected:
   SymmTensor _stress_old;
 
@@ -137,6 +139,7 @@ protected:
   ColumnMajorMatrix _principal_strain;
 
   MaterialProperty<SymmElasticityTensor> & _elasticity_tensor;
+  MaterialProperty<SymmElasticityTensor> & _elasticity_tensor_old;
   MaterialProperty<SymmElasticityTensor> & _Jacobian_mult;
 
   // Accumulate derivatives of strain tensors with respect to Temperature into this
@@ -149,12 +152,17 @@ protected:
   SymmTensor _strain_increment;
 
   const bool _compute_JIntegral;
+  const bool _compute_InteractionIntegral;
+  bool _store_stress_older;
 
   //These are used in calculation of the J integral
   MaterialProperty<Real> * _SED;
   MaterialProperty<Real> * _SED_old;
   MaterialProperty<ColumnMajorMatrix> * _Eshelby_tensor;
   MaterialProperty<RealVectorValue> * _J_thermal_term_vec;
+
+  //This is used in calculation of the J Integral and Interaction Integral
+  MaterialProperty<Real> * _current_instantaneous_thermal_expansion_coef;
 
   virtual void initQpStatefulProperties();
 
@@ -194,6 +202,9 @@ protected:
 
   // Compute quantity used in thermal term of J Integral
   virtual void computeThermalJvec();
+
+  //Compute current thermal expansion coefficient, used in J Integral and Interaction Integral
+  virtual void computeCurrentInstantaneousThermalExpansionCoefficient();
 
   /*
    * Determine whether new cracks have formed.
@@ -250,7 +261,7 @@ protected:
 
   std::vector<SubdomainID> _block_id;
 
-  std::map<SubdomainID, ConstitutiveModel*> _constitutive_model;
+  std::map<SubdomainID, MooseSharedPointer<ConstitutiveModel> > _constitutive_model;
   // This set keeps track of the dynamic memory allocated in this object
   std::set<MooseSharedPointer<ConstitutiveModel> > _models_to_free;
   bool _constitutive_active;
@@ -258,15 +269,19 @@ protected:
   /// Compute the stress (sigma += deltaSigma)
   virtual void computeConstitutiveModelStress();
 
-  void createConstitutiveModel(const std::string & cm_name, const InputParameters & params);
+  void createConstitutiveModel(const std::string & cm_name);
+
+  ///@{ Restartable data to check for the zeroth and first time steps for thermal calculations
+  bool & _step_zero;
+  bool & _step_one;
+  ///@}
 
 
 private:
 
   void computeCrackStrainAndOrientation( ColumnMajorMatrix & principal_strain );
 
-  SolidMechanics::Element * createElement( const std::string & name,
-                                           InputParameters & parameters );
+  SolidMechanics::Element * createElement();
 
   SolidMechanics::Element * _element;
 

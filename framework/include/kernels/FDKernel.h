@@ -16,7 +16,6 @@
 #define FDKERNEL_H
 
 #include "Kernel.h"
-#include "MooseObject.h"
 
 class FDKernel;
 
@@ -27,9 +26,7 @@ class FDKernel :
   public Kernel
 {
 public:
-  FDKernel(const std::string & name, InputParameters parameters);
-
-  virtual ~FDKernel(){};
+  FDKernel(const InputParameters & parameters);
 
   virtual void computeJacobian();
   /**
@@ -41,7 +38,8 @@ public:
    * @param jvar The number of the scalar variable
    */
   virtual void computeOffDiagJacobianScalar(unsigned int jvar);
- protected:
+
+protected:
   /**
    * Computes the residual when the current state of j-th variable
    * at element node i is perturbed by perturbation.

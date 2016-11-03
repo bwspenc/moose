@@ -15,9 +15,10 @@
 #include "Moose.h"
 #include "Factory.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 // Example 2 Includes
-#include "Convection.h"           // <- New include for our custom kernel
+#include "ExampleConvection.h"           // <- New include for our custom kernel
 
 template<>
 InputParameters validParams<ExampleApp>()
@@ -29,8 +30,8 @@ InputParameters validParams<ExampleApp>()
   return params;
 }
 
-ExampleApp::ExampleApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ExampleApp::ExampleApp(InputParameters parameters) :
+    MooseApp(parameters)
 {
   srand(processor_id());
 
@@ -49,7 +50,7 @@ void
 ExampleApp::registerObjects(Factory & factory)
 {
   // Register any custom objects you have built on the MOOSE Framework
-  registerKernel(Convection);  // <- registration
+  registerKernel(ExampleConvection);  // <- registration
 }
 
 void

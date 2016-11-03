@@ -18,8 +18,8 @@ InputParameters validParams<RichardsSUPG>()
   return params;
 }
 
-RichardsSUPG::RichardsSUPG(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters)
+RichardsSUPG::RichardsSUPG(const InputParameters & parameters) :
+    GeneralUserObject(parameters)
 {}
 
 void
@@ -32,3 +32,4 @@ RichardsSUPG::execute()
 
 void RichardsSUPG::finalize()
 {}
+

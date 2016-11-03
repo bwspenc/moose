@@ -26,9 +26,9 @@ InputParameters validParams<AddDamperAction>();
 class AddDamperAction: public MooseObjectAction
 {
 public:
-  AddDamperAction(const std::string & name, InputParameters params);
+  AddDamperAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif //ADDDAMPERACTION_H

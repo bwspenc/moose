@@ -27,7 +27,7 @@ InputParameters validParams<ConservedNoiseBase>();
 class ConservedNoiseBase : public ConservedNoiseInterface
 {
 public:
-  ConservedNoiseBase(const std::string & name, InputParameters parameters);
+  ConservedNoiseBase(const InputParameters & parameters);
 
   virtual ~ConservedNoiseBase() {}
 

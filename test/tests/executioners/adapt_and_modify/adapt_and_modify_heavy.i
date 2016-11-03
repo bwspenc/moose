@@ -6,7 +6,7 @@
   dim = 2
   nx = 15
   ny = 15
-#  distribution = serial
+#  parallel_type = replicated
 []
 
 [Variables]
@@ -106,8 +106,6 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []
 

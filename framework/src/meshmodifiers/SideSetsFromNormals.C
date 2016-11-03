@@ -15,6 +15,7 @@
 #include "SideSetsFromNormals.h"
 #include "Parser.h"
 #include "InputParameters.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/mesh_generation.h"
@@ -32,8 +33,8 @@ InputParameters validParams<SideSetsFromNormals>()
   return params;
 }
 
-SideSetsFromNormals::SideSetsFromNormals(const std::string & name, InputParameters parameters):
-    AddSideSetsBase(name, parameters),
+SideSetsFromNormals::SideSetsFromNormals(const InputParameters & parameters) :
+    AddSideSetsBase(parameters),
     _normals(getParam<std::vector<Point> >("normals"))
 {
 
@@ -45,15 +46,11 @@ SideSetsFromNormals::SideSetsFromNormals(const std::string & name, InputParamete
     mooseError("normal list and boundary list are not the same length");
 
   // Make sure that the normals are normalized
-  for (std::vector<Point>::iterator normal_it = _normals.begin(); normal_it != _normals.end(); ++normal_it)
+  for (auto & normal : _normals)
   {
-    mooseAssert(normal_it->size() >= 1e-5, "Normal is zero");
-    *normal_it /= normal_it->size();
+    mooseAssert(normal.norm() >= 1e-5, "Normal is zero");
+    normal /= normal.norm();
   }
-}
-
-SideSetsFromNormals::~SideSetsFromNormals()
-{
 }
 
 void
@@ -63,7 +60,7 @@ SideSetsFromNormals::modify()
     mooseError("_mesh_ptr must be initialized before calling SideSetsFromNormals::modify()!");
 
   // We can't call this in the constructor, it appears that _mesh_ptr is always NULL there.
-  _mesh_ptr->errorIfParallelDistribution("SideSetsFromNormals");
+  _mesh_ptr->errorIfDistributedMesh("SideSetsFromNormals");
 
   std::vector<BoundaryID> boundary_ids = _mesh_ptr->getBoundaryIDs(_boundary_names, true);
 
@@ -75,11 +72,11 @@ SideSetsFromNormals::modify()
   // We can't rely on flood catching them all here...
   MeshBase::const_element_iterator       el     = _mesh_ptr->getMesh().elements_begin();
   const MeshBase::const_element_iterator end_el = _mesh_ptr->getMesh().elements_end();
-  for ( ; el != end_el ; ++el)
+  for (; el != end_el ; ++el)
   {
     const Elem *elem = *el;
 
-    for (unsigned int side=0; side < elem->n_sides(); ++side)
+    for (unsigned int side = 0; side < elem->n_sides(); ++side)
     {
       if (elem->neighbor(side))
         continue;
@@ -87,7 +84,7 @@ SideSetsFromNormals::modify()
       _fe_face->reinit(elem, side);
       const std::vector<Point> & normals = _fe_face->get_normals();
 
-      for (unsigned int i=0; i<boundary_ids.size(); ++i)
+      for (unsigned int i = 0; i < boundary_ids.size(); ++i)
       {
         if (std::abs(1.0 - _normals[i]*normals[0]) < 1e-5)
           flood(*el, _normals[i], boundary_ids[i]);

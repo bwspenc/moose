@@ -12,8 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NumVars.h"
 #include "SubProblem.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<NumVars>()
@@ -26,8 +28,8 @@ InputParameters validParams<NumVars>()
   return params;
 }
 
-NumVars::NumVars(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+NumVars::NumVars(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _system(getParam<MooseEnum>("system"))
 {}
 
@@ -44,3 +46,4 @@ NumVars::getValue()
 
   mooseError("Unknown system type!");
 }
+

@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "INSExplicitTimestepSelector.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<INSExplicitTimestepSelector>()
@@ -26,8 +30,8 @@ InputParameters validParams<INSExplicitTimestepSelector>()
 
 
 
-INSExplicitTimestepSelector::INSExplicitTimestepSelector(const std::string & name, InputParameters parameters) :
-  ElementPostprocessor(name, parameters),
+INSExplicitTimestepSelector::INSExplicitTimestepSelector(const InputParameters & parameters) :
+  ElementPostprocessor(parameters),
   _vel_mag(coupledValue("vel_mag")),
 
   // Material properties
@@ -107,3 +111,4 @@ INSExplicitTimestepSelector::threadJoin(const UserObject & uo)
   const INSExplicitTimestepSelector & pps = dynamic_cast<const INSExplicitTimestepSelector &>(uo);
   _value = std::min(_value, pps._value);
 }
+

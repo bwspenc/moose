@@ -11,11 +11,10 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-
-#include "Material.h"
-
 #ifndef SPATIALSTATEFULMATERIAL_H
 #define SPATIALSTATEFULMATERIAL_H
+
+#include "Material.h"
 
 //Forward Declarations
 class SpatialStatefulMaterial;
@@ -29,8 +28,7 @@ InputParameters validParams<SpatialStatefulMaterial>();
 class SpatialStatefulMaterial : public Material
 {
 public:
-  SpatialStatefulMaterial(const std::string & name,
-                  InputParameters parameters);
+  SpatialStatefulMaterial(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();

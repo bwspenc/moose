@@ -16,11 +16,11 @@ whitelisted_kernels = ['Diffusion', 'TimeDerivative']
 
 
 # regular expressions to parse the PETSc debug output
-MfdRE = re.compile("^Finite difference Jacobian \(user-defined state\)")
+MfdRE = re.compile("^Finite[ -]difference Jacobian \(user-defined state\)")
 MhcRE = re.compile("^Hand-coded Jacobian \(user-defined state\)")
-MdiffRE = re.compile("^Hand-coded minus finite difference Jacobian \(user-defined state\)")
-rowRE = re.compile("row ([\d]+): ")
-valRE = re.compile(" \(([\d]+), ([+-.e\d]+)\)")
+MdiffRE = re.compile("^Hand-coded minus finite[ -]difference Jacobian \(user-defined state\)")
+rowRE = re.compile("row (\d+): ")
+valRE = re.compile(" \((\d+), ([+.e\d-]+)\)")
 
 
 # Get the real path of jacobian analyzer
@@ -93,6 +93,15 @@ def findExecutable(executable_option, method_option):
 #   sd1  kern3
 
 def analyze(dofdata, Mfd, Mhc, Mdiff) :
+  global options
+
+  if options.only is None :
+    only = None
+  else :
+    only = options.only.split(' ')
+
+  diagonal_only = options.diagonal_only
+
   dofs = dofdata['ndof']
   nlvars = [var['name'] for var in dofdata['vars']]
   numvars = len(nlvars)
@@ -133,14 +142,20 @@ def analyze(dofdata, Mfd, Mhc, Mdiff) :
   norm = norm**0.5
   all_good = True
 
-  e = 1e-4
+  rel_tol = options.rel_tol
+  abs_tol = options.abs_tol
 
   for i in range(nblocks) :
     printed = False
 
     for j in range(nblocks) :
 
-      if norm[i][j] > e*fd[i][j] :
+      if only is not None and ('%s,%s' % (nlvars[i], nlvars[j])) not in only :
+        continue
+      if i != j and diagonal_only :
+        continue
+
+      if norm[i][j] > rel_tol * fd[i][j] and norm[i][j] > abs_tol:
         if not printed :
           print "\nKernel for variable '%s':" % nlvars[i]
           printed = True
@@ -182,7 +197,10 @@ def saveMatrixToFile(M, dofs, filename) :
 #
 # Simple state machine parser for the MOOSE output
 #
-def parseOutput(output, dofdata, write_matrices) :
+def parseOutput(output, dofdata) :
+  global options
+
+  write_matrices = options.write_matrices
   dofs = dofdata['ndof']
 
   state = 0
@@ -264,9 +282,14 @@ if __name__ == '__main__':
   parser.add_option("-r", "--resize-mesh", dest="resize_mesh", action="store_true", help="Perform resizing of generated meshs (to speed up the testing).")
   parser.add_option("-s", "--mesh-size", dest="mesh_size", default=1, type="int", help="Set the mesh dimensions to this number of elements along each dimension (defaults to 1, requires -r option).")
 
+  parser.add_option("-o", "--only", dest="only", help="Test specified Jacobians only (space separated list of comma separated variable pairs).")
+  parser.add_option("-D", "--on-diagonal-only", dest="diagonal_only", action="store_true", help="Test on-diagonal Jacobians only.")
+
   parser.add_option("-d", "--debug", dest="debug", action="store_true", help="Output the command line used to run the application.")
   parser.add_option("-w", "--write-matrices", dest="write_matrices", action="store_true", help="Output the Jacobian matrices in gnuplot format.")
   parser.add_option("-n", "--no-auto-options", dest="noauto", action="store_true", help="Do not add automatic options to the invocation of the moose based application. Requres a specially prepared input file for debugging.")
+  parser.add_option("--rel-tol", dest="rel_tol", default=1e-4, type="float", help="The relative tolerance on the Jacobian elements between the hand-coded and those evaluated with finite difference.")
+  parser.add_option("--abs-tol", dest="abs_tol", default=1e-12, type="float", help="The absolute tolerance on the Jacobian elements between the hand-coded and those evaluated with finite difference.")
 
   (options, args) = parser.parse_args()
 
@@ -374,4 +397,4 @@ if __name__ == '__main__':
     sys.exit(1)
 
   # parse the raw output, which contains the PETSc debug information
-  parseOutput(data, dofdata, options.write_matrices)
+  parseOutput(data, dofdata)

@@ -15,17 +15,17 @@
 #ifndef PHYSICSBASEDPRECONDITIONER_H
 #define PHYSICSBASEDPRECONDITIONER_H
 
-//Global includes
-#include <vector>
 // MOOSE includes
 #include "MoosePreconditioner.h"
-//libMesh includes
+
+// libMesh includes
 #include "libmesh/preconditioner.h"
-#include "libmesh/system.h"
 #include "libmesh/linear_implicit_system.h"
 
+// C++ includes
+#include <vector>
 
-class FEProblem;
+// Forward declarations
 class NonlinearSystem;
 class PhysicsBasedPreconditioner;
 
@@ -43,11 +43,7 @@ public:
   /**
    *  Constructor. Initializes PhysicsBasedPreconditioner data structures
    */
-  PhysicsBasedPreconditioner (const std::string & name, InputParameters params);
-
-  /**
-   * Destructor.
-   */
+  PhysicsBasedPreconditioner (const InputParameters & params);
   virtual ~PhysicsBasedPreconditioner ();
 
   /**
@@ -65,19 +61,19 @@ public:
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear ();
+  virtual void clear();
 
   /**
    * Initialize data structures if not done so already.
    */
-  virtual void init ();
+  virtual void init();
 
   /**
    * This is called every time the "operator might have changed".
    *
    * This is essentially where you need to fill in your preconditioning matrix.
    */
-  virtual void setup ();
+  virtual void setup();
 
 protected:
   /// The nonlinear system this PBP is associated with (convenience reference)

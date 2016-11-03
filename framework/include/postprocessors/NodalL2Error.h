@@ -28,13 +28,12 @@ InputParameters validParams<NodalL2Error>();
 class NodalL2Error : public NodalVariablePostprocessor
 {
 public:
-  NodalL2Error(const std::string & name, InputParameters parameters);
-  virtual ~NodalL2Error();
+  NodalL2Error(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual Real getValue() override;
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
   Real _integral_value;

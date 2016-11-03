@@ -46,19 +46,19 @@
 [Executioner]
   # Preconditioned JFNK (default)
   type = Steady
-  restart_file_base = pointer_load_error_out_cp/0001
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./out]
     type = Checkpoint
     num_files = 1
   [../]
+[]
+
+[Problem]
+  restart_file_base = pointer_load_error_out_cp/0001
 []

@@ -34,33 +34,19 @@ class VectorOfPostprocessors :
 public:
   /**
     * Class constructor
-    * @param name The name of the object
     * @param parameters The input parameters
     */
-  VectorOfPostprocessors(const std::string & name, InputParameters parameters);
-
-  /**
-   * Destructor
-   */
-  virtual ~VectorOfPostprocessors() {}
+  VectorOfPostprocessors(const InputParameters & parameters);
 
   /**
    * Initialize, clears the postprocessor vector
    */
-  virtual void initialize();
+  virtual void initialize() override;
 
   /**
    * Populates the postprocessor vector of values with the supplied postprocessors
    */
-  virtual void execute();
-
-  ///@{
-  /**
-   * no-op because the postprocessors are already parallel consistent
-   */
-  virtual void finalize() {}
-  virtual void threadJoin(const UserObject &) {}
-  ///@}
+  virtual void execute() override;
 
 protected:
   /// The VectorPostprocessorValue object where the results are stored

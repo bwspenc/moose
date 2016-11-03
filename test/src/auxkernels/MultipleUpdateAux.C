@@ -26,11 +26,11 @@ InputParameters validParams<MultipleUpdateAux>()
   return params;
 }
 
-MultipleUpdateAux::MultipleUpdateAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+MultipleUpdateAux::MultipleUpdateAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _nl_u(coupledValue("u")),
-    _var1(coupledValue("var1")),
-    _var2(coupledValue("var2"))
+    _var1(writableCoupledValue("var1")),
+    _var2(writableCoupledValue("var2"))
 {
 }
 

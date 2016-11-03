@@ -24,7 +24,7 @@ InputParameters validParams<TensorMechanicsPlasticWeakPlaneTensile>();
 class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticModel
 {
  public:
-  TensorMechanicsPlasticWeakPlaneTensile(const std::string & name, InputParameters parameters);
+  TensorMechanicsPlasticWeakPlaneTensile(const InputParameters & parameters);
 
   /**
    * The active yield surfaces, given a vector of yield functions.
@@ -38,10 +38,10 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param stress stress tensor
    * @param intnl internal parameter
    * @param Eijkl elasticity tensor (stress = Eijkl*strain)
-   * @param act (output) act[i] = true if the i_th yield function is active
-   * @param returned_stress (output) Approximate value of the returned stress
+   * @param[out] act act[i] = true if the i_th yield function is active
+   * @param[out] returned_stress Approximate value of the returned stress
    */
-  virtual void activeConstraints(const std::vector<Real> & f, const RankTwoTensor & stress, const Real & intnl, const RankFourTensor & Eijkl, std::vector<bool> & act, RankTwoTensor & returned_stress) const;
+  virtual void activeConstraints(const std::vector<Real> & f, const RankTwoTensor & stress, Real intnl, const RankFourTensor & Eijkl, std::vector<bool> & act, RankTwoTensor & returned_stress) const;
 
   /// Returns the model name (WeakPlaneTensile)
   virtual std::string modelName() const;
@@ -56,7 +56,7 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param intnl internal parameter
    * @return the yield function
    */
-  Real yieldFunction(const RankTwoTensor & stress, const Real & intnl) const;
+  Real yieldFunction(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of yield function with respect to stress
@@ -64,7 +64,7 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param intnl internal parameter
    * @return df_dstress(i, j) = dyieldFunction/dstress(i, j)
    */
-  RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, const Real & intnl) const;
+  RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of yield function with respect to the internal parameter
@@ -72,7 +72,7 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param intnl internal parameter
    * @return the derivative
    */
-  Real dyieldFunction_dintnl(const RankTwoTensor & stress, const Real & intnl) const;
+  Real dyieldFunction_dintnl(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The flow potential
@@ -80,7 +80,7 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param intnl internal parameter
    * @return the flow potential
    */
-  RankTwoTensor flowPotential(const RankTwoTensor & stress, const Real & intnl) const;
+  RankTwoTensor flowPotential(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of the flow potential with respect to stress
@@ -88,7 +88,7 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param intnl internal parameter
    * @return dr_dstress(i, j, k, l) = dr(i, j)/dstress(k, l)
    */
-  RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress, const Real & intnl) const;
+  RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of the flow potential with respect to the internal parameter
@@ -96,7 +96,7 @@ class TensorMechanicsPlasticWeakPlaneTensile : public TensorMechanicsPlasticMode
    * @param intnl internal parameter
    * @return dr_dintnl(i, j) = dr(i, j)/dintnl
    */
-  RankTwoTensor dflowPotential_dintnl(const RankTwoTensor & stress, const Real & intnl) const;
+  RankTwoTensor dflowPotential_dintnl(const RankTwoTensor & stress, Real intnl) const;
 
   /// tensile strength as a function of residual value, rate, and internal_param
   virtual Real tensile_strength(const Real internal_param) const;

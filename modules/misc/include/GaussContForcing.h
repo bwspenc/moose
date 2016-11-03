@@ -22,7 +22,7 @@ class GaussContForcing : public Kernel
 {
 public:
 
-  GaussContForcing(const std::string & name, InputParameters parameters);
+  GaussContForcing(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

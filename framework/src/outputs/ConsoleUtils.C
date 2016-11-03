@@ -12,9 +12,6 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-// STL includes
-#include <ostream>
-
 // MOOSE includes
 #include "ConsoleUtils.h"
 #include "MooseApp.h"
@@ -23,12 +20,20 @@
 #include "Executioner.h"
 #include "Conversion.h"
 #include "OutputWarehouse.h"
+#include "MooseMesh.h"
+#include "NonlinearSystem.h"
 
 // libMesh includes
 #include "libmesh/string_to_enum.h"
 
 namespace ConsoleUtils
 {
+
+std::string
+indent(unsigned int spaces)
+{
+  return std::string(spaces, ' ');
+}
 
 
 std::string
@@ -62,8 +67,8 @@ outputMeshInformation(FEProblem & problem, bool verbose)
   if (verbose)
   {
     oss << "Mesh: " << '\n'
-        << std::setw(console_field_width) << "  Distribution: " << (moose_mesh.isParallelMesh() ? "parallel" : "serial")
-        << (moose_mesh.isDistributionForced() ? " (forced) " : "") << '\n'
+        << std::setw(console_field_width) << "  Parallel Type: " << (moose_mesh.isDistributedMesh() ? "distributed" : "replicated")
+        << (moose_mesh.isParallelTypeForced() ? " (forced) " : "") << '\n'
         << std::setw(console_field_width) << "  Mesh Dimension: " << mesh.mesh_dimension() << '\n'
         << std::setw(console_field_width) << "  Spatial Dimension: " << mesh.spatial_dimension() << '\n';
   }
@@ -80,10 +85,10 @@ outputMeshInformation(FEProblem & problem, bool verbose)
 
     oss << std::setw(console_field_width) << "  Num Subdomains: "       << static_cast<std::size_t>(mesh.n_subdomains()) << '\n'
         << std::setw(console_field_width) << "  Num Partitions: "       << static_cast<std::size_t>(mesh.n_partitions()) << '\n';
-  if (problem.n_processors() > 1 && moose_mesh.partitionerName() != "")
-    oss << std::setw(console_field_width) << "  Partitioner: "       << moose_mesh.partitionerName()
-        << (moose_mesh.isPartitionerForced() ? " (forced) " : "")
-        << '\n';
+    if (problem.n_processors() > 1)
+      oss << std::setw(console_field_width) << "  Partitioner: "       << moose_mesh.partitionerName()
+          << (moose_mesh.isPartitionerForced() ? " (forced) " : "")
+          << '\n';
   }
 
   oss << '\n';
@@ -209,7 +214,7 @@ outputExecutionInformation(MooseApp & app, FEProblem & problem)
   std::stringstream oss;
   oss << std::left;
 
-  Executioner * exec = app.actionWarehouse().executioner().get();
+  Executioner * exec = app.getExecutioner();
 
   oss << "Execution Information:\n"
       << std::setw(console_field_width) << "  Executioner: " << demangle(typeid(*exec).name()) << '\n';
@@ -220,7 +225,7 @@ outputExecutionInformation(MooseApp & app, FEProblem & problem)
 
   oss << std::setw(console_field_width) << "  Solver Mode: " << Moose::stringify<Moose::SolveType>(problem.solverParams()._type) << '\n';
 
-  const std::string & pc_desc = problem.getPreconditionerDescription();
+  const std::string & pc_desc = problem.getPetscOptions().pc_description;
   if (!pc_desc.empty())
     oss << std::setw(console_field_width) << "  Preconditioner: " << pc_desc << '\n';
   oss << '\n';
@@ -235,21 +240,21 @@ outputOutputInformation(MooseApp & app)
   std::stringstream oss;
   oss << std::left;
 
-  const std::vector<Output *> & outputs = app.getOutputWarehouse().all();
+  const std::vector<Output *> outputs = app.getOutputWarehouse().getOutputs<Output>();
   oss << "Outputs:\n";
-  for (std::vector<Output *>::const_iterator it = outputs.begin(); it != outputs.end(); ++it)
+  for (const auto & out : outputs)
   {
-    // Display the "output_on" settings
-    const MultiMooseEnum & output_on = (*it)->outputOn();
-    oss << "  " << std::setw(console_field_width-2) << (*it)->name() <<  "\"" << output_on << "\"\n";
+    // Display the "execute_on" settings
+    const MultiMooseEnum & execute_on = out->executeOn();
+    oss << "  " << std::setw(console_field_width-2) << out->name() <<  "\"" << execute_on << "\"\n";
 
-    // Display the advanced "output_on" settings, only if they are different from "output_on"
-    if ((*it)->isAdvanced())
+    // Display the advanced "execute_on" settings, only if they are different from "execute_on"
+    if (out->isAdvanced())
     {
-      const OutputOnWarehouse & adv_on = (*it)->advancedOutputOn();
-      for (std::map<std::string, MultiMooseEnum>::const_iterator adv_it = adv_on.begin(); adv_it != adv_on.end(); ++adv_it)
-        if (output_on != adv_it->second)
-          oss << "    " << std::setw(console_field_width-4) << adv_it->first + ":" <<  "\"" << adv_it->second << "\"\n";
+      const OutputOnWarehouse & adv_on = out->advancedExecuteOn();
+      for (const auto & adv_it : adv_on)
+        if (execute_on != adv_it.second)
+          oss << "    " << std::setw(console_field_width-4) << adv_it.first + ":" <<  "\"" << adv_it.second << "\"\n";
     }
   }
 
@@ -257,7 +262,7 @@ outputOutputInformation(MooseApp & app)
 }
 
 
-std::string outputLegacyInformation(FEProblem & problem)
+std::string outputLegacyInformation(MooseApp & /*app*/, FEProblem & problem)
 {
   std::stringstream oss;
   oss << std::left;
@@ -273,7 +278,6 @@ std::string outputLegacyInformation(FEProblem & problem)
 
   return oss.str();
 }
-
 
 void
 insertNewline(std::stringstream &oss, std::streampos &begin, std::streampos &curr)

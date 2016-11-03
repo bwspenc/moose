@@ -8,9 +8,9 @@
   nx = 4
   ny = 4
   elem_type = QUAD4
-  # This test will not work in parallel with ParallelMesh enabled
+  # This test will not work in parallel with DistributedMesh enabled
   # due to a bug in PeriodicBCs.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Functions]
@@ -154,7 +154,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   csv = true
-  print_perf_log = true
 []

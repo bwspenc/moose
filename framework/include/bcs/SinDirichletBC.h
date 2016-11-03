@@ -15,11 +15,9 @@
 #ifndef SINDIRICHLETBC_H
 #define SINDIRICHLETBC_H
 
-#include "libmesh/libmesh_common.h"
 #include "NodalBC.h"
 
-
-//Forward Declarations
+// Forward Declarations
 class SinDirichletBC;
 
 template<>
@@ -29,10 +27,10 @@ class SinDirichletBC : public NodalBC
 {
 public:
 
-  SinDirichletBC(const std::string & name, InputParameters parameters);
+  SinDirichletBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
 private:
   Real _initial;

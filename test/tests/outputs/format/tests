@@ -24,6 +24,13 @@
     cli_args = '--yaml'
   [../]
 
+  [./no_double_executioner_output]
+    type = 'RunApp'
+    input = 'IGNORED'
+    absent_out = '/Executioner/\<type\>/Transient.*/Executioner/\<type\>/Transient'
+    cli_args = '--yaml /Executioner'
+  [../]
+
   [./tecplot_out_test]
     type = 'CheckFiles'
     input = 'output_test_tecplot.i'
@@ -42,6 +49,7 @@
     input = 'output_test_tecplot_binary.i'
     check_files = 'output_test_tecplot_binary_out_0000.dat'
     tecplot = false
+    allow_warnings = true
   [../]
 
   [./dump_test]
@@ -74,6 +82,7 @@
     input = 'pps_screen_out_warn.i'
     expect_out = "A Postprocessor utilizes the 'outputs' parameter; however, postprocessor output is disabled for the 'console' output object."
     allow_warnings = true
+    max_parallel = 1 # warning can mix on multiple processes
   [../]
 
   [./show_input_test]

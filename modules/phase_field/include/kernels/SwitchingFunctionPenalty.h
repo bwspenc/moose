@@ -24,7 +24,7 @@ InputParameters validParams<SwitchingFunctionPenalty>();
 class SwitchingFunctionPenalty : public DerivativeMaterialInterface<Kernel>
 {
 public:
-  SwitchingFunctionPenalty(const std::string & name, InputParameters parameters);
+  SwitchingFunctionPenalty(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

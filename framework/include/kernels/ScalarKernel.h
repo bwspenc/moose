@@ -16,30 +16,24 @@
 #define SCALARKERNEL_H
 
 #include "MooseObject.h"
-#include "Coupleable.h"
 #include "ScalarCoupleable.h"
 #include "SetupInterface.h"
 #include "FunctionInterface.h"
 #include "UserObjectInterface.h"
 #include "PostprocessorInterface.h"
 #include "TransientInterface.h"
-#include "Assembly.h"
-#include "MooseVariableScalar.h"
-#include "MooseVariable.h"
-#include "SubProblem.h"
 #include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
+#include "VectorPostprocessorInterface.h"
 
-// libMesh
-#include "libmesh/fe.h"
-#include "libmesh/quadrature.h"
-
+// Forward declarations
+class ScalarKernel;
 class MooseMesh;
 class Problem;
 class SubProblem;
-
-
-class ScalarKernel;
+class Assembly;
+class MooseVariableScalar;
+class SubProblem;
 
 template<>
 InputParameters validParams<ScalarKernel>();
@@ -53,10 +47,11 @@ class ScalarKernel :
   public PostprocessorInterface,
   public TransientInterface,
   public ZeroInterface,
-  public MeshChangedInterface
+  public MeshChangedInterface,
+  protected VectorPostprocessorInterface
 {
 public:
-  ScalarKernel(const std::string & name, InputParameters parameters);
+  ScalarKernel(const InputParameters & parameters);
 
   virtual void reinit() = 0;
   virtual void computeResidual() = 0;
@@ -86,7 +81,6 @@ protected:
   /// Scalar variable
   MooseVariableScalar & _var;
   MooseMesh & _mesh;
-//  unsigned int _dim;
 
   unsigned int _i, _j;
 

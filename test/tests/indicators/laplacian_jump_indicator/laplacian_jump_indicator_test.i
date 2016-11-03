@@ -4,7 +4,6 @@
   nx = 10
   ny = 10
   nz = 10
-  distribution = serial
 []
 
 [Variables]
@@ -58,14 +57,12 @@
 
 [Executioner]
   type = Steady
+  nl_rel_tol = 1.e-11
 
   # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

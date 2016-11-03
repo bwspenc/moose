@@ -4,8 +4,8 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef KKSACBULK_H
-#define KKSACBULK_H
+#ifndef KKSACBULKC_H
+#define KKSACBULKC_H
 
 #include "KKSACBulkBase.h"
 
@@ -25,7 +25,7 @@ InputParameters validParams<KKSACBulkC>();
 class KKSACBulkC : public KKSACBulkBase
 {
 public:
-  KKSACBulkC(const std::string & name, InputParameters parameters);
+  KKSACBulkC(const InputParameters & parameters);
 
 protected:
   virtual Real computeDFDOP(PFFunctionType type);
@@ -34,12 +34,12 @@ protected:
   /// phase a concentration
   std::string _ca_name;
   unsigned int _ca_var;
-  VariableValue & _ca;
+  const VariableValue & _ca;
 
   /// phase b concentration
   std::string _cb_name;
   unsigned int _cb_var;
-  VariableValue & _cb;
+  const VariableValue & _cb;
 
   /// Value of the switching function \f$ h(\eta) \f$
   const MaterialProperty<Real> & _prop_h;
@@ -52,6 +52,10 @@ protected:
 
   /// Second derivative of the free energy function \f$ \frac {d^2}{dc_b^2} F_b \f$
   const MaterialProperty<Real> & _prop_d2Fbdcb2;
+
+  /// Mixed partial derivatives of the free energy function wrt ca and
+  /// any other coupled variables \f$ \frac {d^2}{dc_a dq} F_a \f$
+  std::vector<const MaterialProperty<Real>* > _prop_d2Fadcadarg;
 };
 
 #endif //KKSACBULKC_H

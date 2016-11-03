@@ -4,7 +4,9 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "SolidMechY.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<SolidMechY>()
@@ -15,8 +17,8 @@ InputParameters validParams<SolidMechY>()
   return params;
 }
 
-SolidMechY::SolidMechY(const std::string & name, InputParameters parameters) :
-    SolidMech(name, parameters),
+SolidMechY::SolidMechY(const InputParameters & parameters) :
+    SolidMech(parameters),
     _mesh_dimension(_mesh.dimension()),
     _x_var(coupled("x")),
     _x(coupledValue("x")),
@@ -78,3 +80,4 @@ SolidMechY::computeQpOffDiagJacobian(unsigned int jvar)
 
     return _c1*(_grad_test[_i][_qp]*value);
   }
+

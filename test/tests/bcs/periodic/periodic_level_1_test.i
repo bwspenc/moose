@@ -9,7 +9,7 @@
   zmax = 0
   elem_type = QUAD4
   uniform_refine = 4
-  distribution = SERIAL #This is because of floating point roundoff being different with parallel mesh
+  parallel_type = replicated # This is because of floating point roundoff being different with DistributedMesh
 []
 
 [Variables]
@@ -85,7 +85,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = level1
   exodus = true
-  print_perf_log = true
 []

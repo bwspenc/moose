@@ -31,9 +31,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -229,15 +227,15 @@
     outputs = console
   [../]
   [./f0]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = should_be_zero0_fcn
   [../]
   [./f1]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = should_be_zero1_fcn
   [../]
   [./f2]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = should_be_zero2_fcn
   [../]
 []
@@ -265,8 +263,10 @@
 
 [UserObjects]
   [./hard]
-    type = TensorMechanicsHardeningConstant
-    value = 1E6
+    type = TensorMechanicsHardeningCubic
+    value_0 = 1E6
+    value_residual = 0
+    internal_limit = 1
   [../]
   [./tensile]
     type = TensorMechanicsPlasticTensileMulti
@@ -287,9 +287,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./multi]
     type = ComputeMultiPlasticityStress
@@ -300,7 +298,7 @@
     max_NR_iterations = 5
     min_stepsize = 1E-3
     max_stepsize_for_dumb = 1
-    debug_fspb = 1
+    debug_fspb = crash
     debug_jac_at_stress = '10 0 0 0 10 0 0 0 10'
     debug_jac_at_pm = '1 1 1'
     debug_jac_at_intnl = '1 1 1'
@@ -320,12 +318,8 @@
 
 [Outputs]
   file_base = random_planar
-  output_initial = true
   exodus = false
-  print_linear_residuals = true
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
-  [../]
+    [../]
 []

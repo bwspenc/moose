@@ -13,25 +13,26 @@
 /****************************************************************/
 
 #include "InternalSideUserObject.h"
+#include "Assembly.h"
 
 template<>
 InputParameters validParams<InternalSideUserObject>()
 {
   InputParameters params = validParams<UserObject>();
   params += validParams<BlockRestrictable>();
-  params.addPrivateParam<bool>("use_bnd_material", true);
+  params += validParams<TwoMaterialPropertyInterface>();
   return params;
 }
 
-InternalSideUserObject::InternalSideUserObject(const std::string & name, InputParameters parameters) :
-    UserObject(name, parameters),
+InternalSideUserObject::InternalSideUserObject(const InputParameters & parameters) :
+    UserObject(parameters),
     BlockRestrictable(parameters),
-    MaterialPropertyInterface(parameters, blockIDs()),
-    NeighborCoupleable(parameters, false, false),
+    TwoMaterialPropertyInterface(this, blockIDs()),
+    NeighborCoupleable(this, false, false),
     MooseVariableDependencyInterface(),
-    UserObjectInterface(parameters),
-    TransientInterface(parameters, "internal_side_user_object"),
-    PostprocessorInterface(parameters),
+    UserObjectInterface(this),
+    TransientInterface(this),
+    PostprocessorInterface(this),
     ZeroInterface(parameters),
     _mesh(_subproblem.mesh()),
     _q_point(_assembly.qPointsFace()),
@@ -48,10 +49,6 @@ InternalSideUserObject::InternalSideUserObject(const std::string & name, InputPa
 {
   // Keep track of which variables are coupled so we know what we depend on
   const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
-  for (unsigned int i=0; i<coupled_vars.size(); i++)
-    addMooseVariableDependency(coupled_vars[i]);
-}
-
-InternalSideUserObject::~InternalSideUserObject()
-{
+  for (const auto & var : coupled_vars)
+    addMooseVariableDependency(var);
 }

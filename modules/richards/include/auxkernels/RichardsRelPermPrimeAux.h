@@ -25,13 +25,13 @@ InputParameters validParams<RichardsRelPermPrimeAux>();
 class RichardsRelPermPrimeAux: public AuxKernel
 {
 public:
-  RichardsRelPermPrimeAux(const std::string & name, InputParameters parameters);
+  RichardsRelPermPrimeAux(const InputParameters & parameters);
 
 protected:
   virtual Real computeValue();
 
   /// effective saturation
-  VariableValue & _seff_var;
+  const VariableValue & _seff_var;
 
   /// userobject that defines relative permeability function
   const RichardsRelPerm & _relperm_UO;

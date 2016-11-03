@@ -19,7 +19,7 @@ InputParameters validParams<ContactPenetrationAuxAction>();
 class ContactPenetrationAuxAction: public Action
 {
 public:
-  ContactPenetrationAuxAction(const std::string & name, InputParameters params);
+  ContactPenetrationAuxAction(const InputParameters & params);
 
   virtual void act();
 

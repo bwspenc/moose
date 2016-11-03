@@ -19,8 +19,7 @@ InputParameters validParams<VolumetricModel>();
 class VolumetricModel : public Material
 {
 public:
-  VolumetricModel( const std::string & name,
-                   InputParameters & parameters );
+  VolumetricModel( const InputParameters & parameters );
   virtual ~VolumetricModel();
 
   virtual void modifyStrain(const unsigned int qp,

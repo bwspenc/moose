@@ -228,7 +228,7 @@
   line_search = 'none'
 
 
-  nl_abs_tol = 1e-11
+  nl_abs_tol = 1e-9
   nl_rel_tol = 1e-12
 
 
@@ -242,13 +242,10 @@
 
 [Outputs]
   file_base = out_jac_rz_smp
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./exodus]
     type = Exodus
     elemental_as_nodal = true
-    output_nonlinear = true
+    execute_on = 'initial timestep_end nonlinear'
     nonlinear_residual_dt_divisor = 100
   [../]
 [] # Outputs

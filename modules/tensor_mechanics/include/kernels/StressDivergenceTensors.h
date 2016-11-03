@@ -7,14 +7,14 @@
 #ifndef STRESSDIVERGENCETENSORS_H
 #define STRESSDIVERGENCETENSORS_H
 
-#include "Kernel.h"
-#include "ElasticityTensorR4.h"
+#include "ALEKernel.h"
 #include "RankTwoTensor.h"
+#include "RankFourTensor.h"
 
 //Forward Declarations
 class StressDivergenceTensors;
-class ElasticityTensorR4;
 class RankTwoTensor;
+class RankFourTensor;
 
 template<>
 InputParameters validParams<StressDivergenceTensors>();
@@ -24,36 +24,42 @@ InputParameters validParams<StressDivergenceTensors>();
  * RankFourTensor and RankTwoTensors instead of SymmElasticityTensors and SymmTensors.  This is done
  * to allow for more mathematical transparancy.
  */
-class StressDivergenceTensors : public Kernel
+class StressDivergenceTensors : public ALEKernel
 {
 public:
-  StressDivergenceTensors(const std::string & name, InputParameters parameters);
+  StressDivergenceTensors(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
+  virtual void computeJacobian();
+  virtual void computeOffDiagJacobian(unsigned int jvar);
+
+  virtual void computeFiniteDeformJacobian();
+
   std::string _base_name;
+  bool _use_finite_deform_jacobian;
 
   const MaterialProperty<RankTwoTensor> & _stress;
-  const MaterialProperty<ElasticityTensorR4> & _Jacobian_mult;
+  const MaterialProperty<RankFourTensor> & _Jacobian_mult;
+
+  std::vector<RankFourTensor> _finite_deform_Jacobian_mult;
+  const MaterialProperty<RankTwoTensor> * _deformation_gradient;
+  const MaterialProperty<RankTwoTensor> * _deformation_gradient_old;
+  const MaterialProperty<RankTwoTensor> * _rotation_increment;
   // MaterialProperty<RankTwoTensor> & _d_stress_dT;
 
   const unsigned int _component;
 
-  const bool _xdisp_coupled;
-  const bool _ydisp_coupled;
-  const bool _zdisp_coupled;
+  /// Coupled displacement variables
+  unsigned int _ndisp;
+  std::vector<unsigned int> _disp_var;
+
   const bool _temp_coupled;
 
-  const unsigned int _xdisp_var;
-  const unsigned int _ydisp_var;
-  const unsigned int _zdisp_var;
   const unsigned int _temp_var;
-
-private:
-
 };
 
 #endif //STRESSDIVERGENCETENSORS_H

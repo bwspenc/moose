@@ -54,7 +54,6 @@
     type = SolutionUserObject
     mesh = gold/2d_out.e
     system_variables = 'disp_x disp_y temp'
-    timestep = -1
   [../]
 []
 
@@ -207,10 +206,7 @@
 
 [Outputs]
   file_base = 3dy_out
-  interval = 1
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
   [./console]
     type = Console
     perf_log = true

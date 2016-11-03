@@ -15,15 +15,18 @@
 #ifndef EBSDACCESSFUNCTORSTEST_H
 #define EBSDACCESSFUNCTORSTEST_H
 
+#include "EBSDAccessFunctors.h"
+
 //CPPUnit includes
 #include "cppunit/extensions/HelperMacros.h"
 
-class EBSDAccessFunctorsTest : public CppUnit::TestFixture
+class EBSDAccessFunctorsTest :
+  public CppUnit::TestFixture,
+  public EBSDAccessFunctors
 {
   CPPUNIT_TEST_SUITE( EBSDAccessFunctorsTest );
 
-  CPPUNIT_TEST( pointData );
-  CPPUNIT_TEST( avgData );
+  CPPUNIT_TEST( test );
 
   CPPUNIT_TEST_SUITE_END();
 
@@ -31,10 +34,13 @@ public:
   void setUp();
   void tearDown();
 
-  void pointData();
-  void avgData();
+  void test();
 
 private:
+  EBSDPointData _point;
+  EBSDAvgData _avg;
+
+  EulerAngles _angles;
 };
 
 #endif //EBSDACCESSFUNCTORSTEST_H

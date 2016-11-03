@@ -23,8 +23,8 @@ InputParameters validParams<FunctionNeumannBC>()
   return params;
 }
 
-FunctionNeumannBC::FunctionNeumannBC(const std::string & name, InputParameters parameters) :
-    IntegratedBC(name, parameters),
+FunctionNeumannBC::FunctionNeumannBC(const InputParameters & parameters) :
+    IntegratedBC(parameters),
     _func(getFunction("function"))
 {
 }
@@ -34,3 +34,4 @@ FunctionNeumannBC::computeQpResidual()
 {
   return -_test[_i][_qp] * _func.value(_t, _q_point[_qp]);
 }
+

@@ -26,9 +26,9 @@ InputParameters validParams<CrackDataSampler>()
   return params;
 }
 
-CrackDataSampler::CrackDataSampler(const std::string & name, InputParameters parameters) :
-    GeneralVectorPostprocessor(name, parameters),
-    SamplerBase(name, parameters, this, _communicator),
+CrackDataSampler::CrackDataSampler(const InputParameters & parameters) :
+    GeneralVectorPostprocessor(parameters),
+    SamplerBase(parameters, this, _communicator),
     _crack_front_definition(&getUserObject<CrackFrontDefinition>("crack_front_definition")),
     _position_type(getParam<MooseEnum>("position_type"))
 {
@@ -40,7 +40,7 @@ CrackDataSampler::CrackDataSampler(const std::string & name, InputParameters par
     _domain_integral_postprocessor_values.push_back(&getPostprocessorValueByName(pps_names[i]));
   }
   std::vector<std::string> var_names;
-  var_names.push_back(name);
+  var_names.push_back(name());
   SamplerBase::setupVariables(var_names);
 }
 
@@ -58,19 +58,22 @@ CrackDataSampler::initialize()
 void
 CrackDataSampler::execute()
 {
-  std::vector<Real> values;
-  for (unsigned int i=0; i<_domain_integral_postprocessor_values.size(); ++i)
+  if (processor_id() == 0)
   {
-    values.clear();
-    const Point *crack_front_point = _crack_front_definition->getCrackFrontPoint(i);
-    Real position;
-    if (_position_type == "Angle")
-      position = _crack_front_definition->getAngleAlongFront(i);
-    else
-      position = _crack_front_definition->getDistanceAlongFront(i);
+    std::vector<Real> values;
+    for (unsigned int i=0; i<_domain_integral_postprocessor_values.size(); ++i)
+    {
+      values.clear();
+      const Point *crack_front_point = _crack_front_definition->getCrackFrontPoint(i);
+      Real position;
+      if (_position_type == "Angle")
+        position = _crack_front_definition->getAngleAlongFront(i);
+      else
+        position = _crack_front_definition->getDistanceAlongFront(i);
 
-    values.push_back(*_domain_integral_postprocessor_values[i]);
-    addSample(*crack_front_point, position, values);
+      values.push_back(*_domain_integral_postprocessor_values[i]);
+      addSample(*crack_front_point, position, values);
+    }
   }
 }
 
@@ -78,11 +81,4 @@ void
 CrackDataSampler::finalize()
 {
   SamplerBase::finalize();
-}
-
-void
-CrackDataSampler::threadJoin(const SamplerBase & y)
-{
-  const CrackDataSampler & vpp = static_cast<const CrackDataSampler &>(y);
-  SamplerBase::threadJoin(vpp);
 }

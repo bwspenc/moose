@@ -27,7 +27,7 @@ class ElementL2Diff :
   public ElementIntegralVariablePostprocessor
 {
 public:
-  ElementL2Diff(const std::string & name, InputParameters parameters);
+  ElementL2Diff(const InputParameters & parameters);
 
 protected:
 
@@ -38,7 +38,7 @@ protected:
 
   virtual Real computeQpIntegral();
 
-  VariableValue & _u_old;
+  const VariableValue & _u_old;
 };
 
 #endif //ELEMENTL2DIFF_H

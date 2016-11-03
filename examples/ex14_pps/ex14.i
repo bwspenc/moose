@@ -60,8 +60,6 @@
 
 [Executioner]
   type = Steady
-
-  # Preconditioned JFNK (default)
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
@@ -77,6 +75,7 @@
     [./uniform]
       type = UniformMarker
       mark = REFINE
+      outputs = none
     [../]
   [../]
 []
@@ -93,9 +92,7 @@
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
   csv = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

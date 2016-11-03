@@ -36,8 +36,8 @@ InputParameters validParams<ThermalContactBCsAction>()
   return params;
 }
 
-ThermalContactBCsAction::ThermalContactBCsAction(const std::string & name, InputParameters params) :
-  Action(name, params)
+ThermalContactBCsAction::ThermalContactBCsAction(const InputParameters & params) :
+  Action(params)
 {
 }
 
@@ -49,7 +49,10 @@ ThermalContactBCsAction::act()
   InputParameters params = _factory.getValidParams(getParam<std::string>("type"));
 
   // Extract global params
-  _app.parser().extractParams(_name, params);
+  if (isParamValid("parser_syntax"))
+    _app.parser().extractParams(getParam<std::string>("parser_syntax"), params);
+  else
+    mooseError("The 'parser_syntax' parameter is not valid, which indicates that this actions was not created by the Parser, which is not currently supported.");
 
   if (isParamValid("save_in"))
   {
@@ -60,11 +63,8 @@ ThermalContactBCsAction::act()
 
   if (!quadrature)
   {
-    std::vector<VariableName> vars(1);
-    vars[0] = "penetration";
-    params.set<std::vector<VariableName> >("gap_distance") = vars;
-    vars[0] = ThermalContactAuxVarsAction::getGapValueName(_pars);
-    params.set<std::vector<VariableName> >("gap_temp") = vars;
+    params.set<std::vector<VariableName> >("gap_distance") = {"penetration"};
+    params.set<std::vector<VariableName> >("gap_temp") = {ThermalContactAuxVarsAction::getGapValueName(_pars)};
   }
   else
   {
@@ -75,9 +75,7 @@ ThermalContactBCsAction::act()
     params.set<bool>("use_displaced_mesh") = true;
   }
 
-  std::vector<BoundaryName> bnds(1, getParam<BoundaryName>("slave"));
-  params.set<std::vector<BoundaryName> >("boundary") = bnds;
-
+  params.set<std::vector<BoundaryName> >("boundary") = {getParam<BoundaryName>("slave")};
   params.set<std::string>("appended_property_name") = getParam<std::string>("appended_property_name");
 
   params.addCoupledVar("disp_x", "The x displacement");
@@ -85,20 +83,11 @@ ThermalContactBCsAction::act()
   params.addCoupledVar("disp_z", "The z displacement");
 
   if (isParamValid("disp_x"))
-  {
-    std::vector<VariableName> disp_x(1, getParam<VariableName>("disp_x"));
-    params.set< std::vector<VariableName> >("disp_x") = disp_x;
-  }
+    params.set< std::vector<VariableName> >("disp_x") = {getParam<VariableName>("disp_x")};
   if (isParamValid("disp_y"))
-  {
-    std::vector<VariableName> disp_y(1, getParam<VariableName>("disp_y"));
-    params.set< std::vector<VariableName> >("disp_y") = disp_y;
-  }
+    params.set< std::vector<VariableName> >("disp_y") = {getParam<VariableName>("disp_y")};
   if (isParamValid("disp_z"))
-  {
-    std::vector<VariableName> disp_z(1, getParam<VariableName>("disp_z"));
-    params.set< std::vector<VariableName> >("disp_z") = disp_z;
-  }
+    params.set< std::vector<VariableName> >("disp_z") = {getParam<VariableName>("disp_z")};
 
   _problem->addBoundaryCondition(getParam<std::string>("type"),
       "gap_bc_" + Moose::stringify(n),
@@ -107,8 +96,7 @@ ThermalContactBCsAction::act()
   if (quadrature)
   {
     // Swap master and slave for this one
-    std::vector<BoundaryName> bnds(1, getParam<BoundaryName>("master"));
-    params.set<std::vector<BoundaryName> >("boundary") = bnds;
+    params.set<std::vector<BoundaryName> >("boundary") = {getParam<BoundaryName>("master")};
     params.set<BoundaryName>("paired_boundary") = getParam<BoundaryName>("slave");
 
     _problem->addBoundaryCondition(getParam<std::string>("type"),

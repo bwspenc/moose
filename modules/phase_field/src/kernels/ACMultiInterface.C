@@ -4,7 +4,9 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ACMultiInterface.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<ACMultiInterface>()
@@ -17,8 +19,8 @@ InputParameters validParams<ACMultiInterface>()
   return params;
 }
 
-ACMultiInterface::ACMultiInterface(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+ACMultiInterface::ACMultiInterface(const InputParameters & parameters) :
+    Kernel(parameters),
     _num_etas(coupledComponents("etas")),
     _eta(_num_etas),
     _grad_eta(_num_etas),
@@ -53,7 +55,7 @@ ACMultiInterface::ACMultiInterface(const std::string & name, InputParameters par
   }
 
   if (a < 0)
-    mooseError("Kernel variable must be listed in etas for ACMultiInterface kernel " << name);
+    mooseError("Kernel variable must be listed in etas for ACMultiInterface kernel " << name());
   else
     _a = a;
 }
@@ -141,3 +143,4 @@ ACMultiInterface::computeQpOffDiagJacobian(unsigned int jvar)
                  ) * _grad_eta_a[_qp])
          );
 }
+

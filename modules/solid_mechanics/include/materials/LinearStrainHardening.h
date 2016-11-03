@@ -12,8 +12,7 @@
 class LinearStrainHardening : public SolidModel
 {
 public:
-  LinearStrainHardening( const std::string & name,
-                         InputParameters parameters );
+  LinearStrainHardening( const InputParameters & parameters);
   virtual ~LinearStrainHardening() {}
 
 };

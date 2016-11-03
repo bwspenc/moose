@@ -17,6 +17,10 @@
   elem_type = QUAD4
 []
 
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
 [Variables]
   [./diffused]
     order = FIRST
@@ -178,8 +182,6 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
   [../]
 
   [./diff]
@@ -449,14 +451,17 @@
 []
 
 [Materials]
-  [./Anisotropic]
-    type = LinearElasticMaterial
-    block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-
+  [./elasticity_tensor]
+    type = ComputeElasticityTensor
     fill_method = symmetric21
     C_ijkl ='1111 1122 1133 1123 1113 1112 2222 2233 2223 2213 2212 3333 3323 3313 3312 2323 2313 2312 1313 1312 1212'
+  [../]
+  [./strain]
+    type = ComputeSmallStrain
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress]
+    type = ComputeLinearElasticStress
   [../]
 []
 
@@ -515,8 +520,5 @@
 
 [Outputs]
   file_base = Tensor_test
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

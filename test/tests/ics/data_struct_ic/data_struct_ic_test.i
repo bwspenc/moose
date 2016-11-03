@@ -3,6 +3,9 @@
   nx = 10
   ny = 10
   dim = 2
+
+  # DataStructIC creates an IC based on node numbering
+  parallel_type = replicated
 []
 
 [Variables]
@@ -51,7 +54,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

@@ -26,7 +26,7 @@ InputParameters validParams<SolutionRasterizer>();
 class SolutionRasterizer : public SolutionUserObject
 {
 public:
-  SolutionRasterizer(const std::string & name, InputParameters parameters);
+  SolutionRasterizer(const InputParameters & parameters);
 
   virtual ~SolutionRasterizer() {}
 

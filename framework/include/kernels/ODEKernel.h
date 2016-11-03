@@ -29,13 +29,12 @@ InputParameters validParams<ODEKernel>();
 class ODEKernel : public ScalarKernel
 {
 public:
-  ODEKernel(const std::string & name, InputParameters parameters);
-  virtual ~ODEKernel();
+  ODEKernel(const InputParameters & parameters);
 
-  virtual void reinit();
-  virtual void computeResidual();
-  virtual void computeJacobian();
-  virtual void computeOffDiagJacobian(unsigned int jvar);
+  virtual void reinit() override;
+  virtual void computeResidual() override;
+  virtual void computeJacobian() override;
+  virtual void computeOffDiagJacobian(unsigned int jvar) override;
 
 protected:
   virtual Real computeQpResidual() = 0;

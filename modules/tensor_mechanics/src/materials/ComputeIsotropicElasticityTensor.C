@@ -19,9 +19,8 @@ InputParameters validParams<ComputeIsotropicElasticityTensor>()
   return params;
 }
 
-ComputeIsotropicElasticityTensor::ComputeIsotropicElasticityTensor(const std::string & name,
-                                                 InputParameters parameters) :
-    ComputeElasticityTensorBase(name, parameters),
+ComputeIsotropicElasticityTensor::ComputeIsotropicElasticityTensor(const InputParameters & parameters) :
+    ComputeElasticityTensorBase(parameters),
     _bulk_modulus_set( parameters.isParamValid("bulk_modulus") ),
     _lambda_set( parameters.isParamValid("lambda") ),
     _poissons_ratio_set( parameters.isParamValid("poissons_ratio") ),
@@ -63,3 +62,4 @@ ComputeIsotropicElasticityTensor::computeQpElasticityTensor()
   //Assign elasticity tensor at a given quad point
   _elasticity_tensor[_qp] = _Cijkl;
 }
+

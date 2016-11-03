@@ -18,20 +18,18 @@
 // MOOSE includes
 #include "MooseObject.h"
 #include "Restartable.h"
-#include "MooseTypes.h"
-#include "MooseMesh.h"
 #include "MeshChangedInterface.h"
 #include "SetupInterface.h"
 #include "AdvancedOutputUtils.h"
 
-// libMesh
-#include "libmesh/equation_systems.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/mesh_function.h"
-
 // Forward declarations
-class Problem;
 class Output;
+
+// libMesh forward declarations
+namespace libMesh
+{
+class EquationSystems;
+}
 
 template<>
 InputParameters validParams<Output>();
@@ -60,7 +58,7 @@ public:
    *
    * @see initAvailable init separate
    */
-  Output(const std::string & name, InputParameters & parameters);
+  Output(const InputParameters & parameters);
 
   /**
    * Get the output time.
@@ -99,9 +97,9 @@ public:
   const unsigned int & interval() const;
 
   /**
-   * Get the current 'output_on' selections for display
+   * Get the current 'execute_on' selections for display
    */
-  const MultiMooseEnum & outputOn() const;
+  const MultiMooseEnum & executeOn() const;
 
   /**
    * Returns true if this object is an AdvancedOutput object
@@ -109,11 +107,11 @@ public:
   bool isAdvanced();
 
   /**
-   * Returns the advanced output_on settings.
+   * Returns the advanced 'execute_on' settings.
    *
    * Check if this is valid first with isAdvanced()
    */
-  virtual const OutputOnWarehouse & advancedOutputOn() const;
+  virtual const OutputOnWarehouse & advancedExecuteOn() const;
 
   /**
    * Return the support output execution times
@@ -127,13 +125,17 @@ public:
    */
   void allowOutput(bool state) { _allow_output = state; }
 
+  /**
+   * A static helper for injecting deprecated parameters
+   */
+  static void addDeprecatedInputParameters(InputParameters & params);
+
 
 protected:
 
   /**
    * A single call to this function should output all the necessary data for a single timestep.
    * @param type The type execution flag (see Moose.h)
-   * @param force Ignore the flag and preform the output
    *
    * @see outputNodalVariables outputElementalVariables outputScalarVariables outputPostprocessors
    */
@@ -163,12 +165,6 @@ protected:
    */
   virtual void initialSetup();
 
-  /**
-   * A method for modifying "output_on" MultiMooseEnums with the short-cut flag options
-   * @param input A reference to the enum to modifiy
-   */
-  void applyOutputOnShortCutFlags(MultiMooseEnum & input);
-
   /// Pointer the the FEProblem object for output object (use this)
   FEProblem * _problem_ptr;
 
@@ -185,7 +181,7 @@ protected:
   bool _sequence;
 
   /// The common Execution types; this is used as the default execution type for everything except system information and input
-  MultiMooseEnum _output_on;
+  MultiMooseEnum _execute_on;
 
   /// The current time for output purposes
   Real & _time;
@@ -236,7 +232,7 @@ protected:
   // This is here rather than in AdvancedOutput to allow generic
   // access to this data from the Console object for displaying
   // the output settings.
-  OutputOnWarehouse _advanced_output_on;
+  OutputOnWarehouse _advanced_execute_on;
 
   friend class OutputWarehouse;
 };

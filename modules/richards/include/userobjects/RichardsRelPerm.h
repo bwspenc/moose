@@ -24,7 +24,7 @@ InputParameters validParams<RichardsRelPerm>();
 class RichardsRelPerm : public GeneralUserObject
 {
 public:
-  RichardsRelPerm(const std::string & name, InputParameters parameters);
+  RichardsRelPerm(const InputParameters & parameters);
 
   void initialize();
   void execute();

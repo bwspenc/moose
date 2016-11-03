@@ -2,7 +2,31 @@
 # Note: MOOSE applications are assumed to reside in peer directories relative to MOOSE and its modules.
 #       This can be overridden by using the MOOSE_DIR environment variable
 
+# list of application-wide excluded source files
+excluded_srcfiles :=
+
+#
+# Save off parameters for possible app.mk recursion
+#
+STACK ?= stack
+STACK := $(STACK).X
+$APPLICATION_DIR$(STACK) := $(APPLICATION_DIR)
+$APPLICATION_NAME$(STACK) := $(APPLICATION_NAME)
+$DEPEND_MODULES$(STACK) := $(DEPEND_MODULES)
+$BUILD_EXEC$(STACK) := $(BUILD_EXEC)
+$DEP_APPS$(STACK) := $(DEP_APPS)
+
 -include $(APPLICATION_DIR)/$(APPLICATION_NAME).mk
+
+#
+# Restore parameters
+#
+APPLICATION_DIR := $($APPLICATION_DIR$(STACK))
+APPLICATION_NAME := $($APPLICATION_NAME$(STACK))
+DEPEND_MODULES := $($DEPEND_MODULES$(STACK))
+BUILD_EXEC := $($BUILD_EXEC$(STACK))
+DEP_APPS := $($DEP_APPS$(STACK))
+STACK := $(basename $(STACK))
 
 ##############################################################################
 ######################### Application Variables ##############################
@@ -12,7 +36,9 @@
 SRC_DIRS    := $(APPLICATION_DIR)/src
 PLUGIN_DIR  := $(APPLICATION_DIR)/plugins
 
-srcfiles    := $(shell find $(SRC_DIRS) -name "*.C" -not -name main.C)
+excluded_srcfiles += main.C
+find_excludes     := $(foreach i, $(excluded_srcfiles), -not -name $(i))
+srcfiles    := $(shell find $(SRC_DIRS) -name "*.C" $(find_excludes))
 csrcfiles   := $(shell find $(SRC_DIRS) -name "*.c")
 fsrcfiles   := $(shell find $(SRC_DIRS) -name "*.f")
 f90srcfiles := $(shell find $(SRC_DIRS) -name "*.f90")
@@ -63,7 +89,7 @@ app_EXEC    := $(APPLICATION_DIR)/$(APPLICATION_NAME)-$(METHOD)
 # revision header
 CAMEL_CASE_NAME := $(shell echo $(APPLICATION_NAME) | perl -pe 's/(?:^|_)([a-z])/\u$$1/g')
 app_BASE_DIR    ?= base/
-app_HEADER      := $(APPLICATION_DIR)/include/$(app_base_dir)$(CAMEL_CASE_NAME)Revision.h
+app_HEADER      := $(APPLICATION_DIR)/include/$(app_BASE_DIR)$(CAMEL_CASE_NAME)Revision.h
 # depend modules
 depend_libs  := $(foreach i, $(DEPEND_MODULES), $(MOOSE_DIR)/modules/$(i)/lib/lib$(i)-$(METHOD).la)
 
@@ -91,6 +117,9 @@ app_LIBS_other := $(filter-out $(app_LIB),$(app_LIBS))
 app_HEADERS    := $(app_HEADER) $(app_HEADERS)
 app_INCLUDES   += $(app_INCLUDE)
 app_DIRS       += $(APPLICATION_DIR)
+
+# WARNING: the += operator does NOT work here!
+ADDITIONAL_CPPFLAGS := $(ADDITIONAL_CPPFLAGS) -D$(shell echo $(APPLICATION_NAME) | perl -pe 'y/a-z/A-Z/' | perl -pe 's/-//g')_ENABLED
 
 # dependencies
 -include $(app_deps)

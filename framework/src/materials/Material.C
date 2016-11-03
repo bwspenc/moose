@@ -12,12 +12,14 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "Material.h"
 #include "SubProblem.h"
 #include "MaterialData.h"
+#include "Assembly.h"
 
-// system includes
-#include <iostream>
+// libMesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<Material>()
@@ -25,12 +27,18 @@ InputParameters validParams<Material>()
   InputParameters params = validParams<MooseObject>();
   params += validParams<BlockRestrictable>();
   params += validParams<BoundaryRestrictable>();
+  params += validParams<TransientInterface>();
+  params += validParams<RandomInterface>();
+  params += validParams<MaterialPropertyInterface>();
 
   params.addParam<bool>("use_displaced_mesh", false, "Whether or not this object should use the displaced mesh for computation.  Note that in the case this is true but no displacements are provided in the Mesh block the undisplaced mesh will still be used.");
+  params.addParam<bool>("compute", true, "When false MOOSE will not call compute methods on this material, compute then "
+                                         "must be called retrieving the Material object via MaterialPropertyInterface::getMaterial "
+                                         "and calling the computeProerties method. Non-computed Materials are not sorted for dependencies.");
 
   // Outputs
   params += validParams<OutputInterface>();
-  params.set<std::vector<OutputName> >("outputs") =  std::vector<OutputName>(1, "none");
+  params.set<std::vector<OutputName> >("outputs") =  {"none"};
   params.addParam<std::vector<std::string> >("output_properties", "List of material properties, from this material, to output (outputs must also be defined to an output type)");
 
   params.addParamNamesToGroup("outputs output_properties", "Outputs");
@@ -41,34 +49,34 @@ InputParameters validParams<Material>()
 }
 
 
-Material::Material(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
+Material::Material(const InputParameters & parameters) :
+    MooseObject(parameters),
     BlockRestrictable(parameters),
-    BoundaryRestrictable(parameters, blockIDs()),
-    SetupInterface(parameters),
-    Coupleable(parameters, false),
+    BoundaryRestrictable(parameters, blockIDs(), false), // false for being _not_ nodal
+    SetupInterface(this),
+    Coupleable(this, false),
     MooseVariableDependencyInterface(),
-    ScalarCoupleable(parameters),
-    FunctionInterface(parameters),
-    UserObjectInterface(parameters),
-    TransientInterface(parameters, "materials"),
-    MaterialPropertyInterface(parameters, blockIDs(), boundaryIDs()),
-    PostprocessorInterface(parameters),
+    ScalarCoupleable(this),
+    FunctionInterface(this),
+    UserObjectInterface(this),
+    TransientInterface(this),
+    MaterialPropertyInterface(this, blockIDs(), boundaryIDs()),
+    PostprocessorInterface(this),
     DependencyResolverInterface(),
     Restartable(parameters, "Materials"),
     ZeroInterface(parameters),
     MeshChangedInterface(parameters),
 
-    // The false flag disables the automatic call  buildOutputVariableHideList;
+    // The false flag disables the automatic call buildOutputVariableHideList;
     // for Material objects the hide lists are handled by MaterialOutputAction
     OutputInterface(parameters, false),
+    RandomInterface(parameters, *parameters.get<FEProblem *>("_fe_problem"), parameters.get<THREAD_ID>("_tid"), false),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
     _fe_problem(*parameters.get<FEProblem *>("_fe_problem")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
-    _bnd(parameters.get<bool>("_bnd")),
-    _neighbor(getParam<bool>("_neighbor")),
-    _material_data(*parameters.get<MaterialData *>("_material_data")),
+    _bnd(_material_data_type != Moose::BLOCK_MATERIAL_DATA),
+    _neighbor(_material_data_type == Moose::NEIGHBOR_MATERIAL_DATA),
     _qp(std::numeric_limits<unsigned int>::max()),
     _qrule(_bnd ? _assembly.qRuleFace() : _assembly.qRule()),
     _JxW(_bnd ? _assembly.JxWFace() : _assembly.JxW()),
@@ -79,26 +87,13 @@ Material::Material(const std::string & name, InputParameters parameters) :
     _current_side(_neighbor ? _assembly.neighborSide() : _assembly.side()),
     _mesh(_subproblem.mesh()),
     _coord_sys(_assembly.coordSystem()),
+    _compute(getParam<bool>("compute")),
     _has_stateful_property(false)
 {
   // Fill in the MooseVariable dependencies
   const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
-  for (unsigned int i=0; i<coupled_vars.size(); i++)
-    addMooseVariableDependency(coupled_vars[i]);
-
-  // Update the MaterialData pointer in BlockRestrictable to use the correct MaterialData object
-  _blk_material_data = &_material_data;
-}
-
-Material::~Material()
-{
-}
-
-void
-Material::computeProperties()
-{
-  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
-    computeQpProperties();
+  for (const auto & var : coupled_vars)
+    addMooseVariableDependency(var);
 }
 
 void
@@ -112,28 +107,15 @@ Material::initStatefulProperties(unsigned int n_points)
 void
 Material::initQpStatefulProperties()
 {
-  mooseDoOnce(mooseWarning(std::string("Material \"") + _name + "\" declares one or more stateful properties but initQpStatefulProperties() was not overridden in the derived class."));
-}
-
-void
-Material::computeQpProperties()
-{
-}
-
-QpData *
-Material::createData()
-{
-  return NULL;
+  mooseDoOnce(mooseWarning(std::string("Material \"") + name() + "\" declares one or more stateful properties but initQpStatefulProperties() was not overridden in the derived class."));
 }
 
 void
 Material::checkStatefulSanity() const
 {
-  for (std::map<std::string, int>::const_iterator it = _props_to_flags.begin(); it != _props_to_flags.end(); ++it)
-  {
-    if (static_cast<int>(it->second) % 2 == 0) // Only Stateful properties declared!
-      mooseError("Material '" << _name << "' has stateful properties declared but not associated \"current\" properties." << it->second);
-  }
+  for (const auto & it : _props_to_flags)
+    if (static_cast<int>(it.second) % 2 == 0) // Only Stateful properties declared!
+      mooseError("Material '" << name() << "' has stateful properties declared but not associated \"current\" properties." << it.second);
 }
 
 void
@@ -147,84 +129,71 @@ Material::registerPropName(std::string prop_name, bool is_get, Material::Prop_St
   }
 
   // Store material properties for block ids
-  for (std::set<SubdomainID>::const_iterator it = blockIDs().begin(); it != blockIDs().end(); ++it)
+  for (const auto & block_id : blockIDs())
   {
     // Only save this prop as a "supplied" prop is it was registered as a result of a call to declareProperty not getMaterialProperty
     if (!is_get)
       _supplied_props.insert(prop_name);
-    _fe_problem.storeMatPropName(*it, prop_name);
+    _fe_problem.storeMatPropName(block_id, prop_name);
   }
 
   // Store material properties for the boundary ids
-  for (std::set<BoundaryID>::const_iterator it = boundaryIDs().begin(); it != boundaryIDs().end(); ++it)
+  for (const auto & boundary_id : boundaryIDs())
   {
     // Only save this prop as a "supplied" prop is it was registered as a result of a call to declareProperty not getMaterialProperty
     if (!is_get)
       _supplied_props.insert(prop_name);
-    _fe_problem.storeMatPropName(*it, prop_name);
+    _fe_problem.storeMatPropName(boundary_id, prop_name);
   }
 }
+
 
 std::set<OutputName>
 Material::getOutputs()
 {
-  return std::set<OutputName>(getParam<std::vector<OutputName> >("outputs").begin(), getParam<std::vector<OutputName> >("outputs").end());
+  const std::vector<OutputName> & out = getParam<std::vector<OutputName> >("outputs");
+  return std::set<OutputName>(out.begin(), out.end());
 }
 
-bool
-Material::hasBlockMaterialPropertyHelper(const std::string & name)
+void
+Material::computeProperties()
 {
-  // Reference to MaterialWarehouse for testing and retrieving block ids
-  MaterialWarehouse & material_warehouse = _fe_problem.getMaterialWarehouse(_tid);
+  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+    computeQpProperties();
+}
 
-  // Complete set of ids that this object is active
-  const std::set<SubdomainID> & ids = hasBlocks(Moose::ANY_BLOCK_ID) ? meshBlockIDs() : blockIDs();
 
-  // Flags for the various material types
-  bool neighbor = getParam<bool>("_neighbor");
-  bool bnd = getParam<bool>("_bnd");
+void
+Material::computeQpProperties()
+{
+}
 
-  // Define function pointers to the correct has/get methods for the type of material
-  bool(MaterialWarehouse::*has_func)(SubdomainID) const;
-  std::vector<Material *> & (MaterialWarehouse::*get_func)(SubdomainID);
-  if (bnd && neighbor)
-  {
-    has_func = &MaterialWarehouse::hasNeighborMaterials;
-    get_func = &MaterialWarehouse::getNeighborMaterials;
-  }
-  else if (bnd && !neighbor)
-  {
-    has_func = &MaterialWarehouse::hasFaceMaterials;
-    get_func = &MaterialWarehouse::getFaceMaterials;
-  }
-  else
-  {
-    has_func = &MaterialWarehouse::hasMaterials;
-    get_func = &MaterialWarehouse::getMaterials;
-  }
 
-  // Loop over each id for this object
-  for (std::set<SubdomainID>::const_iterator id_it = ids.begin(); id_it != ids.end(); ++id_it)
-  {
-    // Storage of material properties that have been DECLARED on this id
-    std::set<std::string> declared_props;
+void
+Material::resetProperties()
+{
+  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+    resetQpProperties();
+}
 
-    // If block materials exist, populated the set of properties that were declared
-    if ((material_warehouse.*has_func)(*id_it))
-    {
-      std::vector<Material *> mats = (material_warehouse.*get_func)(*id_it);
-      for (std::vector<Material *>::iterator mat_it = mats.begin(); mat_it != mats.end(); ++mat_it)
-      {
-        const std::set<std::string> & mat_props = (*mat_it)->getSuppliedItems();
-        declared_props.insert(mat_props.begin(), mat_props.end());
-      }
-    }
 
-    // If the supplied property is not in the list of properties on the current id, return false
-    if (declared_props.find(name) == declared_props.end())
-      return false;
-  }
+void
+Material::resetQpProperties()
+{
+  if (!_compute)
+    mooseDoOnce(mooseWarning("You disabled the computation of this (" << name() << ") material by MOOSE, but have not overridden the 'resetQpProperties' method, this can lead to unintended values being set for material property values."));
+}
 
-  // If you get here the supplied property is defined on all blocks
-  return true;
+void
+Material::computePropertiesAtQp(unsigned int qp)
+{
+  _qp = qp;
+  computeQpProperties();
+}
+
+void
+Material::checkExecutionStage()
+{
+  if (_fe_problem.startedInitialSetup())
+    mooseError("Material properties must be retrieved during material object construction to ensure correct dependency resolution.");
 }

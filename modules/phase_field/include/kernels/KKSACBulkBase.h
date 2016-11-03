@@ -8,8 +8,6 @@
 #define KKSACBULKBASE_H
 
 #include "ACBulk.h"
-#include "JvarMapInterface.h"
-#include "DerivativeMaterialInterface.h"
 
 //Forward Declarations
 class KKSACBulkBase;
@@ -23,29 +21,19 @@ InputParameters validParams<KKSACBulkBase>();
  *
  * The non-linear variable for this Kernel is the order parameter 'eta'.
  */
-class KKSACBulkBase : public DerivativeMaterialInterface<
-                         JvarMapInterface<
-                         ACBulk
-                         > >
+class KKSACBulkBase : public ACBulk<Real>
 {
 public:
-  KKSACBulkBase(const std::string & name, InputParameters parameters);
+  KKSACBulkBase(const InputParameters & parameters);
+
+  virtual void initialSetup();
 
 protected:
   /// Number of coupled variables
   unsigned int _nvar;
 
   /// name of the order parameter (needed to retrieve the derivative material properties)
-  std::string _eta_name;
-
-  /// phase a free energy function material property base names
-  std::string _Fa_name;
-
-  /// phase b free energy function material property base names
-  std::string _Fb_name;
-
-  /// switching function material property base names
-  std::string _h_name;
+  VariableName _eta_name;
 
   /// Derivatives of \f$ F_a \f$ with respect to all coupled variables
   std::vector<const MaterialProperty<Real> *> _derivatives_Fa;
@@ -72,7 +60,7 @@ protected:
   const MaterialProperty<Real> & _prop_d2h;
 
   /// Gradients for all coupled variables
-  std::vector<VariableGradient*> _grad_args;
+  std::vector<const VariableGradient *> _grad_args;
 };
 
 #endif //KKSACBULKBASE_H

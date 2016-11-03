@@ -4,8 +4,6 @@
 []
 
 [Variables]
-  active = 'convected diffused'
-
   [./convected]
     order = FIRST
     family = LAGRANGE
@@ -27,8 +25,6 @@
 []
 
 [BCs]
-  active = 'left_convected right_convected left_diffused right_diffused'
-
   [./left_convected]
     type = DirichletBC
     variable = convected
@@ -58,21 +54,14 @@
     boundary = 'right'
     value = 1
   [../]
-
 []
 
 [Executioner]
   type = Steady
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

@@ -64,7 +64,7 @@
 
 [Postprocessors]
   [./react_z]
-    type = MaterialTensorIntegral
+    type = MaterialTensorIntegralSM
     tensor = stress
     index = 2
   [../]
@@ -227,8 +227,5 @@
 []
 
 [Outputs]
-  print_linear_residuals = true
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

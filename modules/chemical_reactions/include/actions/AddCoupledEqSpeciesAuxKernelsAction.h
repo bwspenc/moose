@@ -14,14 +14,16 @@ class AddCoupledEqSpeciesAuxKernelsAction;
 template<>
 InputParameters validParams<AddCoupledEqSpeciesAuxKernelsAction>();
 
-
 class AddCoupledEqSpeciesAuxKernelsAction : public Action
 {
 public:
-  AddCoupledEqSpeciesAuxKernelsAction(const std::string & name, InputParameters params);
+  AddCoupledEqSpeciesAuxKernelsAction(const InputParameters & params);
 
   virtual void act();
 
+private:
+  const std::string _reactions;
+  const std::vector<std::string> _secondary_species;
 };
 
 #endif // ADDCOUPLEDEQSPECIESAUXKERNELSACTION_H

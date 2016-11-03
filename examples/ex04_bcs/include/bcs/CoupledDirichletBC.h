@@ -34,10 +34,10 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  CoupledDirichletBC(const std::string & name, InputParameters parameters);
+  CoupledDirichletBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
 private:
   /**
@@ -49,7 +49,7 @@ private:
    * Holds the values at the quadrature points
    * of a coupled variable.
    */
-  VariableValue & _some_var_val;
+  const VariableValue & _some_var_val;
 };
 
 #endif //COUPLEDDIRICHLETBC_H

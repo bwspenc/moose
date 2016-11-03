@@ -20,7 +20,7 @@
 #include "OutputInterface.h"
 
 // libMesh includes
-#include "libmesh/fe.h"
+#include "libmesh/fe_type.h"
 
 // Forward declerations
 class AddVariableAction;
@@ -40,12 +40,9 @@ public:
   /**
    * Class constructor
    */
-  AddVariableAction(const std::string & name, InputParameters params);
+  AddVariableAction(InputParameters params);
 
-  /**
-   * Adds the nonlinear variable
-   */
-  virtual void act();
+  virtual void act() override;
 
   /**
    * Get the possible variable families
@@ -69,12 +66,12 @@ protected:
   void addVariable(std::string & var_name);
 
   /**
-   * Create initial condition object
+   * Create the action to generate the InitialCondition object
    *
    * If the user supplies a value for 'initial_condition' in the input file this
    * method will create the proper InitialCondition object.
    */
-  void setInitialCondition();
+  void createInitialConditionAction();
 
   /**
    * Get the block ids from the input parameters
@@ -90,9 +87,6 @@ protected:
 
   /// Absolute zero tolerance
   static const Real _abs_zero_tol;
-
-
-  // std::string _variable_to_read;
 };
 
 #endif // ADDVARIABLEACTION_H

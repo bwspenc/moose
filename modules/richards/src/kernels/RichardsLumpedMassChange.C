@@ -22,8 +22,8 @@ InputParameters validParams<RichardsLumpedMassChange>()
   return params;
 }
 
-RichardsLumpedMassChange::RichardsLumpedMassChange(const std::string & name, InputParameters parameters) :
-    TimeKernel(name, parameters),
+RichardsLumpedMassChange::RichardsLumpedMassChange(const InputParameters & parameters) :
+    TimeKernel(parameters),
     _richards_name_UO(getUserObject<RichardsVarNames>("richardsVarNames_UO")),
     _num_p(_richards_name_UO.num_v()),
     _pvar(_richards_name_UO.richards_var_num(_var.number())),
@@ -53,31 +53,16 @@ Real
 RichardsLumpedMassChange::computeQpResidual()
 {
   // current values:
-  Real density = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
-  Real seff = (*_seff_UO).seff(_ps_at_nodes, _i);
-  Real sat = (*_sat_UO).sat(seff);
-  Real mass = _porosity[_qp]*density*sat;
-
+  const Real density = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
+  const Real seff = (*_seff_UO).seff(_ps_at_nodes, _i);
+  const Real sat = (*_sat_UO).sat(seff);
+  const Real mass = _porosity[_qp]*density*sat;
 
   // old values:
-  // for snes_type = test (and perhaps others?) the Old values
-  // aren't defined for some reason
-  // hence all the fluffing around with checking of sizes
-  Real density_old;
-  Real seff_old;
-  if ((*_ps_old_at_nodes[0]).size() <= _i)
-  {
-    density_old = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
-    seff_old = (*_seff_UO).seff(_ps_at_nodes, _i);
-  }
-  else
-  {
-    density_old = (*_density_UO).density((*_ps_old_at_nodes[_pvar])[_i]);
-    seff_old = (*_seff_UO).seff(_ps_old_at_nodes, _i);
-  }
-  Real sat_old = (*_sat_UO).sat(seff_old);
-  Real mass_old = _porosity_old[_qp]*density_old*sat_old;
-
+  const Real density_old = (*_density_UO).density((*_ps_old_at_nodes[_pvar])[_i]);
+  const Real seff_old = (*_seff_UO).seff(_ps_old_at_nodes, _i);
+  const Real sat_old = (*_sat_UO).sat(seff_old);
+  const Real mass_old = _porosity_old[_qp]*density_old*sat_old;
 
   return _test[_i][_qp]*(mass - mass_old)/_dt;
 }
@@ -89,16 +74,16 @@ RichardsLumpedMassChange::computeQpJacobian()
   if (_i != _j)
     return 0.0;
 
-  Real density = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
-  Real ddensity = (*_density_UO).ddensity((*_ps_at_nodes[_pvar])[_i]);
+  const Real density = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
+  const Real ddensity = (*_density_UO).ddensity((*_ps_at_nodes[_pvar])[_i]);
 
-  Real seff = (*_seff_UO).seff(_ps_at_nodes, _i);
+  const Real seff = (*_seff_UO).seff(_ps_at_nodes, _i);
   (*_seff_UO).dseff(_ps_at_nodes, _i, _dseff);
 
-  Real sat = (*_sat_UO).sat(seff);
-  Real dsat = (*_sat_UO).dsat(seff);
+  const Real sat = (*_sat_UO).sat(seff);
+  const Real dsat = (*_sat_UO).dsat(seff);
 
-  Real mass_prime = _porosity[_qp]*(ddensity*sat + density*_dseff[_pvar]*dsat);
+  const Real mass_prime = _porosity[_qp]*(ddensity*sat + density*_dseff[_pvar]*dsat);
 
   return _test[_i][_qp]*mass_prime/_dt;
 }
@@ -112,16 +97,17 @@ RichardsLumpedMassChange::computeQpOffDiagJacobian(unsigned int jvar)
     return 0.0;
   if (_i != _j)
     return 0.0;
-  unsigned int dvar = _richards_name_UO.richards_var_num(jvar);
+  const unsigned int dvar = _richards_name_UO.richards_var_num(jvar);
 
-  Real density = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
+  const Real density = (*_density_UO).density((*_ps_at_nodes[_pvar])[_i]);
 
-  Real seff = (*_seff_UO).seff(_ps_at_nodes, _i);
+  const Real seff = (*_seff_UO).seff(_ps_at_nodes, _i);
   (*_seff_UO).dseff(_ps_at_nodes, _i, _dseff);
 
-  Real dsat = (*_sat_UO).dsat(seff);
+  const Real dsat = (*_sat_UO).dsat(seff);
 
-  Real mass_prime = _porosity[_qp]*density*_dseff[dvar]*dsat;
+  const Real mass_prime = _porosity[_qp]*density*_dseff[dvar]*dsat;
 
   return _test[_i][_qp]*mass_prime/_dt;
 }
+

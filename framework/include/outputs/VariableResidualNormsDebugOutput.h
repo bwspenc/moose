@@ -18,7 +18,9 @@
 // MOOSE includes
 #include "BasicOutput.h"
 #include "PetscOutput.h"
-#include "FEProblem.h"
+
+// libMesh includes
+#include "libmesh/transient_system.h" // TransientNonlinearImplicitSystem typedef
 
 // Forward declerations
 class VariableResidualNormsDebugOutput;
@@ -37,26 +39,19 @@ public:
 
   /**
    * Class constructor
-   * @param name Output object name
    * @param parameters Object input parameters
    */
-  VariableResidualNormsDebugOutput(const std::string & name, InputParameters & parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~VariableResidualNormsDebugOutput();
+  VariableResidualNormsDebugOutput(const InputParameters & parameters);
 
 protected:
 
   /**
    * Perform the debugging output
    */
-  virtual void output(const ExecFlagType & type);
+  virtual void output(const ExecFlagType & type) override;
 
   /// Reference to libMesh system
   TransientNonlinearImplicitSystem & _sys;
-
 };
 
 #endif // VARIABLERESIDUALNORMSDEBUGOUTPUT_H

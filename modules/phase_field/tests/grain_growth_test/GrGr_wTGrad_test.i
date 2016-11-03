@@ -85,7 +85,6 @@
 [Materials]
   [./Copper]
     type = GBEvolution
-    block = 0
     T = 500 # K
     wGB = 60 # nm
     GBmob0 = 2.5e-6 # m^4/(Js) from Schoenfelder 1997
@@ -130,11 +129,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = wT
   exodus = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

@@ -14,11 +14,12 @@
 #include "ExampleApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 // Example 16 Includes
 #include "TransientHalf.h"
 #include "ExampleDiffusion.h"
-#include "Convection.h"
+#include "ExampleConvection.h"
 #include "ExampleImplicitEuler.h"
 #include "ExampleMaterial.h"
 
@@ -32,8 +33,8 @@ InputParameters validParams<ExampleApp>()
   return params;
 }
 
-ExampleApp::ExampleApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ExampleApp::ExampleApp(InputParameters parameters) :
+    MooseApp(parameters)
 {
   srand(processor_id());
 
@@ -60,7 +61,7 @@ ExampleApp::registerObjects(Factory & factory)
   // Register our new executioner
   registerTimeStepper(TransientHalf);
   registerKernel(ExampleDiffusion);
-  registerKernel(Convection);
+  registerKernel(ExampleConvection);
   registerKernel(ExampleImplicitEuler);
   registerMaterial(ExampleMaterial);
 }

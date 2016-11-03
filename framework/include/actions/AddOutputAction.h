@@ -17,18 +17,9 @@
 
 // MOOSE includes
 #include "MooseObjectAction.h"
-#include "OutputWarehouse.h"
-#include "MooseMesh.h"
-
-// libMesh includes
-#include "libmesh/equation_systems.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/mesh_function.h"
 
 // Forward declerations
 class AddOutputAction;
-class OutputWarehouse;
-class Output;
 
 template<>
 InputParameters validParams<AddOutputAction>();
@@ -43,13 +34,9 @@ public:
   /**
    * Class constructor
    */
-  AddOutputAction(const std::string & name, InputParameters params);
+  AddOutputAction(InputParameters params);
 
-  /**
-   * Creates the actual output object
-   */
-  virtual void act();
-
+  virtual void act() override;
 };
 
 #endif //ADDOUTPUTACTION_H

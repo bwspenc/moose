@@ -53,7 +53,7 @@
     args = 'c d'
   [../]
   [./time]
-    type = CoupledImplicitEuler
+    type = CoupledTimeDerivative
     variable = w
     v = c
   [../]
@@ -79,13 +79,11 @@
 [Materials]
   [./kappa]
     type = GenericConstantMaterial
-    block = 0
     prop_names = 'kappa_c'
     prop_values = '2.0'
   [../]
   [./mob]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = M
     args = 'c d'
     function = 'if(d>0.001,d,0.001)*(1-0.5*c^2)'
@@ -94,7 +92,6 @@
   [../]
   [./free_energy]
     type = MathEBFreeEnergy
-    block = 0
     f_name = F
     c = c
   [../]
@@ -102,7 +99,6 @@
     type = GenericConstantMaterial
     prop_names = diffusivity
     prop_values = 0.1
-    block = 0
   [../]
 []
 
@@ -118,7 +114,7 @@
   scheme = 'BDF2'
 
   solve_type = 'NEWTON'
-  petsc_options_iname = '-pc_type -ksp_grmres_restart -sub_pc_type -pc_asm_overlap'
+  petsc_options_iname = '-pc_type -ksp_gmres_restart -sub_pc_type -pc_asm_overlap'
   petsc_options_value = 'asm         31      lu      1'
 
   l_max_its = 30
@@ -132,7 +128,4 @@
 
 [Outputs]
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
-  output_initial = true
 []

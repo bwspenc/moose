@@ -15,10 +15,10 @@
 class ComputeSmallStrain : public ComputeStrainBase
 {
 public:
-  ComputeSmallStrain(const std:: string & name, InputParameters parameters);
+  ComputeSmallStrain(const InputParameters & parameters);
 
 protected:
-  virtual void computeProperties();
+  virtual void computeQpProperties();
 
   const MaterialProperty<RankTwoTensor> & _stress_free_strain;
 };

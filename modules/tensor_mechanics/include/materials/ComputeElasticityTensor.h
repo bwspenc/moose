@@ -15,13 +15,13 @@
 class ComputeElasticityTensor : public ComputeRotatedElasticityTensorBase
 {
 public:
-  ComputeElasticityTensor(const std:: string & name, InputParameters parameters);
+  ComputeElasticityTensor(const InputParameters & parameters);
 
 protected:
   virtual void computeQpElasticityTensor();
 
   /// Individual material information
-  ElasticityTensorR4 _Cijkl;
+  RankFourTensor _Cijkl;
 };
 
 #endif //COMPUTEELASTICITYTENSOR_H

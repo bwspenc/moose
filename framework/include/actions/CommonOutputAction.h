@@ -20,7 +20,6 @@
 
 // Forward declerations
 class CommonOutputAction;
-class OutputWarehouse;
 
 template<>
 InputParameters validParams<CommonOutputAction>();
@@ -39,12 +38,9 @@ public:
   /**
    * Class constructor
    */
-  CommonOutputAction(const std::string & name, InputParameters params);
+  CommonOutputAction(InputParameters params);
 
-  /**
-   * Perform the action creation
-   */
-  virtual void act();
+  virtual void act() override;
 
 private:
 

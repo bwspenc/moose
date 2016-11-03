@@ -12,10 +12,12 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "SetupResidualDebugAction.h"
 #include "FEProblem.h"
 #include "ActionWarehouse.h"
 #include "Factory.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<SetupResidualDebugAction>()
@@ -25,13 +27,9 @@ InputParameters validParams<SetupResidualDebugAction>()
   return params;
 }
 
-SetupResidualDebugAction::SetupResidualDebugAction(const std::string & name, InputParameters parameters) :
-    Action(name, parameters),
+SetupResidualDebugAction::SetupResidualDebugAction(InputParameters parameters) :
+    Action(parameters),
     _show_var_residual(getParam<std::vector<NonlinearVariableName> >("show_var_residual"))
-{
-}
-
-SetupResidualDebugAction::~SetupResidualDebugAction()
 {
 }
 
@@ -44,10 +42,8 @@ SetupResidualDebugAction::act()
   _problem->getNonlinearSystem().debuggingResiduals(true);
 
   // debug variable residuals
-  for (std::vector<NonlinearVariableName>::const_iterator it = _show_var_residual.begin(); it != _show_var_residual.end(); ++it)
+  for (const auto & var_name : _show_var_residual)
   {
-    NonlinearVariableName var_name = *it;
-
     // add aux-variable
     MooseVariable & var = _problem->getVariable(0, var_name);
     const std::set<SubdomainID> & subdomains = var.activeSubdomains();
@@ -69,9 +65,7 @@ SetupResidualDebugAction::act()
     InputParameters params = _factory.getValidParams("DebugResidualAux");
     params.set<AuxVariableName>("variable") = aux_var_name;
     params.set<NonlinearVariableName>("debug_variable") = var.name();
-    params.set<MultiMooseEnum>("execute_on") = "linear";
-    _problem->addAuxKernel("DebugResidualAux", kern_name, params);
-    params.set<MultiMooseEnum>("execute_on") = "timestep_end";
+    params.set<MultiMooseEnum>("execute_on") = "linear timestep_end";
     _problem->addAuxKernel("DebugResidualAux", kern_name, params);
   }
 }

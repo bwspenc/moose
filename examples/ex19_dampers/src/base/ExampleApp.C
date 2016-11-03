@@ -14,6 +14,7 @@
 #include "ExampleApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 template<>
 InputParameters validParams<ExampleApp>()
@@ -25,8 +26,8 @@ InputParameters validParams<ExampleApp>()
   return params;
 }
 
-ExampleApp::ExampleApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ExampleApp::ExampleApp(InputParameters parameters) :
+    MooseApp(parameters)
 {
   srand(processor_id());
 

@@ -19,7 +19,7 @@
 template<>
 InputParameters validParams<LeastSquaresFit>()
 {
-  InputParameters params = validParams<VectorPostprocessor>();
+  InputParameters params = validParams<GeneralVectorPostprocessor>();
 
   params.addRequiredParam<VectorPostprocessorName>("vectorpostprocessor", "The vectorpostprocessor on whose values we perform a least squares fit");
   params.addRequiredParam<std::string>("x_name", "The name of the independent variable");
@@ -35,8 +35,8 @@ InputParameters validParams<LeastSquaresFit>()
   return params;
 }
 
-LeastSquaresFit::LeastSquaresFit(const std::string & name, InputParameters parameters) :
-    GeneralVectorPostprocessor(name, parameters),
+LeastSquaresFit::LeastSquaresFit(const InputParameters & parameters) :
+    GeneralVectorPostprocessor(parameters),
     _vpp_name(getParam<VectorPostprocessorName>("vectorpostprocessor")),
     _order(parameters.get<unsigned int>("order")),
     _x_name(getParam<std::string>("x_name")),
@@ -123,7 +123,7 @@ LeastSquaresFit::execute()
 
     for (unsigned int i=0; i<_num_samples; ++i)
     {
-      Real x = x_min + (Real)i / _num_samples * x_span;
+      Real x = x_min + static_cast<Real>(i) / _num_samples * x_span;
       _sample_x->push_back(x);
       _sample_y->push_back(pf.sample(x));
     }

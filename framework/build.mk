@@ -57,6 +57,18 @@ ifneq (,$(findstring mpi,$(cxx_compiler)))
 	cxx_compiler = $(shell $(libmesh_CXX) -show)
 endif
 
+# Check that we have Asio installed.
+ASIO_FILE := $(MOOSE_DIR)/framework/contrib/asio/include/asio.hpp
+ifneq ("$(wildcard $(ASIO_FILE))","")
+libmeshConfigHeader := $(LIBMESH_DIR)/include/libmesh/libmesh_config.h
+cxx11Enabled := $(shell grep 'define LIBMESH_HAVE_CXX11 ' $(libmeshConfigHeader) | tail -c 2)
+# If it is installed, make sure this is a
+# build using C++11, if so, then turn on Asio Networking
+ifeq (1,$(strip $(cxx11Enabled)))
+	ADDITIONAL_CPPFLAGS += "-DASIO_STANDALONE"
+endif
+endif
+
 MOOSE_PRECOMPILED ?= false
 PCH_FLAGS=
 PCH_MODE=
@@ -190,11 +202,15 @@ endif
 	  $(libmesh_F90) $(libmesh_FFLAGS) $(libmesh_INCLUDE) -c $< $(module_dir_flag) -o $@
 
 # Add method to list of defines passed to the compiler
-libmesh_CXXFLAGS       += -DMETHOD=$(METHOD)
+libmesh_CXXFLAGS += -DMETHOD=$(METHOD)
 
 # treat these warnings as errors (This doesn't seem to be necessary for Intel)
 ifneq (,$(findstring g++,$(cxx_compiler)))
-  libmesh_CXXFLAGS     += -Werror=return-type -Werror=reorder
+  libmesh_CXXFLAGS += -Werror=return-type -Werror=reorder
+
+	# Disable the long string warning from GCC
+	# warning: string length ‘524’ is greater than the length ‘509’ ISO C90 compilers are required to support [-Woverlength-strings]
+	libmesh_CXXFLAGS += -Woverlength-strings
 endif
 
 #
@@ -228,7 +244,9 @@ endif
 # compile with gcov support if using the gcc compiler suite
 ifeq ($(coverage),true)
 	libmesh_CXXFLAGS += -fprofile-arcs -ftest-coverage
-	libmesh_LDFLAGS += -lgcov
+	ifeq (,$(findstring clang++,$(cxx_compiler)))
+		libmesh_LDFLAGS += -lgcov
+	endif
 endif
 
 # link with gcov support, but do now generate data for this build

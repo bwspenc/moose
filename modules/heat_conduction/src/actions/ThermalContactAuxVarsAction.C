@@ -31,8 +31,8 @@ InputParameters validParams<ThermalContactAuxVarsAction>()
   return params;
 }
 
-ThermalContactAuxVarsAction::ThermalContactAuxVarsAction(const std::string & name, InputParameters params) :
-   Action(name, params)
+ThermalContactAuxVarsAction::ThermalContactAuxVarsAction(const InputParameters & params) :
+   Action(params)
 {
 }
 
@@ -75,3 +75,4 @@ ThermalContactAuxVarsAction::act()
            Utility::string_to_enum<FEFamily>(family)));
 
 }
+

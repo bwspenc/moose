@@ -19,20 +19,11 @@
 #include "AuxKernel.h"
 
 // Forward declarations
-template<typename T>
+template<typename T= Real>
 class MaterialAuxBase;
 
 template<>
-InputParameters validParams<MaterialAuxBase<Real> >();
-
-template<>
-InputParameters validParams<MaterialAuxBase<RealVectorValue> >();
-
-template<>
-InputParameters validParams<MaterialAuxBase<RealTensorValue> >();
-
-template<>
-InputParameters validParams<MaterialAuxBase<DenseMatrix<Real> > >();
+InputParameters validParams<MaterialAuxBase<> >();
 
 /**
  * A base class for the various Material related AuxKernal objects
@@ -44,36 +35,41 @@ public:
 
   /**
    * Class constructor
-   * @param name Name of the AuxKernel
    * @param parameters The input parameters for this object
    */
-  MaterialAuxBase(const std::string & name, InputParameters parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~MaterialAuxBase(){}
+  MaterialAuxBase(const InputParameters & parameters);
 
 protected:
+  virtual Real computeValue() override;
+
+  /// Returns material property values at quadrature points
+  virtual Real getRealValue() = 0;
 
   /// Reference to the material property for this AuxKernel
   const MaterialProperty<T> & _prop;
 
-  // Value to be added to the material property
+private:
+  /// Multiplier for the material property
   const Real _factor;
 
-  // Multiplier for the material property
+  /// Value to be added to the material property
   const Real _offset;
-
 };
 
 template<typename T>
-MaterialAuxBase<T>::MaterialAuxBase(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+MaterialAuxBase<T>::MaterialAuxBase(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _prop(getMaterialProperty<T>("property")),
     _factor(getParam<Real>("factor")),
     _offset(getParam<Real>("offset"))
 {
+}
+
+template<typename T>
+Real
+MaterialAuxBase<T>::computeValue()
+{
+  return _factor * getRealValue() + _offset;
 }
 
 #endif //MATERIALAUXBASE_H

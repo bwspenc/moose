@@ -16,11 +16,11 @@
 #define GAPVALUEAUX_H
 
 #include "AuxKernel.h"
-#include "PenetrationLocator.h"
 
 
 //Forward Declarations
 class GapValueAux;
+class PenetrationLocator;
 
 template<>
 InputParameters validParams<GapValueAux>();
@@ -28,12 +28,10 @@ InputParameters validParams<GapValueAux>();
 class GapValueAux : public AuxKernel
 {
 public:
-  GapValueAux(const std::string & name, InputParameters parameters);
-
-  virtual ~GapValueAux();
+  GapValueAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   PenetrationLocator & _penetration_locator;
 

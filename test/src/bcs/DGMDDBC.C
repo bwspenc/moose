@@ -30,8 +30,8 @@ InputParameters validParams<DGMDDBC>()
   return params;
 }
 
-DGMDDBC::DGMDDBC(const std::string & name, InputParameters parameters) :
-    IntegratedBC(name, parameters),
+DGMDDBC::DGMDDBC(const InputParameters & parameters) :
+    IntegratedBC(parameters),
     _func(getFunction("function")),
     _diff(getMaterialProperty<Real>("prop_name")),
     _epsilon(getParam<Real>("epsilon")),
@@ -41,7 +41,7 @@ DGMDDBC::DGMDDBC(const std::string & name, InputParameters parameters) :
 Real
 DGMDDBC::computeQpResidual()
 {
-  const unsigned int elem_b_order = static_cast<unsigned int> (_var.getOrder());
+  const unsigned int elem_b_order = _var.order();
   const double h_elem = _current_elem->volume()/_current_side_elem->volume() * 1./std::pow(elem_b_order, 2.);
 
   Real fn = _func.value(_t, _q_point[_qp]);
@@ -56,7 +56,7 @@ DGMDDBC::computeQpResidual()
 Real
 DGMDDBC::computeQpJacobian()
 {
-  const unsigned int elem_b_order = static_cast<unsigned int> (_var.getOrder());
+  const unsigned int elem_b_order = _var.order();
   const double h_elem = _current_elem->volume()/_current_side_elem->volume() * 1./std::pow(elem_b_order, 2.);
 
   Real r = 0;

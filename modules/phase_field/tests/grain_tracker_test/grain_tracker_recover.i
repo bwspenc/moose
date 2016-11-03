@@ -62,21 +62,21 @@
     type = FeatureFloodCountAux
     variable = unique_grains
     execute_on = timestep_end
-    bubble_object = grain_tracker
+    flood_counter = grain_tracker
     field_display = UNIQUE_REGION
   [../]
   [./var_indices]
     type = FeatureFloodCountAux
     variable = var_indices
     execute_on = timestep_end
-    bubble_object = grain_tracker
+    flood_counter = grain_tracker
     field_display = VARIABLE_COLORING
   [../]
   [./centroids]
     type = FeatureFloodCountAux
     variable = centroids
     execute_on = timestep_end
-    bubble_object = grain_tracker
+    flood_counter = grain_tracker
     field_display = CENTROID
   [../]
 []
@@ -92,7 +92,6 @@
 [Materials]
   [./CuGrGr]
     type = CuGrGr
-    block = 0
     T = 500 # K
     wGB = 75 # nm
   [../]
@@ -135,8 +134,5 @@
 []
 
 [Outputs]
-  output_initial = true
-  interval = 1
   exodus = true
-  print_perf_log = true
 []

@@ -38,8 +38,7 @@ PenetrationLocator::PenetrationLocator(SubProblem & subproblem, GeometricSearchD
     _tangential_tolerance(0.0),
     _do_normal_smoothing(false),
     _normal_smoothing_distance(0.0),
-    _normal_smoothing_method(NSM_EDGE_BASED),
-    _skip_off_process_slaves(false)
+    _normal_smoothing_method(NSM_EDGE_BASED)
 {
   // Preconstruct an FE object for each thread we're going to use and for each lower-dimensional element
   // This is a time savings so that the thread objects don't do this themselves multiple times
@@ -69,14 +68,14 @@ PenetrationLocator::~PenetrationLocator()
     for (unsigned int dim = 0; dim < _fe[i].size(); dim++)
       delete _fe[i][dim];
 
-  for (std::map<dof_id_type, PenetrationInfo *>::iterator it = _penetration_info.begin(); it != _penetration_info.end(); ++it)
-    delete it->second;
+  for (auto & it : _penetration_info)
+    delete it.second;
 }
 
 void
 PenetrationLocator::detectPenetration()
 {
-  Moose::perf_log.push("detectPenetration()","Solve");
+  Moose::perf_log.push("detectPenetration()", "Execution");
 
   // Data structures to hold the element boundary information
   std::vector<dof_id_type> elem_list;
@@ -106,12 +105,11 @@ PenetrationLocator::detectPenetration()
                        _mesh.nodeToElemMap(),
                        elem_list,
                        side_list,
-                       id_list,
-                       _skip_off_process_slaves);
+                       id_list);
 
   Threads::parallel_reduce(slave_node_range, pt);
 
-  Moose::perf_log.pop("detectPenetration()","Solve");
+  Moose::perf_log.pop("detectPenetration()", "Execution");
 }
 
 void
@@ -182,9 +180,4 @@ PenetrationLocator::setNormalSmoothingMethod(std::string nsmString)
   else
     mooseError("Invalid normal_smoothing_method: "<<nsmString);
   _do_normal_smoothing = true;
-}
-
-void PenetrationLocator::skipOffProcessSlaveNodes( bool skip_them )
-{
-  _skip_off_process_slaves = skip_them;
 }

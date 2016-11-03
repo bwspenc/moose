@@ -14,6 +14,7 @@
 
 #include "MooseError.h"
 #include "SolutionFunction.h"
+#include "SolutionUserObject.h"
 
 
 template<>
@@ -34,15 +35,11 @@ InputParameters validParams<SolutionFunction>()
   return params;
 }
 
-SolutionFunction::SolutionFunction(const std::string & name, InputParameters parameters) :
-    Function(name, parameters),
+SolutionFunction::SolutionFunction(const InputParameters & parameters) :
+    Function(parameters),
     _solution_object_ptr(NULL),
     _scale_factor(getParam<Real>("scale_factor")),
     _add_factor(getParam<Real>("add_factor"))
-{
-}
-
-SolutionFunction::~SolutionFunction()
 {
 }
 
@@ -53,9 +50,11 @@ SolutionFunction::initialSetup()
   // construction of the function
   _solution_object_ptr = &getUserObject<SolutionUserObject>("solution");
 
+  std::string var_name;
+
   // If 'from_variable' is supplied, use the value
   if (isParamValid("from_variable"))
-    _var_name = getParam<std::string>("from_variable");
+    var_name = getParam<std::string>("from_variable");
 
   // If not, get the value from the SolutionUserObject
   else
@@ -68,12 +67,13 @@ SolutionFunction::initialSetup()
       mooseError("The SolutionUserObject contains multiple variables, the SolutionFunction must specifiy the desired variable in the input file with 'from_variable'");
 
     // Define the variable
-    _var_name = vars[0];
+    var_name = vars[0];
   }
+  _solution_object_var_index = _solution_object_ptr->getLocalVarIndex(var_name);
 }
 
 Real
 SolutionFunction::value(Real t, const Point & p)
 {
-  return _scale_factor*(_solution_object_ptr->pointValue(t, p, _var_name)) + _add_factor;
+  return _scale_factor*(_solution_object_ptr->pointValue(t, p, _solution_object_var_index)) + _add_factor;
 }

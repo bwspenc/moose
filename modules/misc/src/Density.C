@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "Density.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<Density>()
@@ -21,8 +25,8 @@ InputParameters validParams<Density>()
   return params;
 }
 
-Density::Density( const std::string & name, InputParameters parameters ) :
-  Material( name, parameters ),
+Density::Density( const InputParameters & parameters) :
+  Material(parameters),
 
   _is_coupled( isCoupled("disp_x") || isCoupled("disp_r") ),
   _is_RZ( isCoupled("disp_r") && isCoupled("disp_z") ),
@@ -32,7 +36,7 @@ Density::Density( const std::string & name, InputParameters parameters ) :
   _grad_disp_y( isCoupled("disp_y") ? coupledGradient("disp_y") :
                 ( isCoupled("disp_z") ? coupledGradient("disp_z") : _grad_zero ) ),
   _grad_disp_z( !_is_RZ && isCoupled("disp_z") ? coupledGradient("disp_z") : _grad_zero ),
-  _disp_r( _is_RZ ? coupledValue("disp_r") : _zero ),
+  _disp_r( _is_RZ || _is_SphericalR ? coupledValue("disp_r") : _zero ),
 
   _orig_density(getParam<Real>("density")),
   _density(declareProperty<Real>("density")),

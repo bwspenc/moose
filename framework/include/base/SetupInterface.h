@@ -15,9 +15,9 @@
 #ifndef SETUPINTERFACE_H
 #define SETUPINTERFACE_H
 
-#include "InputParameters.h"
 #include "ExecStore.h"
 #include "MooseEnum.h"
+#include "InputParameters.h"
 
 // Forward declarations
 class SetupInterface;
@@ -28,7 +28,7 @@ InputParameters validParams<SetupInterface>();
 class SetupInterface
 {
 public:
-  SetupInterface(const InputParameters & params);
+  SetupInterface(const MooseObject * moose_object);
   virtual ~SetupInterface();
 
   /**
@@ -75,6 +75,12 @@ public:
 protected:
   /// execution flag (when is the object executed/evaluated)
   std::vector<ExecFlagType> _exec_flags;
+
+  /// Reference to FEProblem
+  const ExecFlagType & _current_execute_flag;
+
+  // FEProblem::addMultiApp needs to reset the execution flags
+  friend class FEProblem;
 };
 
 #endif /* SETUPINTERFACE_H */

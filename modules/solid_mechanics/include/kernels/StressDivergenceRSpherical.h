@@ -17,8 +17,8 @@ class StressDivergenceRSpherical : public Kernel
 {
 public:
 
-  StressDivergenceRSpherical(const std::string & name, InputParameters parameters);
-  virtual ~StressDivergenceRSpherical() {}
+  StressDivergenceRSpherical(const InputParameters & parameters);
+    virtual ~StressDivergenceRSpherical() {}
 
 protected:
   virtual Real computeQpResidual();

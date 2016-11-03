@@ -12,9 +12,11 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "PointValue.h"
 #include "Function.h"
 #include "SubProblem.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<PointValue>()
@@ -25,11 +27,11 @@ InputParameters validParams<PointValue>()
   return params;
 }
 
-PointValue::PointValue(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+PointValue::PointValue(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _var(_subproblem.getVariable(_tid, parameters.get<VariableName>("variable"))),
     _u(_var.sln()),
-    _mesh(_subproblem.mesh().getMesh()),
+    _mesh(_subproblem.mesh()),
     _point_vec(1, getParam<Point>("point")),
     _value(0),
     _root_id(0),
@@ -42,12 +44,12 @@ PointValue::execute()
 {
   // Locate the element and store the id
   // We can't store the actual Element pointer here b/c PointLocatorBase returns a const Elem *
-  UniquePtr<PointLocatorBase> pl = _mesh.sub_point_locator();
+  std::unique_ptr<PointLocatorBase> pl = _mesh.getPointLocator();
   const Elem * elem = (*pl)(_point_vec[0]);
 
   // Error if the element cannot be located
   if (!elem)
-    mooseError("No element located at " << _point_vec[0] << " in PointValue Postprocessor named: " << _name);
+    mooseError("No element located at " << _point_vec[0] << " in PointValue Postprocessor named: " << name());
 
   // Store the element id and processor id that owns the located element
   _elem_id = elem->id();
@@ -57,13 +59,13 @@ PointValue::execute()
 void
 PointValue::finalize()
 {
-  // Gather a consist id for broadcasting the computed value
+  // Gather a consistent id for broadcasting the computed value
   gatherMin(_root_id);
 
   // Compute the value at the point
   if (_root_id == processor_id())
   {
-    const Elem * elem = _mesh.elem(_elem_id);
+    const Elem * elem = _mesh.getMesh().elem(_elem_id);
     std::set<MooseVariable *> var_list;
     var_list.insert(&_var);
 

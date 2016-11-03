@@ -17,14 +17,14 @@
 template<>
 InputParameters validParams<MaterialRealTensorValueAux>()
 {
-  InputParameters params = validParams<MaterialAuxBase<RealTensorValue> >();
+  InputParameters params = validParams<MaterialAuxBase<> >();
   params.addParam<unsigned int>("row", 0, "The row component to consider for this kernel");
   params.addParam<unsigned int>("column", 0, "The column component to consider for this kernel");
   return params;
 }
 
-MaterialRealTensorValueAux::MaterialRealTensorValueAux(const std::string & name, InputParameters parameters) :
-    MaterialAuxBase<RealTensorValue>(name, parameters),
+MaterialRealTensorValueAux::MaterialRealTensorValueAux(const InputParameters & parameters) :
+    MaterialAuxBase<RealTensorValue>(parameters),
     _row(getParam<unsigned int>("row")),
     _col(getParam<unsigned int>("column"))
 {
@@ -34,12 +34,8 @@ MaterialRealTensorValueAux::MaterialRealTensorValueAux(const std::string & name,
     mooseError("The column component " << _col << " does not exist for " << LIBMESH_DIM << " dimensional problems");
 }
 
-MaterialRealTensorValueAux::~MaterialRealTensorValueAux()
-{
-}
-
 Real
-MaterialRealTensorValueAux::computeValue()
+MaterialRealTensorValueAux::getRealValue()
 {
-  return _factor * _prop[_qp](_row, _col) + _offset;
+  return _prop[_qp](_row, _col);
 }

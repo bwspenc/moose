@@ -15,8 +15,8 @@ InputParameters validParams<SolidMechZ>()
   return params;
 }
 
-SolidMechZ::SolidMechZ(const std::string & name, InputParameters parameters)
-  :SolidMech(name, parameters),
+SolidMechZ::SolidMechZ(const InputParameters & parameters)
+  :SolidMech(parameters),
     _x_var(coupled("x")),
     _x(coupledValue("x")),
     _grad_x(coupledGradient("x")),
@@ -71,3 +71,4 @@ SolidMechZ::computeQpOffDiagJacobian(unsigned int jvar)
 
     return _c1*(_grad_test[_i][_qp]*value);
   }
+

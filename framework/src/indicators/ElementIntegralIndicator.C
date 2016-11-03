@@ -14,6 +14,9 @@
 
 #include "ElementIntegralIndicator.h"
 
+// libmesh includes
+#include "libmesh/quadrature.h"
+
 template<>
 InputParameters validParams<ElementIntegralIndicator>()
 {
@@ -22,8 +25,8 @@ InputParameters validParams<ElementIntegralIndicator>()
 }
 
 
-ElementIntegralIndicator::ElementIntegralIndicator(const std::string & name, InputParameters parameters) :
-    ElementIndicator(name, parameters)
+ElementIntegralIndicator::ElementIntegralIndicator(const InputParameters & parameters) :
+    ElementIndicator(parameters)
 {
 }
 
@@ -44,4 +47,5 @@ ElementIntegralIndicator::computeQpIntegral()
 {
   return _u[_qp];
 }
+
 

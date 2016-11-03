@@ -12,14 +12,15 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "MultiAppCopyTransfer.h"
-
-// Moose
 #include "MooseTypes.h"
 #include "FEProblem.h"
 #include "DisplacedProblem.h"
+#include "MultiApp.h"
+#include "MooseMesh.h"
 
-// libMesh
+// libMesh includes
 #include "libmesh/system.h"
 #include "libmesh/mesh_tools.h"
 #include "libmesh/id_types.h"
@@ -34,13 +35,13 @@ InputParameters validParams<MultiAppCopyTransfer>()
   return params;
 }
 
-MultiAppCopyTransfer::MultiAppCopyTransfer(const std::string & name, InputParameters parameters) :
-    MultiAppTransfer(name, parameters),
+MultiAppCopyTransfer::MultiAppCopyTransfer(const InputParameters & parameters) :
+    MultiAppTransfer(parameters),
     _to_var_name(getParam<AuxVariableName>("variable")),
     _from_var_name(getParam<VariableName>("source_variable"))
 {
-  // This transfer does not work with ParallelMesh
-  _fe_problem.mesh().errorIfParallelDistribution("MultiAppCopyTransfer");
+  // This transfer does not work with DistributedMesh
+  _fe_problem.mesh().errorIfDistributedMesh("MultiAppCopyTransfer");
 }
 
 void
@@ -52,13 +53,13 @@ MultiAppCopyTransfer::initialSetup()
 void
 MultiAppCopyTransfer::execute()
 {
-  _console << "Beginning CopyTransfer " << _name << std::endl;
+  _console << "Beginning CopyTransfer " << name() << std::endl;
 
   switch (_direction)
   {
     case TO_MULTIAPP:
     {
-      FEProblem & from_problem = *_multi_app->problem();
+      FEProblem & from_problem = _multi_app->problem();
       MooseVariable & from_var = from_problem.getVariable(0, _from_var_name);
 
       MeshBase * from_mesh = NULL;
@@ -71,7 +72,7 @@ MultiAppCopyTransfer::execute()
       unsigned int from_sys_num = from_sys.number();
 
       // Only works with a serialized mesh to transfer from!
-      mooseAssert(from_sys.get_mesh().is_serial(), "MultiAppCopyTransfer only works with SerialMesh!");
+      mooseAssert(from_sys.get_mesh().is_serial(), "MultiAppCopyTransfer only works with ReplicatedMesh!");
 
       unsigned int from_var_num = from_sys.variable_number(from_var.name());
 
@@ -89,7 +90,7 @@ MultiAppCopyTransfer::execute()
           MPI_Comm swapped = Moose::swapLibMeshComm(_multi_app->comm());
 
           // Loop over the master nodes and set the value of the variable
-          System * to_sys = find_sys(_multi_app->appProblem(i)->es(), _to_var_name);
+          System * to_sys = find_sys(_multi_app->appProblem(i).es(), _to_var_name);
 
           unsigned int sys_num = to_sys->number();
           unsigned int var_num = to_sys->variable_number(_to_var_name);
@@ -98,7 +99,7 @@ MultiAppCopyTransfer::execute()
 
           MeshBase * mesh = NULL;
 
-          mesh = &_multi_app->appProblem(i)->mesh().getMesh();
+          mesh = &_multi_app->appProblem(i).mesh().getMesh();
 
           bool is_nodal = to_sys->variable_type(var_num).family == LAGRANGE;
 
@@ -153,7 +154,7 @@ MultiAppCopyTransfer::execute()
     }
     case FROM_MULTIAPP:
     {
-      FEProblem & to_problem = *_multi_app->problem();
+      FEProblem & to_problem = _multi_app->problem();
       MooseVariable & to_var = to_problem.getVariable(0, _to_var_name);
       SystemBase & to_system_base = to_var.sys();
 
@@ -164,7 +165,7 @@ MultiAppCopyTransfer::execute()
       unsigned int to_sys_num = to_sys.number();
 
       // Only works with a serialized mesh to transfer to!
-      mooseAssert(to_sys.get_mesh().is_serial(), "MultiAppCopyTransfer only works with SerialMesh!");
+      mooseAssert(to_sys.get_mesh().is_serial(), "MultiAppCopyTransfer only works with ReplicatedMesh!");
 
       unsigned int to_var_num = to_sys.variable_number(to_var.name());
 
@@ -181,7 +182,7 @@ MultiAppCopyTransfer::execute()
 
         MPI_Comm swapped = Moose::swapLibMeshComm(_multi_app->comm());
 
-        FEProblem & from_problem = *_multi_app->appProblem(i);
+        FEProblem & from_problem = _multi_app->appProblem(i);
         MooseVariable & from_var = from_problem.getVariable(0, _from_var_name);
         SystemBase & from_system_base = from_var.sys();
 
@@ -192,7 +193,7 @@ MultiAppCopyTransfer::execute()
         unsigned int from_var_num = from_sys.variable_number(from_var.name());
 
         // Only works with a serialized mesh to transfer from!
-        mooseAssert(from_sys.get_mesh().is_serial(), "MultiAppCopyTransfer only works with SerialMesh!");
+        mooseAssert(from_sys.get_mesh().is_serial(), "MultiAppCopyTransfer only works with ReplicatedMesh!");
 
         //Create a serialized version of the solution vector
 //        NumericVector<Number> * serialized_solution = NumericVector<Number>::build(from_sys.comm()).release();
@@ -249,5 +250,5 @@ MultiAppCopyTransfer::execute()
     }
   }
 
-  _console << "Finished CopyTransfer " << _name << std::endl;
+  _console << "Finished CopyTransfer " << name() << std::endl;
 }

@@ -4,12 +4,14 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#include "ContactMaster.h"
 
+// MOOSE includes
+#include "ContactMaster.h"
 #include "FrictionalContactProblem.h"
 #include "NodalArea.h"
 #include "SystemBase.h"
 #include "PenetrationInfo.h"
+#include "MooseMesh.h"
 
 // libmesh includes
 #include "libmesh/sparse_matrix.h"
@@ -34,6 +36,7 @@ InputParameters validParams<ContactMaster>()
   params.addParam<Real>("penalty", 1e8, "The penalty to apply.  This can vary depending on the stiffness of your materials");
   params.addParam<Real>("friction_coefficient", 0, "The friction coefficient");
   params.addParam<Real>("tangential_tolerance", "Tangential distance to extend edges of contact surfaces");
+  params.addParam<Real>("capture_tolerance", 0, "Normal distance from surface within which nodes are captured");
   params.addParam<Real>("normal_smoothing_distance", "Distance from edge in parametric coordinates over which to smooth contact normal");
   params.addParam<std::string>("normal_smoothing_method","Method to use to smooth normals (edge_based|nodal_normal_based)");
   params.addParam<MooseEnum>("order", orders, "The finite element order");
@@ -47,16 +50,19 @@ InputParameters validParams<ContactMaster>()
 
 
 
-ContactMaster::ContactMaster(const std::string & name, InputParameters parameters) :
-    DiracKernel(name, parameters),
+ContactMaster::ContactMaster(const InputParameters & parameters) :
+    DiracKernel(parameters),
     _component(getParam<unsigned int>("component")),
     _model(contactModel(getParam<std::string>("model"))),
     _formulation(contactFormulation(getParam<std::string>("formulation"))),
     _normalize_penalty(getParam<bool>("normalize_penalty")),
-    _penetration_locator(getPenetrationLocator(getParam<BoundaryName>("boundary"), getParam<BoundaryName>("slave"), Utility::string_to_enum<Order>(getParam<MooseEnum>("order")))),
+    _penetration_locator(getPenetrationLocator(getParam<BoundaryName>("boundary"),
+                                               getParam<BoundaryName>("slave"),
+                                               Utility::string_to_enum<Order>(getParam<MooseEnum>("order")))),
     _penalty(getParam<Real>("penalty")),
     _friction_coefficient(getParam<Real>("friction_coefficient")),
     _tension_release(getParam<Real>("tension_release")),
+    _capture_tolerance(getParam<Real>("capture_tolerance")),
     _updateContactSet(true),
     _residual_copy(_sys.residualGhosted()),
     _x_var(isCoupled("disp_x") ? coupled("disp_x") : libMesh::invalid_uint),
@@ -69,26 +75,20 @@ ContactMaster::ContactMaster(const std::string & name, InputParameters parameter
     _aux_solution(_aux_system.currentSolution())
 {
   if (parameters.isParamValid("tangential_tolerance"))
-  {
     _penetration_locator.setTangentialTolerance(getParam<Real>("tangential_tolerance"));
-  }
+
   if (parameters.isParamValid("normal_smoothing_distance"))
-  {
     _penetration_locator.setNormalSmoothingDistance(getParam<Real>("normal_smoothing_distance"));
-  }
+
   if (parameters.isParamValid("normal_smoothing_method"))
-  {
     _penetration_locator.setNormalSmoothingMethod(parameters.get<std::string>("normal_smoothing_method"));
-  }
+
   if (_model == CM_GLUED ||
       (_model == CM_COULOMB && _formulation == CF_DEFAULT))
-  {
     _penetration_locator.setUpdate(false);
-  }
+
   if (_friction_coefficient < 0)
-  {
     mooseError("The friction coefficient must be nonnegative");
-  }
 }
 
 void
@@ -97,9 +97,8 @@ ContactMaster::jacobianSetup()
   if (_component == 0)
   {
     if (_updateContactSet)
-    {
       updateContactSet();
-    }
+
     _updateContactSet = true;
   }
 }
@@ -141,10 +140,10 @@ ContactMaster::updateContactSet(bool beginning_of_step)
     }
 
     const Real contact_pressure = -(pinfo->_normal * pinfo->_contact_force) / nodalArea(*pinfo);
-    const Real distance = pinfo->_normal * (pinfo->_closest_point - _mesh.node(slave_node_num));
+    const Real distance = pinfo->_normal * (pinfo->_closest_point - _mesh.nodeRef(slave_node_num));
 
-    // ************** Capture ******************
-    if ( ! pinfo->isCaptured() && distance > 0 )
+    // Capture
+    if ( ! pinfo->isCaptured() && MooseUtils::absoluteFuzzyGreaterEqual(distance, 0, _capture_tolerance))
     {
       pinfo->capture();
 
@@ -152,12 +151,12 @@ ContactMaster::updateContactSet(bool beginning_of_step)
       if (_formulation == CF_KINEMATIC)
         ++pinfo->_locked_this_step;
     }
-    // ************** Release ******************
+    // Release
     else if (_model != CM_GLUED &&
-        pinfo->isCaptured() &&
-        _tension_release >= 0 &&
-        -contact_pressure >= _tension_release &&
-        pinfo->_locked_this_step < 2)
+             pinfo->isCaptured() &&
+             _tension_release >= 0 &&
+             -contact_pressure >= _tension_release &&
+             pinfo->_locked_this_step < 2)
     {
       pinfo->release();
       pinfo->_contact_force.zero();
@@ -209,7 +208,7 @@ ContactMaster::computeContactForce(PenetrationInfo * pinfo)
 
   const Real area = nodalArea(*pinfo);
 
-  RealVectorValue distance_vec(_mesh.node(node->id()) - pinfo->_closest_point);
+  RealVectorValue distance_vec(_mesh.nodeRef(node->id()) - pinfo->_closest_point);
   RealVectorValue pen_force(_penalty * distance_vec);
   if (_normalize_penalty)
     pen_force *= area;
@@ -236,7 +235,7 @@ ContactMaster::computeContactForce(PenetrationInfo * pinfo)
   }
   else if (_model == CM_COULOMB && _formulation == CF_PENALTY)
   {
-    distance_vec = pinfo->_incremental_slip + (pinfo->_normal * (_mesh.node(node->id()) - pinfo->_closest_point)) * pinfo->_normal;
+    distance_vec = pinfo->_incremental_slip + (pinfo->_normal * (_mesh.nodeRef(node->id()) - pinfo->_closest_point)) * pinfo->_normal;
     pen_force = _penalty * distance_vec;
     if (_normalize_penalty)
       pen_force *= area;
@@ -252,7 +251,7 @@ ContactMaster::computeContactForce(PenetrationInfo * pinfo)
     RealVectorValue contact_force_tangential( pinfo->_contact_force - contact_force_normal );
 
     // Tangential magnitude of elastic predictor
-    const Real tan_mag( contact_force_tangential.size() );
+    const Real tan_mag( contact_force_tangential.norm() );
 
     if ( tan_mag > capacity )
     {
@@ -277,7 +276,7 @@ ContactMaster::computeContactForce(PenetrationInfo * pinfo)
       break;
     case CF_AUGMENTED_LAGRANGE:
       pinfo->_contact_force = pen_force +
-                              pinfo->_lagrange_multiplier*distance_vec/distance_vec.size();
+                              pinfo->_lagrange_multiplier*distance_vec/distance_vec.norm();
       break;
     default:
       mooseError("Invalid contact formulation");
@@ -376,17 +375,13 @@ contactModel(const std::string & the_name)
   std::string name(the_name);
   std::transform(name.begin(), name.end(), name.begin(), ::tolower);
   if ("frictionless" == name)
-  {
     model = CM_FRICTIONLESS;
-  }
   else if ("glued" == name)
-  {
     model = CM_GLUED;
-  }
   else if ("coulomb" == name)
-  {
     model = CM_COULOMB;
-  }
+  else if ("coulomb_mp" == name)
+    model = CM_COULOMB_MP;
   else if ("experimental" == name)
   {
     model = CM_FRICTIONLESS;
@@ -416,6 +411,9 @@ contactFormulation(const std::string & the_name)
 
   else if ("augmented_lagrange" == name)
     formulation = CF_AUGMENTED_LAGRANGE;
+
+  else if ("tangential_penalty" == name)
+    formulation = CF_TANGENTIAL_PENALTY;
 
   if (formulation == CF_INVALID)
   {

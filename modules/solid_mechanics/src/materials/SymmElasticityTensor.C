@@ -7,6 +7,24 @@
 #include "SymmElasticityTensor.h"
 #include <vector>
 
+template<>
+void
+dataStore(std::ostream & stream, SymmElasticityTensor & set, void * context)
+{
+  dataStore(stream, set._constant, context);
+  dataStore(stream, set._values_computed, context);
+  dataStore(stream, set._val, context);
+}
+
+template<>
+void
+dataLoad(std::istream & stream, SymmElasticityTensor & set, void * context)
+{
+  dataLoad(stream, set._constant, context);
+  dataLoad(stream, set._values_computed, context);
+  dataLoad(stream, set._val, context);
+}
+
 SymmElasticityTensor::SymmElasticityTensor(const bool constant)
   : _constant(constant),
     _values_computed(false)
@@ -345,6 +363,12 @@ SymmElasticityTensor::adjustForCracking( const RealVectorValue & /*crack_flags*/
 }
 
 void
+SymmElasticityTensor::adjustForCrackingWithShearRetention( const RealVectorValue & /*crack_flags*/)
+{
+  mooseError("adjustForCrackingWithShearRetention method not defined");
+}
+
+void
 SymmElasticityTensor::fillFromInputVector(std::vector<Real> input, bool all)
 {
   if ((all == true && input.size() != 21) || (all == false && input.size() != 9 ))
@@ -373,4 +397,22 @@ Real
 SymmElasticityTensor::valueAtIndex(int i) const
 {
   return _val[i];
+}
+
+Real
+SymmElasticityTensor::sum_3x3() const
+{
+   // summation of Cij for i and j ranging from 0 to 2 - used in the volumetric locking correction
+   return _val[0] + 2 * ( _val[1] + _val[2] + _val[7]) + _val[6] + _val[11];
+}
+
+RealGradient
+SymmElasticityTensor::sum_3x1() const
+{
+  // used for volumetric locking correction
+  RealGradient a(3);
+  a(0) = _val[0] + _val[1] + _val[2]; // C00 + C01 + C02
+  a(1) = _val[1] + _val[6] + _val[7]; // C10 + C11 + C12
+  a(2) = _val[2] + _val[7] + _val[11]; // C20 + C21 + C22
+  return a;
 }

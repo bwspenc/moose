@@ -1,9 +1,9 @@
 [Mesh]
   file = curvi.e
   # This mesh only has one element.  It does seem to work if you
-  # use SerialMesh on two processors, but it hangs with ParallelMesh
+  # use ReplicatedMesh on two processors, but it hangs with DistributedMesh
   # on two processors.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -43,9 +43,6 @@
 
 [Outputs]
   file_base = out
-  output_initial = true
   exodus = true
   csv = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

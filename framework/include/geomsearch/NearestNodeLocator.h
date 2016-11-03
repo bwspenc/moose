@@ -16,20 +16,11 @@
 #define NEARESTNODELOCATOR_H
 
 // Moose
-#include "MooseMesh.h"
-#include "libmesh/vector_value.h"
 #include "Restartable.h"
 
-// libMesh
-#include "libmesh/libmesh_common.h"
-
-// System
-#include <vector>
-#include <map>
-
-
-class MooseMesh;
+// Forward declarations
 class SubProblem;
+class MooseMesh;
 
 /**
  * Finds the nearest node to each node in boundary1 to each node in boundary2 and the other way around.

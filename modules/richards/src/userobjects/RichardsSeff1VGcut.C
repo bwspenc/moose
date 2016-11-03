@@ -19,8 +19,8 @@ InputParameters validParams<RichardsSeff1VGcut>()
   return params;
 }
 
-RichardsSeff1VGcut::RichardsSeff1VGcut(const std::string & name, InputParameters parameters) :
-    RichardsSeff1VG(name, parameters),
+RichardsSeff1VGcut::RichardsSeff1VGcut(const InputParameters & parameters) :
+    RichardsSeff1VG(parameters),
     _al(getParam<Real>("al")),
     _m(getParam<Real>("m")),
     _p_cut(getParam<Real>("p_cut")),
@@ -40,7 +40,7 @@ RichardsSeff1VGcut::initialSetup()
 
 
 Real
-RichardsSeff1VGcut::seff(std::vector<VariableValue *> p, unsigned int qp) const
+RichardsSeff1VGcut::seff(std::vector<const VariableValue *> p, unsigned int qp) const
 {
   if ((*p[0])[qp] > _p_cut)
   {
@@ -55,7 +55,7 @@ RichardsSeff1VGcut::seff(std::vector<VariableValue *> p, unsigned int qp) const
 }
 
 void
-RichardsSeff1VGcut::dseff(std::vector<VariableValue *> p, unsigned int qp, std::vector<Real> &result) const
+RichardsSeff1VGcut::dseff(std::vector<const VariableValue *> p, unsigned int qp, std::vector<Real> &result) const
 {
   if ((*p[0])[qp] > _p_cut)
     return RichardsSeff1VG::dseff(p, qp, result);
@@ -64,10 +64,11 @@ RichardsSeff1VGcut::dseff(std::vector<VariableValue *> p, unsigned int qp, std::
 }
 
 void
-RichardsSeff1VGcut::d2seff(std::vector<VariableValue *> p, unsigned int qp, std::vector<std::vector<Real> > &result) const
+RichardsSeff1VGcut::d2seff(std::vector<const VariableValue *> p, unsigned int qp, std::vector<std::vector<Real> > &result) const
 {
   if ((*p[0])[qp] > _p_cut)
     return RichardsSeff1VG::d2seff(p, qp, result);
   else
     result[0][0] = 0;
 }
+

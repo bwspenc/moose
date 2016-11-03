@@ -28,8 +28,8 @@ InputParameters validParams<TimeStepper>()
   return params;
 }
 
-TimeStepper::TimeStepper(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
+TimeStepper::TimeStepper(const InputParameters & parameters) :
+    MooseObject(parameters),
     Restartable(parameters, "TimeSteppers"),
     _fe_problem(*parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
     _executioner(*parameters.getCheckedPointerParam<Transient *>("_executioner")),
@@ -203,6 +203,7 @@ TimeStepper::acceptStep()
 void
 TimeStepper::rejectStep()
 {
+  _converged = false;
   _fe_problem.restoreSolutions();
 }
 
@@ -229,10 +230,4 @@ void
 TimeStepper::forceTimeStep(Real dt)
 {
   _current_dt = dt;
-}
-
-void
-TimeStepper::addSyncTime(Real sync_time)
-{
-  _sync_times.insert(sync_time);
 }

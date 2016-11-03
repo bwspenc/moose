@@ -31,10 +31,9 @@ public:
   /**
    * Class constructor
    * Sets up variables for output based on the properties to be output
-   * @param name The name of the class
    * @param parameters The input parameters
    */
-  LineMaterialSymmTensorSampler(const std::string & name, InputParameters parameters);
+  LineMaterialSymmTensorSampler(const InputParameters & parameters);
 
   virtual ~LineMaterialSymmTensorSampler() {}
 
@@ -46,7 +45,7 @@ public:
    * @param curr_point The point corresponding to this material property
    * @return A scalar value from this material property to be output
    */
-  virtual Real getScalarFromProperty(const SymmTensor &property, const Point * curr_point);
+  virtual Real getScalarFromProperty(const SymmTensor &property, const Point & curr_point);
 };
 
 #endif

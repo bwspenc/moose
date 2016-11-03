@@ -13,8 +13,8 @@ InputParameters validParams<SolidMechTempCoupleX>()
   return params;
 }
 
-SolidMechTempCoupleX::SolidMechTempCoupleX(const std::string & name, InputParameters parameters)
-  :SolidMechTempCouple(name, parameters)
+SolidMechTempCoupleX::SolidMechTempCoupleX(const InputParameters & parameters)
+  :SolidMechTempCouple(parameters)
 {}
 
 Real
@@ -37,3 +37,4 @@ SolidMechTempCoupleX::computeQpOffDiagJacobian(unsigned int jvar)
 
     return 0.0;
   }
+

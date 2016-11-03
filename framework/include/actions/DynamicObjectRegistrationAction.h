@@ -25,9 +25,9 @@ InputParameters validParams<DynamicObjectRegistrationAction>();
 class DynamicObjectRegistrationAction : public Action
 {
 public:
-  DynamicObjectRegistrationAction(const std::string & name, InputParameters parameters);
+  DynamicObjectRegistrationAction(InputParameters parameters);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif /* DYNAMICOBJECTREGISTRATIONACTION_H */

@@ -1,5 +1,5 @@
 #
-# Example problem showing how to use the DerivativeParsedMaterial with CHParsed.
+# Example problem showing how to use the DerivativeParsedMaterial with CahnHilliard.
 # The free energy is identical to that from CHMath, f_bulk = 1/4*(1-c)^2*(1+c)^2.
 #
 
@@ -10,7 +10,6 @@
   ny = 100
   xmax = 60
   ymax = 60
-  elem_type = QUAD4
 []
 
 [Variables]
@@ -31,33 +30,35 @@
   [./cIC]
     type = RandomIC
     variable = c
-    max = 0.1
     min = -0.1
+    max =  0.1
   [../]
 []
 
 [Kernels]
-  active = 'CH_Parsed c_dot CHint'
-  [./c_dot]
-    type = TimeDerivative
-    variable = c
-  [../]
-  [./CH_Parsed]
-    type = CHParsed
+  active = 'bulk interface dot'
+  [./bulk]
+    type = CahnHilliard
     variable = c
     f_name = fbulk
     mob_name = M
   [../]
-  [./CH_Math]
-    type = CHMath
-    variable = c
-  [../]
-  [./CHint]
+  [./interface]
     type = CHInterface
     variable = c
     mob_name = M
     kappa_name = kappa_c
-    grad_mob_name = grad_M
+  [../]
+  [./dot]
+    type = TimeDerivative
+    variable = c
+  [../]
+
+  # enable this kernel instead of 'bulk' to compare to CHMath
+  [./bulk_reference]
+    type = CHMath
+    variable = c
+    mob_name = M
   [../]
 []
 
@@ -82,14 +83,12 @@
 
 [Materials]
   [./mat]
-    type = PFMobility
-    block = 0
-    mob = 1.0
-    kappa = 0.5
+    type = GenericConstantMaterial
+    prop_names  = 'M   kappa_c'
+    prop_values = '1.0 0.5'
   [../]
   [./free_energy]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = fbulk
     args = c
     constant_names = W
@@ -113,22 +112,27 @@
 
 [Executioner]
   type = Transient
-  scheme = bdf2
-  dt = 2.0
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart'
-  petsc_options_value = 'hypre boomeramg 31'
+  scheme = bdf2
+
+  # Alternative preconditioning using the additive Schwartz method and LU decomposition
+  #petsc_options_iname = '-pc_type -sub_ksp_type -sub_pc_type'
+  #petsc_options_value = 'asm      preonly       lu          '
+
+  # Preconditioning options using Hypre (algebraic multi-grid)
+  petsc_options_iname = '-pc_type -pc_hypre_type'
+  petsc_options_value = 'hypre    boomeramg'
+
   l_max_its = 30
   l_tol = 1e-4
   nl_max_its = 20
   nl_rel_tol = 1e-9
+
+  dt = 2.0
   end_time = 20.0
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
   print_perf_log = true
 []
-

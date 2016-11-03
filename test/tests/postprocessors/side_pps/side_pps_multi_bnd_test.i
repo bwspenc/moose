@@ -12,8 +12,8 @@
   ny = 3
   elem_type = QUAD4
   stripes = 3
-  # StripeMesh currently only works correctly with SerialMesh.
-  distribution = serial
+  # StripeMesh currently only works correctly with ReplicatedMesh.
+  parallel_type = replicated
 []
 
 [Functions]
@@ -56,7 +56,7 @@
 []
 
 [Outputs]
-  print_perf_log = true
+  execute_on = 'timestep_end'
   [./out]
     type = Exodus
     elemental_as_nodal = true

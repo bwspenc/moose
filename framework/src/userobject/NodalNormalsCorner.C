@@ -12,7 +12,9 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NodalNormalsCorner.h"
+#include "MooseMesh.h"
 
 Threads::spin_mutex nodal_normals_corner_mutex;
 
@@ -24,14 +26,10 @@ InputParameters validParams<NodalNormalsCorner>()
   return params;
 }
 
-NodalNormalsCorner::NodalNormalsCorner(const std::string & name, InputParameters parameters) :
-    SideUserObject(name, parameters),
+NodalNormalsCorner::NodalNormalsCorner(const InputParameters & parameters) :
+    SideUserObject(parameters),
     _aux(_fe_problem.getAuxiliarySystem()),
     _corner_boundary_id(_mesh.getBoundaryID(getParam<BoundaryName>("corner_boundary")))
-{
-}
-
-NodalNormalsCorner::~NodalNormalsCorner()
 {
 }
 
@@ -46,7 +44,7 @@ NodalNormalsCorner::execute()
 
   for (unsigned int nd = 0; nd < _current_side_elem->n_nodes(); nd++)
   {
-    const Node * node = _current_side_elem->get_node(nd);
+    const Node * node = _current_side_elem->node_ptr(nd);
     if (boundary_info.has_boundary_id(node, _corner_boundary_id) &&
         node->n_dofs(_aux.number(), _fe_problem.getVariable(_tid, "nodal_normal_x").number()) > 0)
       {

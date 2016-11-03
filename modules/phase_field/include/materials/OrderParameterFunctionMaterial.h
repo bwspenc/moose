@@ -24,14 +24,13 @@ InputParameters validParams<OrderParameterFunctionMaterial>();
 class OrderParameterFunctionMaterial : public DerivativeMaterialInterface<Material>
 {
 public:
-  OrderParameterFunctionMaterial(const std::string & name,
-                                 InputParameters parameters);
+  OrderParameterFunctionMaterial(const InputParameters & parameters);
 
 protected:
   /// Coupled variable value for the order parameter \f$ \eta \f$.
-  VariableValue & _eta;
+  const VariableValue & _eta;
   unsigned int _eta_var;
-  std::string _eta_name;
+  VariableName _eta_name;
 
   /// name of the function of eta (used to generate the material property names)
   std::string _function_name;

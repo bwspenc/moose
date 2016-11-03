@@ -25,7 +25,7 @@ InputParameters validParams<ElementPropertyReadFile>();
 class ElementPropertyReadFile : public GeneralUserObject
 {
  public:
-  ElementPropertyReadFile(const std::string & name, InputParameters parameters);
+  ElementPropertyReadFile(const InputParameters & parameters);
   virtual ~ElementPropertyReadFile() {}
 
   virtual void initialize() {}

@@ -8,6 +8,10 @@
   elem_type = QUAD4
 []
 
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
 [Variables]
   [./disp_x]
     order = FIRST
@@ -21,8 +25,6 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
   [../]
 []
 
@@ -99,8 +101,7 @@
   [./strain]
     type = ComputeSmallStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
+    displacements = 'disp_x disp_y'
   [../]
 []
 
@@ -152,14 +153,7 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  output_on = timestep_end
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'initial timestep_end failed nonlinear'
-  [../]
 []
 
 [ICs]

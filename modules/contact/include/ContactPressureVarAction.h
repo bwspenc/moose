@@ -13,7 +13,7 @@
 class ContactPressureVarAction: public Action
 {
 public:
-  ContactPressureVarAction(const std::string & name, InputParameters params);
+  ContactPressureVarAction(const InputParameters & params);
 
   virtual void act();
 

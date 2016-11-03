@@ -1,11 +1,12 @@
 # Seff User objects give the correct value
+# Sat User objects give the correct value
 #
 # If you want to add another test for another UserObject
 # then add the UserObject, add a Function defining the expected result,
-# add an AuxVariable and AuxKernel that will record the UserObject's value
+# add an AuxVariable and AuxKernel that will record the UserObjects value
 # and finally add a NodalL2Error that compares this with the Function
 #
-# pressure = x (-5E6<=x<=5E6)
+# Here pressure is x where x runs between -5E6 and 5E6
 
 [UserObjects]
   [./Seff1VG]
@@ -25,6 +26,12 @@
     oil_viscosity = 4.0
     scale_ratio = 1E6
     shift = -2E6
+  [../]
+  [./Seff1VGcut]
+    type = RichardsSeff1VGcut
+    m = 0.8
+    al = 1E-6
+    p_cut = -1E6
   [../]
 
   # following are unimportant in this test
@@ -119,6 +126,40 @@
     vars = 'shift scale'
     vals = '-2E6 1E6'
   [../]
+
+  [./answer_Seff1VGcut]
+    type = ParsedFunction
+    value = if(x<pcut,scut+dscut*(x-pcut),(1+max((-x)*al,0)^(1/(1-m)))^(-m))
+    vars = 'al m pcut scut dscut'
+    vals = '1E-6 0.8 -1E6 0.574349177498517 1.14869835499703e-06'
+  [../]
+  [./answer_dSeff1VGcut]
+    type = GradParsedFunction
+    direction = '1 0 0'
+    value = if(x<pcut,scut+dscut*(x-pcut),(1+max((-x)*al,0)^(1/(1-m)))^(-m))
+    vars = 'al m pcut scut dscut'
+    vals = '1E-6 0.8 -1E6 0.574349177498517 1.14869835499703e-06'
+  [../]
+  [./answer_d2Seff1VGcut]
+    type = Grad2ParsedFunction
+    direction = '1 0 0'
+    value = if(x<pcut,scut+dscut*(x-pcut),(1+max((-x)*al,0)^(1/(1-m)))^(-m))
+    vars = 'al m pcut scut dscut'
+    vals = '1E-6 0.8 -1E6 0.574349177498517 1.14869835499703e-06'
+  [../]
+
+  [./answer_Sat]
+    type = ParsedFunction
+    value = sres+((1-sumsres)*((1+max((-x)*al,0)^(1/(1-m)))^(-m)))
+    vars = 'al m sres sumsres'
+    vals = '1E-6 0.8 0.054321 0.054321'
+  [../]
+  [./answer_dSat]
+    type = ParsedFunction
+    value = 1-sumsres
+    vars = 'sumsres'
+    vals = '0.054321'
+  [../]
 []
 
 [AuxVariables]
@@ -141,6 +182,18 @@
   [./dSeff1RSC_Aux]
   [../]
   [./d2Seff1RSC_Aux]
+  [../]
+
+  [./Seff1VGcut_Aux]
+  [../]
+  [./dSeff1VGcut_Aux]
+  [../]
+  [./d2Seff1VGcut_Aux]
+  [../]
+
+  [./Sat_Aux]
+  [../]
+  [./dSat_Aux]
   [../]
 
   [./check_Aux]
@@ -214,10 +267,45 @@
     wrtnum2 = 0
   [../]
 
+  [./Seff1VGcut_AuxK]
+    type = RichardsSeffAux
+    variable = Seff1VGcut_Aux
+    seff_UO = Seff1VGcut
+    pressure_vars = pressure
+  [../]
+  [./dSeff1VGcut_AuxK]
+    type = RichardsSeffPrimeAux
+    variable = dSeff1VGcut_Aux
+    seff_UO = Seff1VGcut
+    pressure_vars = pressure
+    wrtnum = 0
+  [../]
+  [./d2Seff1VGcut_AuxK]
+    type = RichardsSeffPrimePrimeAux
+    variable = d2Seff1VGcut_Aux
+    seff_UO = Seff1VGcut
+    pressure_vars = pressure
+    wrtnum1 = 0
+    wrtnum2 = 0
+  [../]
+
+  [./Sat_AuxK]
+    type = RichardsSatAux
+    sat_UO = Saturation
+    seff_var = Seff1VG_Aux
+    variable = Sat_Aux
+  [../]
+  [./dSat_AuxK]
+    type = RichardsSatPrimeAux
+    sat_UO = Saturation
+    seff_var = Seff1VG_Aux
+    variable = dSat_Aux
+  [../]
+
   [./check_AuxK]
     type = FunctionAux
     variable = check_Aux
-    function = answer_Seff1RSC
+    function = answer_Seff1VGcut
   [../]
 []
 
@@ -269,13 +357,40 @@
     function = answer_d2Seff1RSC
     variable = d2Seff1RSC_Aux
   [../]
+
+  [./cf_Seff1VGcut]
+    type = NodalL2Error
+    function = answer_Seff1VGcut
+    variable = Seff1VGcut_Aux
+  [../]
+  [./cf_dSeff1VGcut]
+    type = NodalL2Error
+    function = answer_dSeff1VGcut
+    variable = dSeff1VGcut_Aux
+  [../]
+  [./cf_d2Seff1VGcut]
+    type = NodalL2Error
+    function = answer_d2Seff1VGcut
+    variable = d2Seff1VGcut_Aux
+  [../]
+
+  [./cf_Sat]
+    type = NodalL2Error
+    function = answer_Sat
+    variable = Sat_Aux
+  [../]
+  [./cf_dSat]
+    type = NodalL2Error
+    function = answer_dSat
+    variable = dSat_Aux
+  [../]
 []
 
 
 
 #############################################################################
 #
-# Following is largely unimportant as we're not running an actual similation
+# Following is largely unimportant as we are not running an actual similation
 #
 #############################################################################
 [Mesh]
@@ -347,12 +462,11 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   active = 'csv'
   file_base = uo3
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
   [../]
   [./exodus]
     type = Exodus

@@ -19,7 +19,6 @@
 #include "MultiAppTransfer.h"
 
 // Forward declerations
-class MooseVariable;
 class MultiAppPostprocessorToAuxScalarTransfer;
 
 template<>
@@ -32,21 +31,12 @@ class MultiAppPostprocessorToAuxScalarTransfer :
   public MultiAppTransfer
 {
 public:
-
-  /**
-   * Class constructor.
-   */
-  MultiAppPostprocessorToAuxScalarTransfer(const std::string & name, InputParameters parameters);
-
-  /**
-   * Classs destructor.
-   */
-  virtual ~MultiAppPostprocessorToAuxScalarTransfer() {}
+  MultiAppPostprocessorToAuxScalarTransfer(const InputParameters & parameters);
 
   /**
    * Execute the transfer
    */
-  virtual void execute();
+  virtual void execute() override;
 
 protected:
 

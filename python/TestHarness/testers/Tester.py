@@ -38,6 +38,16 @@ class Tester(MooseObject):
     params.addParam('vtk',           ['ALL'], "A test that runs only if VTK is detected ('ALL', 'TRUE', 'FALSE')")
     params.addParam('tecplot',       ['ALL'], "A test that runs only if Tecplot is detected ('ALL', 'TRUE', 'FALSE')")
     params.addParam('dof_id_bytes',  ['ALL'], "A test that runs only if libmesh is configured --with-dof-id-bytes = a specific number, e.g. '4', '8'")
+    params.addParam('petsc_debug',   ['ALL'], "{False,True} -> test only runs when PETSc is configured with --with-debugging={0,1}, otherwise test always runs.")
+    params.addParam('curl',          ['ALL'], "A test that runs only if CURL is detected ('ALL', 'TRUE', 'FALSE')")
+    params.addParam('tbb',           ['ALL'], "A test that runs only if TBB is available ('ALL', 'TRUE', 'FALSE')")
+    params.addParam('superlu',       ['ALL'], "A test that runs only if SuperLU is available via PETSc ('ALL', 'TRUE', 'FALSE')")
+    params.addParam('unique_id',     ['ALL'], "A test that runs only if libmesh is configured with --enable-unique-id ('ALL', 'TRUE', 'FALSE')")
+    params.addParam('cxx11',         ['ALL'], "A test that runs only if CXX11 is available ('ALL', 'TRUE', 'FALSE')")
+    params.addParam('asio',          ['ALL'], "A test that runs only if ASIO is available ('ALL', 'TRUE', 'FALSE')")
+    params.addParam('depend_files',  [], "A test that only runs if all depend files exist (files listed are expected to be relative to the base directory, not the test directory")
+    params.addParam('env_vars',      [], "A test that only runs if all the environment variables listed exist")
+    params.addParam('should_execute', True, 'Whether or not the executeable needs to be run.  Use this to chain together multiple tests based off of one executeable invocation')
 
     return params
 
@@ -45,13 +55,17 @@ class Tester(MooseObject):
     MooseObject.__init__(self, name, params)
     self.specs = params
 
+  # Method to return the input file if applicable to this Tester
+  def getInputFile(self):
+    return None
+
 
   def setValgrindMode(self, mode):
     # Increase the alloted time for tests when running with the valgrind option
     if mode == 'NORMAL':
       self.specs['max_time'] = self.specs['max_time'] * 2
     elif mode == 'HEAVY':
-      self.specs['max_time'] = self.specs['max_time'] * 4
+      self.specs['max_time'] = self.specs['max_time'] * 6
 
 
   # Override this method to tell the harness whether or not this test should run.
@@ -62,11 +76,21 @@ class Tester(MooseObject):
     return (True, '')
 
 
+  # Whether or not the executeable should be run
+  # Don't override this
+  def shouldExecute(self):
+    return self.specs['should_execute']
+
   # This method is called prior to running the test.  It can be used to cleanup files
   # or do other preparations before the tester is run
   def prepare(self):
     return
 
+  def getThreads(self, options):
+    return 1
+
+  def getProcs(self, options):
+    return 1
 
   # This method should return the executable command that will be executed by the tester
   def getCommand(self, options):
@@ -152,13 +176,29 @@ class Tester(MooseObject):
       return (False, reason)
 
     # PETSc is being explicitly checked above
-    local_checks = ['platform', 'compiler', 'mesh_mode', 'method', 'library_mode', 'dtk', 'unique_ids', 'vtk', 'tecplot']
+    local_checks = ['platform', 'compiler', 'mesh_mode', 'method', 'library_mode', 'dtk', 'unique_ids', 'vtk', 'tecplot', \
+                    'petsc_debug', 'curl', 'tbb', 'superlu', 'cxx11', 'asio', 'unique_id']
     for check in local_checks:
       test_platforms = set()
+      operator_display = '!='
+      inverse_set = False
       for x in self.specs[check]:
+        if x[0] == '!':
+          if inverse_set:
+            return (False, "(Multiple Negation Unsupported)")
+          inverse_set = True
+          operator_display = '=='
+          x = x[1:] # Strip off the !
+        x_upper = x.upper()
+        if x_upper in test_platforms:
+          return (False, "(Duplicate Entry or Negative of Existing Entry)")
         test_platforms.add(x.upper())
-      if not len(test_platforms.intersection(checks[check])):
-        reason = 'skipped (' + re.sub(r'\[|\]', '', check).upper() + '!=' + ', '.join(self.specs[check]) + ')'
+
+      match_found = len(test_platforms.intersection(checks[check])) > 0
+      # Either we didn't find the match when we were using normal "include" logic
+      # or we did find the match when we wanted to exclude it
+      if inverse_set == match_found:
+        reason = 'skipped (' + re.sub(r'\[|\]', '', check).upper() + operator_display + ', '.join(test_platforms) + ')'
         return (False, reason)
 
     # Check for heavy tests
@@ -178,6 +218,18 @@ class Tester(MooseObject):
     for x in self.specs['dof_id_bytes']:
       if x != 'ALL' and not x in checks['dof_id_bytes']:
         return (False, 'skipped (--with-dof-id-bytes!=' + x + ')')
+
+    # Check to make sure depend files exist
+    for file in self.specs['depend_files']:
+      if not os.path.isfile(os.path.join(self.specs['base_dir'], file)):
+        reason = 'skipped (DEPEND FILES)'
+        return (False, reason)
+
+    # Check to make sure environment variable exists
+    for var in self.specs['env_vars']:
+      if not os.environ.has_key(var):
+        reason = 'skipped (ENV VAR NOT SET)'
+        return (False, reason)
 
     # Check the return values of the derived classes
     return self.checkRunnable(options)

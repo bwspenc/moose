@@ -7,7 +7,7 @@
 #ifndef NSMASSWEAKSTAGNATIONBC_H
 #define NSMASSWEAKSTAGNATIONBC_H
 
-#include "NSWeakStagnationBC.h"
+#include "NSWeakStagnationBaseBC.h"
 
 // Forward Declarations
 class NSMassWeakStagnationBC;
@@ -15,17 +15,13 @@ class NSMassWeakStagnationBC;
 template<>
 InputParameters validParams<NSMassWeakStagnationBC>();
 
-
 /**
  * The inviscid energy BC term with specified normal flow.
  */
-class NSMassWeakStagnationBC : public NSWeakStagnationBC
+class NSMassWeakStagnationBC : public NSWeakStagnationBaseBC
 {
-
 public:
-  NSMassWeakStagnationBC(const std::string & name, InputParameters parameters);
-
-  virtual ~NSMassWeakStagnationBC(){}
+  NSMassWeakStagnationBC(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

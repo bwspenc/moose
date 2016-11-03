@@ -12,6 +12,7 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "ComputeElemAuxBcsThread.h"
 #include "AuxiliarySystem.h"
 #include "FEProblem.h"
@@ -22,11 +23,11 @@
 
 ComputeElemAuxBcsThread::ComputeElemAuxBcsThread(FEProblem & problem,
                                                  AuxiliarySystem & sys,
-                                                 std::vector<AuxWarehouse> & auxs,
+                                                 const MooseObjectWarehouse<AuxKernel> & storage,
                                                  bool need_materials) :
     _problem(problem),
     _sys(sys),
-    _auxs(auxs),
+    _storage(storage),
     _need_materials(need_materials)
 {
 }
@@ -35,7 +36,7 @@ ComputeElemAuxBcsThread::ComputeElemAuxBcsThread(FEProblem & problem,
 ComputeElemAuxBcsThread::ComputeElemAuxBcsThread(ComputeElemAuxBcsThread & x, Threads::split /*split*/) :
     _problem(x._problem),
     _sys(x._sys),
-    _auxs(x._auxs),
+    _storage(x._storage),
     _need_materials(x._need_materials)
 {
 }
@@ -46,10 +47,11 @@ ComputeElemAuxBcsThread::operator() (const ConstBndElemRange & range)
   ParallelUniqueId puid;
   _tid = puid.id;
 
-  for (ConstBndElemRange::const_iterator elem_it = range.begin() ; elem_it != range.end(); ++elem_it)
-  {
-    const BndElement * belem = *elem_it;
+  // Reference to all boundary restricted AuxKernels for the current thread
+  const std::map<BoundaryID, std::vector<MooseSharedPointer<AuxKernel> > > & boundary_kernels = _storage.getActiveBoundaryObjects(_tid);
 
+  for (const auto & belem : range)
+  {
     const Elem * elem = belem->_elem;
     unsigned short int side = belem->_side;
     BoundaryID boundary_id = belem->_bnd_id;
@@ -57,13 +59,16 @@ ComputeElemAuxBcsThread::operator() (const ConstBndElemRange & range)
     if (elem->processor_id() == _problem.processor_id())
     {
       // prepare variables
-      for (std::map<std::string, MooseVariable *>::iterator it = _sys._elem_vars[_tid].begin(); it != _sys._elem_vars[_tid].end(); ++it)
+      for (const auto & it : _sys._elem_vars[_tid])
       {
-        MooseVariable * var = it->second;
+        MooseVariable * var = it.second;
         var->prepareAux();
       }
 
-      if (_auxs[_tid].elementalBCs(boundary_id).size() > 0)
+      // Locate the AuxKernel objects for the current BoundaryID
+      const std::map<BoundaryID, std::vector<MooseSharedPointer<AuxKernel> > >::const_iterator iter = boundary_kernels.find(boundary_id);
+
+      if (iter != boundary_kernels.end() && !(iter->second.empty()) )
       {
         _problem.prepare(elem, _tid);
         _problem.reinitElemFace(elem, side, boundary_id, _tid);
@@ -77,9 +82,8 @@ ComputeElemAuxBcsThread::operator() (const ConstBndElemRange & range)
         // Set the active boundary id so that BoundaryRestrictable::_boundary_id is correct
         _problem.setCurrentBoundaryID(boundary_id);
 
-        const std::vector<AuxKernel*> & bcs = _auxs[_tid].elementalBCs(boundary_id);
-        for (std::vector<AuxKernel*>::const_iterator element_bc_it = bcs.begin(); element_bc_it != bcs.end(); ++element_bc_it)
-            (*element_bc_it)->compute();
+        for (const auto & aux : iter->second)
+          aux->compute();
 
         if (_need_materials)
           _problem.swapBackMaterialsFace(_tid);
@@ -91,9 +95,9 @@ ComputeElemAuxBcsThread::operator() (const ConstBndElemRange & range)
       // update the solution vector
       {
         Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-        for (std::map<std::string, MooseVariable *>::iterator it = _sys._elem_vars[_tid].begin(); it != _sys._elem_vars[_tid].end(); ++it)
+        for (const auto & it : _sys._elem_vars[_tid])
         {
-          MooseVariable * var = it->second;
+          MooseVariable * var = it.second;
           var->insert(_sys.solution());
         }
       }

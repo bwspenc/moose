@@ -25,6 +25,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dense_subvector.h"
 #include "libmesh/libmesh_common.h"
+#include "libmesh/quadrature.h"
 
 const BoundaryID InternalSideIndicator::InternalBndId = 12345;
 
@@ -40,12 +41,12 @@ InputParameters validParams<InternalSideIndicator>()
 }
 
 
-InternalSideIndicator::InternalSideIndicator(const std::string & name, InputParameters parameters) :
-    Indicator(name, parameters),
-    NeighborCoupleable(parameters, false, false),
-    ScalarCoupleable(parameters),
-    NeighborMooseVariableInterface(parameters, false),
-    _field_var(_sys.getVariable(_tid, name)),
+InternalSideIndicator::InternalSideIndicator(const InputParameters & parameters) :
+    Indicator(parameters),
+    NeighborCoupleable(this, false, false),
+    ScalarCoupleable(this),
+    NeighborMooseVariableInterface(this, false),
+    _field_var(_sys.getVariable(_tid, name())),
 
     _current_elem(_assembly.elem()),
     _neighbor_elem(_assembly.neighbor()),
@@ -73,14 +74,10 @@ InternalSideIndicator::InternalSideIndicator(const std::string & name, InputPara
     _grad_u_neighbor(_var.gradSlnNeighbor())
 {
   const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
-  for (unsigned int i=0; i<coupled_vars.size(); i++)
-    addMooseVariableDependency(coupled_vars[i]);
+  for (const auto & var : coupled_vars)
+    addMooseVariableDependency(var);
 
   addMooseVariableDependency(mooseVariable());
-}
-
-InternalSideIndicator::~InternalSideIndicator()
-{
 }
 
 void
@@ -120,6 +117,6 @@ InternalSideIndicator::finalize()
 
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    _solution.set(_field_var.nodalDofIndex(), std::sqrt(value)/(Real)n_flux_faces);
+    _solution.set(_field_var.nodalDofIndex(), std::sqrt(value)/static_cast<Real>(n_flux_faces));
   }
 }

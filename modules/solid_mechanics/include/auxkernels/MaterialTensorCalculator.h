@@ -42,7 +42,8 @@ public:
     VOLUMETRICSTRAIN
   };
 
-  MaterialTensorCalculator(const std::string &name, InputParameters parameters);
+  MaterialTensorCalculator(const InputParameters & parameters);
+
   ~MaterialTensorCalculator() {}
 
 protected:
@@ -56,11 +57,8 @@ protected:
 
 public:
   Real getTensorQuantity(const SymmTensor & tensor,
-                         const Point * curr_point,
+                         const Point & curr_point,
                          RealVectorValue &direction);
-
-  Real principalValue( const SymmTensor & tensor, unsigned int index, RealVectorValue &direction );
-
 };
 
 #endif //MATERIALTENSORCALCULATOR_H

@@ -26,9 +26,9 @@ InputParameters validParams<InitProblemAction>();
 class InitProblemAction : public Action
 {
 public:
-  InitProblemAction(const std::string & name, InputParameters params);
+  InitProblemAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // INITPROBLEMACTION_H

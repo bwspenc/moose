@@ -30,15 +30,14 @@ InputParameters validParams<NodalNormalBC>();
 class NodalNormalBC : public NodalBC
 {
 public:
-  NodalNormalBC(const std::string & name, InputParameters parameters);
-  virtual ~NodalNormalBC();
+  NodalNormalBC(const InputParameters & parameters);
 
-  virtual void computeResidual(NumericVector<Number> & residual);
+  virtual void computeResidual(NumericVector<Number> & residual) override;
 
 protected:
-  VariableValue & _nx;
-  VariableValue & _ny;
-  VariableValue & _nz;
+  const VariableValue & _nx;
+  const VariableValue & _ny;
+  const VariableValue & _nz;
   /// Normal at the node (it is pre-computed by user object subsystem)
   Point _normal;
 };

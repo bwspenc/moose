@@ -31,13 +31,13 @@ InputParameters validParams<MeshChangedInterface>();
 class MeshChangedInterface
 {
 public:
-  MeshChangedInterface(InputParameters & params);
-  virtual ~MeshChangedInterface() {};
+  MeshChangedInterface(const InputParameters & params);
+  virtual ~MeshChangedInterface() = default;
 
   /**
    * Called on this object when the mesh changes
    */
-  virtual void meshChanged() {};
+  virtual void meshChanged() {}
 
 protected:
 

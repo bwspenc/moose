@@ -8,6 +8,7 @@
 #include "Factory.h"
 #include "Parser.h"
 #include "FEProblem.h"
+#include "Conversion.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -34,8 +35,8 @@ InputParameters validParams<PolycrystalRandomICAction>()
   return params;
 }
 
-PolycrystalRandomICAction::PolycrystalRandomICAction(const std::string & name, InputParameters params) :
-    Action(name, params),
+PolycrystalRandomICAction::PolycrystalRandomICAction(const InputParameters & params) :
+    Action(params),
     _op_num(getParam<unsigned int>("op_num")),
     _var_name_base(getParam<std::string>("var_name_base")),
     _random_type(getParam<MooseEnum>("random_type"))
@@ -65,6 +66,7 @@ PolycrystalRandomICAction::act()
     poly_params.set<unsigned int>("typ") = _random_type;
 
     //Add initial condition
-    _problem->addInitialCondition("PolycrystalRandomIC", "InitialCondition", poly_params);
+    _problem->addInitialCondition("PolycrystalRandomIC", "ICs/PolycrystalICs/PolycrystalRandomIC_" + Moose::stringify(op), poly_params);
   }
 }
+

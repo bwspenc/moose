@@ -11,7 +11,11 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
+// MOOSE includes
 #include "AutoPositionsMultiApp.h"
+#include "MooseMesh.h"
+#include "FEProblem.h"
 
 template<>
 InputParameters validParams<AutoPositionsMultiApp>()
@@ -21,41 +25,33 @@ InputParameters validParams<AutoPositionsMultiApp>()
   params += validParams<BoundaryRestrictable>();
 
   params.suppressParameter<std::vector<Point> >("positions");
-  params.suppressParameter<FileName>("positions_file");
+  params.suppressParameter<std::vector<FileName> >("positions_file");
 
   return params;
 }
 
 
-AutoPositionsMultiApp::AutoPositionsMultiApp(const std::string & name, InputParameters parameters):
-    TransientMultiApp(name, parameters),
-    BoundaryRestrictable(parameters)
-{
-}
-
-AutoPositionsMultiApp::~AutoPositionsMultiApp()
+AutoPositionsMultiApp::AutoPositionsMultiApp(const InputParameters & parameters):
+    TransientMultiApp(parameters),
+    BoundaryRestrictable(parameters, true) // true for applying to nodesets
 {
 }
 
 void
 AutoPositionsMultiApp::fillPositions()
 {
-  MooseMesh & master_mesh = _fe_problem->mesh();
+  MooseMesh & master_mesh = _fe_problem.mesh();
 
   const std::set<BoundaryID> & bids = boundaryIDs();
 
-  for (std::set<BoundaryID>::iterator bid_it = bids.begin();
-       bid_it != bids.end();
-       ++bid_it)
+  for (const auto & boundary_id : bids)
   {
-    BoundaryID boundary_id = *bid_it;
-
     // Grab the nodes on the boundary ID and add a Sub-App at each one.
-    std::vector<dof_id_type> & boundary_node_ids = master_mesh.getNodeList(boundary_id);
+    const std::vector<dof_id_type> & boundary_node_ids = master_mesh.getNodeList(boundary_id);
 
-    for (unsigned int i=0; i<boundary_node_ids.size(); i++)
+    for (const auto & boundary_node_id : boundary_node_ids)
     {
-      Node & node = master_mesh.node(boundary_node_ids[i]);
+      Node & node = master_mesh.nodeRef(boundary_node_id);
 
       _positions.push_back(node);
     }

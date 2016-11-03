@@ -15,6 +15,7 @@
 #ifndef MOOSEOBJECT_H
 #define MOOSEOBJECT_H
 
+// MOOSE includes
 #include "InputParameters.h"
 #include "ConsoleStreamInterface.h"
 
@@ -27,6 +28,7 @@ class MooseObject;
 template<>
 InputParameters validParams<MooseObject>();
 
+
 /**
  * Every object that can be built by the factory should be derived from this class.
  */
@@ -35,9 +37,9 @@ class MooseObject :
   public libMesh::ParallelObject
 {
 public:
-  MooseObject(const std::string & name, InputParameters parameters);
+  MooseObject(const InputParameters & parameters);
 
-  virtual ~MooseObject() { }
+  virtual ~MooseObject() = default;
 
   /**
    * Get the name of the object
@@ -49,20 +51,15 @@ public:
    * Get the parameters of the object
    * @return The parameters of the object
    */
-  InputParameters & parameters() { return _pars; }
+  const InputParameters & parameters() const { return _pars; }
 
-  ///@{
   /**
    * Retrieve a parameter for the object
    * @param name The name of the parameter
    * @return The value of the parameter
    */
   template <typename T>
-  const T & getParam(const std::string & name);
-
-  template <typename T>
   const T & getParam(const std::string & name) const;
-  ///@}
 
   /**
    * Test if the supplied parameter is valid
@@ -75,24 +72,27 @@ public:
    */
   MooseApp & getMooseApp() { return _app; }
 
+  /**
+   * Return the enabled status of the object.
+   */
+  virtual bool enabled() { return _enabled; }
+
+
 protected:
-
-  /// The name of this object
-  std::string _name;
-
-  /// Parameters of this object
-  InputParameters _pars;
 
   /// The MooseApp this object is associated with
   MooseApp & _app;
-};
 
-template <typename T>
-const T &
-MooseObject::getParam(const std::string & name)
-{
-  return InputParameters::getParamHelper(name, _pars, static_cast<T *>(0));
-}
+  /// Parameters of this object, references the InputParameters stored in the InputParametersWarehouse
+  const InputParameters & _pars;
+
+  /// The name of this object, reference to value stored in InputParameters
+  const std::string & _name;
+
+  /// Reference to the "enable" InputParaemters, used by Controls for toggling on/off MooseObjects
+  const bool & _enabled;
+
+};
 
 template <typename T>
 const T &
@@ -100,5 +100,6 @@ MooseObject::getParam(const std::string & name) const
 {
   return InputParameters::getParamHelper(name, _pars, static_cast<T *>(0));
 }
+
 
 #endif /* MOOSEOBJECT_H*/

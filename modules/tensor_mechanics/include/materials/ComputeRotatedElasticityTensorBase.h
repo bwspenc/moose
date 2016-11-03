@@ -15,7 +15,7 @@
 class ComputeRotatedElasticityTensorBase : public ComputeElasticityTensorBase
 {
 public:
-  ComputeRotatedElasticityTensorBase(const std:: string & name, InputParameters parameters);
+  ComputeRotatedElasticityTensorBase(const InputParameters & parameters);
 
 protected:
   RealVectorValue _Euler_angles;

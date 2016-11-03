@@ -12,11 +12,17 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "Transfer.h"
 #include "FEProblem.h"
 #include "MooseMesh.h"
 #include "Assembly.h"
 #include "MooseVariable.h"
+#include "MooseEnum.h"
+#include "InputParameters.h"
+
+// libMesh
+#include "libmesh/system.h"
 
 const Number Transfer::OutOfMeshValue = -999999;
 
@@ -32,12 +38,14 @@ InputParameters validParams<Transfer>()
   params.registerBase("Transfer");
 
   params.addParamNamesToGroup("use_displaced_mesh", "Advanced");
+
+  params.declareControllable("enable");
   return params;
 }
 
-Transfer::Transfer(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
-    SetupInterface(parameters),
+Transfer::Transfer(const InputParameters & parameters) :
+    MooseObject(parameters),
+    SetupInterface(this),
     Restartable(parameters, "Transfers"),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
     _fe_problem(*parameters.get<FEProblem *>("_fe_problem")),
@@ -52,21 +60,15 @@ Transfer::Transfer(const std::string & name, InputParameters parameters) :
  * Note that this implies that variable names are unique across all systems!
  */
 System *
-Transfer::find_sys(EquationSystems & es, const std::string & var_name) const
+Transfer::find_sys(EquationSystems & es, const std::string & var_name)
 {
-  System * sys = NULL;
-
   // Find the system this variable is from
   for (unsigned int i=0; i<es.n_systems(); i++)
-  {
     if (es.get_system(i).has_variable(var_name))
-    {
-      sys = &es.get_system(i);
-      break;
-    }
-  }
+      return &es.get_system(i);
 
-  mooseAssert(sys, "Unable to find variable " + var_name);
+  mooseError("Unable to find variable " + var_name + " in any system.");
 
-  return sys;
+  // Unreachable
+  return &es.get_system(0);
 }

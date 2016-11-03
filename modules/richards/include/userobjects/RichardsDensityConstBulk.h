@@ -23,7 +23,7 @@ InputParameters validParams<RichardsDensityConstBulk>();
 class RichardsDensityConstBulk : public RichardsDensity
 {
 public:
-  RichardsDensityConstBulk(const std::string & name, InputParameters parameters);
+  RichardsDensityConstBulk(const InputParameters & parameters);
 
   /**
    * fluid density as a function of porepressure

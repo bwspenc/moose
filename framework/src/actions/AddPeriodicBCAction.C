@@ -39,8 +39,8 @@ InputParameters validParams<AddPeriodicBCAction>()
   return params;
 }
 
-AddPeriodicBCAction::AddPeriodicBCAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+AddPeriodicBCAction::AddPeriodicBCAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -48,7 +48,7 @@ void
 AddPeriodicBCAction::setPeriodicVars(PeriodicBoundaryBase & p, const std::vector<VariableName> & var_names)
 {
   NonlinearSystem & nl = _problem->getNonlinearSystem();
-  std::vector<VariableName> const * var_names_ptr;
+  const std::vector<VariableName> * var_names_ptr;
 
   // If var_names is empty - then apply this periodic condition to all variables in the system
   if (var_names.empty())
@@ -56,9 +56,9 @@ AddPeriodicBCAction::setPeriodicVars(PeriodicBoundaryBase & p, const std::vector
   else
     var_names_ptr = &var_names;
 
-  for (std::vector<VariableName>::const_iterator it = var_names_ptr->begin(); it != var_names_ptr->end(); ++it)
+  for (const auto & var_name : *var_names_ptr)
   {
-    unsigned int var_num = nl.getVariable(0, (*it)).number();
+    unsigned int var_num = nl.getVariable(0, var_name).number();
 
     p.set_variable(var_num);
     _mesh->addPeriodicVariable(var_num, p.myboundary, p.pairedboundary);
@@ -71,34 +71,38 @@ AddPeriodicBCAction::autoTranslationBoundaries()
   if (isParamValid("auto_direction"))
   {
     // If we are working with a parallel mesh then we're going to ghost all the boundaries everywhere because we don't know what we need...
-    if (_mesh->isParallelMesh())
+    if (_mesh->isDistributedMesh())
     {
       const std::set<BoundaryID> & ids = _mesh->meshBoundaryIds();
-      for (std::set<BoundaryID>::const_iterator id_it = ids.begin();
-          id_it != ids.end();
-          ++id_it)
-        _problem->addGhostedBoundary(*id_it);
+      for (const auto & bid : ids)
+        _problem->addGhostedBoundary(bid);
 
       _problem->ghostGhostedBoundaries();
-      _mesh->detectOrthogonalDimRanges();
+
+      bool is_orthogonal_mesh = _mesh->detectOrthogonalDimRanges();
+
+      // If we can't detect the orthogonal dimension ranges for this
+      // Mesh, then auto_direction periodicity isn't going to work.
+      if (!is_orthogonal_mesh)
+        mooseError("Could not detect orthogonal dimension ranges for DistributedMesh.");
     }
 
     NonlinearSystem & nl = _problem->getNonlinearSystem();
     std::vector<std::string> auto_dirs = getParam<std::vector<std::string> >("auto_direction");
 
     int dim_offset = _mesh->dimension() - 2;
-    for (unsigned int i=0; i<auto_dirs.size(); ++i)
+    for (const auto & dir : auto_dirs)
     {
       int component = -1;
-      if (auto_dirs[i] == "X" || auto_dirs[i] == "x")
+      if (dir == "X" || dir == "x")
         component = 0;
-      else if (auto_dirs[i] == "Y" || auto_dirs[i] == "y")
+      else if (dir == "Y" || dir == "y")
       {
         if (dim_offset < 0)
           mooseError("Cannot wrap 'Y' direction when using a 1D mesh");
         component = 1;
       }
-      else if (auto_dirs[i] == "Z" || auto_dirs[i] == "z")
+      else if (dir == "Z" || dir == "z")
       {
         if (dim_offset <= 0)
           mooseError("Cannot wrap 'Z' direction when using a 1D or 2D mesh");
@@ -107,7 +111,7 @@ AddPeriodicBCAction::autoTranslationBoundaries()
 
       if (component >= 0)
       {
-        std::pair<BoundaryID, BoundaryID> *boundary_ids = _mesh->getPairedBoundaryMapping(component);
+        const std::pair<BoundaryID, BoundaryID> * boundary_ids = _mesh->getPairedBoundaryMapping(component);
         RealVectorValue v;
         v(component) = _mesh->dimensionWidth(component);
         PeriodicBoundary p(v);

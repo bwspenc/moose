@@ -1,8 +1,8 @@
 [Mesh]
   file = square.e
-  # This MeshModifier currently only works with SerialMesh.
+  # This MeshModifier currently only works with ReplicatedMesh.
   # For more information, refer to #2129.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [MeshModifiers]
@@ -65,8 +65,5 @@
 
 [Outputs]
   file_base = out
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

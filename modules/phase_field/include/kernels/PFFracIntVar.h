@@ -24,7 +24,7 @@ InputParameters validParams<PFFracIntVar>();
 class PFFracIntVar : public KernelValue
 {
 public:
-  PFFracIntVar(const std::string & name, InputParameters parameters);
+  PFFracIntVar(const InputParameters & parameters);
 
 protected:
 

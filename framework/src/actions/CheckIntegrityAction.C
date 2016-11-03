@@ -24,8 +24,8 @@ InputParameters validParams<CheckIntegrityAction>()
 }
 
 
-CheckIntegrityAction::CheckIntegrityAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+CheckIntegrityAction::CheckIntegrityAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -36,3 +36,4 @@ CheckIntegrityAction::act()
   if (_problem.get() != NULL)
     _problem->checkProblemIntegrity();
 }
+

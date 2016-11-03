@@ -12,8 +12,14 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "MoosePreconditioner.h"
 #include "FEProblem.h"
+#include "PetscSupport.h"
+#include "NonlinearSystem.h"
+
+// libMesh includes
+#include "libmesh/numeric_vector.h"
 
 template<>
 InputParameters validParams<MoosePreconditioner>()
@@ -23,23 +29,22 @@ InputParameters validParams<MoosePreconditioner>()
 
   MooseEnum pc_side("left right symmetric", "right");
   params.addParam<MooseEnum>("pc_side", pc_side, "Preconditioning side");
-
   params.registerBase("MoosePreconditioner");
+
+#ifdef LIBMESH_HAVE_PETSC
+  params += Moose::PetscSupport::getPetscValidParams();
+#endif //LIBMESH_HAVE_PETSC
 
   return params;
 }
 
 
-MoosePreconditioner::MoosePreconditioner(const std::string & name, InputParameters params) :
-    MooseObject(name, params),
+MoosePreconditioner::MoosePreconditioner(const InputParameters & params) :
+    MooseObject(params),
     Restartable(params, "Preconditioners"),
     _fe_problem(*params.getCheckedPointerParam<FEProblem *>("_fe_problem"))
 {
   _fe_problem.getNonlinearSystem().setPCSide(getParam<MooseEnum>("pc_side"));
-}
-
-MoosePreconditioner::~MoosePreconditioner()
-{
 }
 
 void
@@ -51,7 +56,7 @@ MoosePreconditioner::copyVarValues(MeshBase & mesh,
     MeshBase::node_iterator it = mesh.local_nodes_begin();
     MeshBase::node_iterator it_end = mesh.local_nodes_end();
 
-    for (;it!=it_end;++it)
+    for (; it != it_end; ++it)
     {
       Node * node = *it;
 
@@ -73,7 +78,7 @@ MoosePreconditioner::copyVarValues(MeshBase & mesh,
     MeshBase::element_iterator it = mesh.local_elements_begin();
     MeshBase::element_iterator it_end = mesh.local_elements_end();
 
-    for (;it!=it_end;++it)
+    for (; it != it_end; ++it)
     {
       Elem * elem = *it;
 

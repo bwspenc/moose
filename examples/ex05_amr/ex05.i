@@ -20,7 +20,7 @@
     coef = 0.125
   [../]
   [./conv]
-    type = Convection
+    type = ExampleConvection
     variable = convected
     some_variable = diffused
   [../]
@@ -60,8 +60,6 @@
 
 [Executioner]
   type = Steady
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   l_tol = 1e-3
@@ -76,6 +74,7 @@
     [./error]
       type = GradientJumpIndicator
       variable = convected
+      outputs = none
     [../]
   [../]
   [./Markers]
@@ -84,13 +83,12 @@
       refine = 0.5
       coarsen = 0
       indicator = error
+      outputs = none
     [../]
   [../]
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

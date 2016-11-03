@@ -25,17 +25,14 @@ class DesorptionToPorespace : public Kernel
 {
 public:
 
-  DesorptionToPorespace(const std::string & name,
-                        InputParameters parameters);
+  DesorptionToPorespace(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
-
   virtual Real computeQpJacobian();
-
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  /// moose internal variable number corresponding to the concentration in the matrix (needed for OffDiagJacobian)
+  /// MOOSE internal variable number corresponding to the concentration in the matrix (needed for OffDiagJacobian)
   unsigned int _conc_var;
 
   /// mass flow rate from matrix = mass flow rate to porespace

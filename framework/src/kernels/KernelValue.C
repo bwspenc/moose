@@ -15,6 +15,10 @@
 #include "KernelValue.h"
 #include "SubProblem.h"
 #include "SystemBase.h"
+#include "Assembly.h"
+
+// libMesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<KernelValue>()
@@ -24,12 +28,8 @@ InputParameters validParams<KernelValue>()
 }
 
 
-KernelValue::KernelValue(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters)
-{
-}
-
-KernelValue::~KernelValue()
+KernelValue::KernelValue(const InputParameters & parameters) :
+    Kernel(parameters)
 {
 }
 
@@ -53,8 +53,8 @@ KernelValue::computeResidual()
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i<_save_in.size(); i++)
-      _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
+    for (const auto & var : _save_in)
+      var->sys().solution().add_vector(_local_re, var->dofIndices());
   }
 }
 
@@ -84,8 +84,8 @@ KernelValue::computeJacobian()
       diag(i) = _local_ke(i,i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i = 0; i < _diag_save_in.size(); i++)
-      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+    for (const auto & var : _diag_save_in)
+      var->sys().solution().add_vector(diag, var->dofIndices());
   }
 }
 

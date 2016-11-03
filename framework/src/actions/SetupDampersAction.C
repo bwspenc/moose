@@ -24,8 +24,8 @@ InputParameters validParams<SetupDampersAction>()
 }
 
 
-SetupDampersAction::SetupDampersAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+SetupDampersAction::SetupDampersAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -38,3 +38,4 @@ SetupDampersAction::act()
   if (it_beg != it_end)
     _problem->setupDampers();
 }
+

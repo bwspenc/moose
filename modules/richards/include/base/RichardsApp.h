@@ -22,7 +22,7 @@ InputParameters validParams<RichardsApp>();
 class RichardsApp : public MooseApp
 {
 public:
-  RichardsApp(const std::string & name, InputParameters parameters);
+  RichardsApp(const InputParameters & parameters);
   virtual ~RichardsApp();
 
   static void registerApps();

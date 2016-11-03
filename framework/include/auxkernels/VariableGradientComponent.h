@@ -33,17 +33,12 @@ public:
 
   /**
    * Class constructor
-   * @param name AuxKernel object name
    * @param parameters Input parameters for the object
    */
-  VariableGradientComponent(const std::string & name, InputParameters parameters);
+  VariableGradientComponent(const InputParameters & parameters);
 
 protected:
-
-  /**
-   * Extracts the component from the gradient of a coupled variable
-   */
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
 private:
 

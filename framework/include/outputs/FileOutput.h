@@ -36,12 +36,7 @@ public:
   /**
    * Class constructor
    */
-  FileOutput(const std::string & name, InputParameters & parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~FileOutput();
+  FileOutput(const InputParameters & parameters);
 
   /**
    * The filename for the output file

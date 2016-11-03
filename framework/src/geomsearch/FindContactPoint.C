@@ -15,6 +15,7 @@
 // Moose
 #include "FindContactPoint.h"
 #include "LineSegment.h"
+#include "PenetrationInfo.h"
 
 // libMesh
 #include "libmesh/boundary_info.h"
@@ -24,6 +25,8 @@
 #include "libmesh/dense_matrix.h"
 #include "libmesh/dense_vector.h"
 #include "libmesh/fe_base.h"
+#include "libmesh/vector_value.h"
+
 
 namespace Moose
 {
@@ -63,13 +66,13 @@ findContactPoint(PenetrationInfo & p_info,
 
   if (dim == 1)
   {
-    Node * left(master_elem->get_node(0));
-    Node * right(left);
-    Real leftCoor((*left)(0));
-    Real rightCoor(leftCoor);
-    for (unsigned i(1); i < master_elem->n_nodes(); ++i)
+    const Node * left = master_elem->node_ptr(0);
+    const Node * right = left;
+    Real leftCoor = (*left)(0);
+    Real rightCoor = leftCoor;
+    for (unsigned i = 1; i < master_elem->n_nodes(); ++i)
     {
-      Node * curr = master_elem->get_node(i);
+      const Node * curr = master_elem->node_ptr(i);
       Real coor = (*curr)(0);
       if (coor < leftCoor)
       {
@@ -82,7 +85,7 @@ findContactPoint(PenetrationInfo & p_info,
         rightCoor = coor;
       }
     }
-    Node * nearestNode(left);
+    const Node * nearestNode = left;
     Point nearestPoint(leftCoor, 0, 0);
     if (side->node(0) == right->id())
     {
@@ -101,6 +104,7 @@ findContactPoint(PenetrationInfo & p_info,
     p_info._dxyzdeta = dxyz_deta;
     p_info._d2xyzdxideta = d2xyz_dxieta;
     p_info._side_phi = _fe->get_phi();
+    p_info._side_grad_phi = _fe->get_dphi();
     contact_point_on_side = true;
     return;
   }
@@ -112,17 +116,15 @@ findContactPoint(PenetrationInfo & p_info,
   else
     ref_point = p_info._closest_point_ref;
 
-  std::vector<Point> points(1);
-  points[0] = ref_point;
+  std::vector<Point> points = {ref_point};
   _fe->reinit(side, &points);
   RealGradient d = slave_point - phys_point[0];
 
   Real update_size = std::numeric_limits<Real>::max();
 
   //Least squares
-  for (unsigned int it=0; it<3 && update_size > TOLERANCE*1e3; ++it)
+  for (unsigned int it = 0; it < 3 && update_size > TOLERANCE*1e3; ++it)
   {
-
     DenseMatrix<Real> jac(dim-1, dim-1);
 
     jac(0,0) = -(dxyz_dxi[0] * dxyz_dxi[0]);
@@ -163,7 +165,7 @@ findContactPoint(PenetrationInfo & p_info,
   unsigned nit=0;
 
   // Newton Loop
-  for (; nit<12 && update_size > TOLERANCE*TOLERANCE; nit++)
+  for (; nit < 12 && update_size > TOLERANCE*TOLERANCE; nit++)
   {
     d = slave_point - phys_point[0];
 
@@ -209,17 +211,18 @@ findContactPoint(PenetrationInfo & p_info,
 
   p_info._closest_point_ref = ref_point;
   p_info._closest_point = phys_point[0];
-  p_info._distance = d.size();
+  p_info._distance = d.norm();
 
   if (dim-1 == 2)
   {
     p_info._normal = dxyz_dxi[0].cross(dxyz_deta[0]);
-    p_info._normal /= p_info._normal.size();
+    p_info._normal /= p_info._normal.norm();
   }
   else
   {
     p_info._normal = RealGradient(dxyz_dxi[0](1),-dxyz_dxi[0](0));
-    p_info._normal /= p_info._normal.size();
+    if (std::fabs(p_info._normal.norm()) > 1e-15)
+      p_info._normal /= p_info._normal.norm();
   }
 
   // If the point has not penetrated the face, make the distance negative
@@ -241,7 +244,7 @@ findContactPoint(PenetrationInfo & p_info,
     Point closest_point_on_face(phys_point[0]);
 
     RealGradient off_face = closest_point_on_face - p_info._closest_point;
-    Real tangential_distance = off_face.size();
+    Real tangential_distance = off_face.norm();
     p_info._tangential_distance = tangential_distance;
     if (tangential_distance <= tangential_tolerance)
     {
@@ -250,11 +253,13 @@ findContactPoint(PenetrationInfo & p_info,
   }
 
   const std::vector<std::vector<Real> > & phi = _fe->get_phi();
+  const std::vector<std::vector<RealGradient> > & grad_phi = _fe->get_dphi();
 
   points[0] = p_info._closest_point_ref;
   _fe->reinit(side, &points);
 
   p_info._side_phi = phi;
+  p_info._side_grad_phi = grad_phi;
   p_info._dxyzdxi = dxyz_dxi;
   p_info._dxyzdeta = dxyz_deta;
   p_info._d2xyzdxideta = d2xyz_dxieta;
@@ -263,7 +268,7 @@ findContactPoint(PenetrationInfo & p_info,
 
 void restrictPointToFace(Point& p,
                          const Elem* side,
-                         std::vector<Node*> &off_edge_nodes)
+                         std::vector<const Node *> & off_edge_nodes)
 {
   const ElemType t(side->type());
   off_edge_nodes.clear();
@@ -280,12 +285,12 @@ void restrictPointToFace(Point& p,
       if (xi < -1.0)
       {
         xi = -1.0;
-        off_edge_nodes.push_back(side->get_node(0));
+        off_edge_nodes.push_back(side->node_ptr(0));
       }
       else if (xi > 1.0)
       {
         xi = 1.0;
-        off_edge_nodes.push_back(side->get_node(1));
+        off_edge_nodes.push_back(side->node_ptr(1));
       }
       break;
     }
@@ -300,43 +305,43 @@ void restrictPointToFace(Point& p,
       {
         xi = 0.0;
         eta = 0.0;
-        off_edge_nodes.push_back(side->get_node(0));
+        off_edge_nodes.push_back(side->node_ptr(0));
       }
       else if (xi > 0.0 && xi < 1.0
                && eta < 0.0)
       {
         eta = 0.0;
-        off_edge_nodes.push_back(side->get_node(0));
-        off_edge_nodes.push_back(side->get_node(1));
+        off_edge_nodes.push_back(side->node_ptr(0));
+        off_edge_nodes.push_back(side->node_ptr(1));
       }
       else if (eta > 0.0 && eta < 1.0
                && xi < 0.0)
       {
         xi = 0.0;
-        off_edge_nodes.push_back(side->get_node(2));
-        off_edge_nodes.push_back(side->get_node(0));
+        off_edge_nodes.push_back(side->node_ptr(2));
+        off_edge_nodes.push_back(side->node_ptr(0));
       }
       else if (xi >= 1.0
                && (eta - xi) <= -1.0)
       {
         xi = 1.0;
         eta = 0.0;
-        off_edge_nodes.push_back(side->get_node(1));
+        off_edge_nodes.push_back(side->node_ptr(1));
       }
       else if (eta >= 1.0
                && (eta - xi) >= 1.0)
       {
         xi = 0.0;
         eta = 1.0;
-        off_edge_nodes.push_back(side->get_node(2));
+        off_edge_nodes.push_back(side->node_ptr(2));
       }
       else if ((xi + eta) > 1.0)
       {
         Real delta = (xi+eta-1.0)/2.0;
         xi -= delta;
         eta -= delta;
-        off_edge_nodes.push_back(side->get_node(1));
-        off_edge_nodes.push_back(side->get_node(2));
+        off_edge_nodes.push_back(side->node_ptr(1));
+        off_edge_nodes.push_back(side->node_ptr(2));
       }
       break;
     }
@@ -352,17 +357,17 @@ void restrictPointToFace(Point& p,
         if (eta < -1.0)
         {
           eta = -1.0;
-          off_edge_nodes.push_back(side->get_node(0));
+          off_edge_nodes.push_back(side->node_ptr(0));
         }
         else if (eta > 1.0)
         {
           eta = 1.0;
-          off_edge_nodes.push_back(side->get_node(3));
+          off_edge_nodes.push_back(side->node_ptr(3));
         }
         else
         {
-          off_edge_nodes.push_back(side->get_node(3));
-          off_edge_nodes.push_back(side->get_node(0));
+          off_edge_nodes.push_back(side->node_ptr(3));
+          off_edge_nodes.push_back(side->node_ptr(0));
         }
       }
       else if (xi > 1.0)
@@ -371,17 +376,17 @@ void restrictPointToFace(Point& p,
         if (eta < -1.0)
         {
           eta = -1.0;
-          off_edge_nodes.push_back(side->get_node(1));
+          off_edge_nodes.push_back(side->node_ptr(1));
         }
         else if (eta > 1.0)
         {
           eta = 1.0;
-          off_edge_nodes.push_back(side->get_node(2));
+          off_edge_nodes.push_back(side->node_ptr(2));
         }
         else
         {
-          off_edge_nodes.push_back(side->get_node(1));
-          off_edge_nodes.push_back(side->get_node(2));
+          off_edge_nodes.push_back(side->node_ptr(1));
+          off_edge_nodes.push_back(side->node_ptr(2));
         }
       }
       else
@@ -389,14 +394,14 @@ void restrictPointToFace(Point& p,
         if (eta < -1.0)
         {
           eta = -1.0;
-          off_edge_nodes.push_back(side->get_node(0));
-          off_edge_nodes.push_back(side->get_node(1));
+          off_edge_nodes.push_back(side->node_ptr(0));
+          off_edge_nodes.push_back(side->node_ptr(1));
         }
         else if (eta > 1.0)
         {
           eta = 1.0;
-          off_edge_nodes.push_back(side->get_node(2));
-          off_edge_nodes.push_back(side->get_node(3));
+          off_edge_nodes.push_back(side->node_ptr(2));
+          off_edge_nodes.push_back(side->node_ptr(3));
         }
       }
       break;

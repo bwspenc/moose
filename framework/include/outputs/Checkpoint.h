@@ -18,16 +18,13 @@
 // MOOSE includes
 #include "BasicOutput.h"
 #include "FileOutput.h"
-#include "MaterialPropertyStorage.h"
-#include "RestartableData.h"
-#include "MaterialPropertyIO.h"
 #include "RestartableDataIO.h"
 
 #include <deque>
 
 // Forward declarations
 class Checkpoint;
-struct CheckpointFileNames;
+class MaterialPropertyStorage;
 
 template<>
 InputParameters validParams<Checkpoint>();
@@ -43,9 +40,6 @@ struct CheckpointFileNames
   /// Filename for EquationsSystems::write
   std::string system;
 
-  /// Filename for stateful material property file
-  std::string material;
-
   /// Filename for restartable data filename
   std::string restart;
 };
@@ -59,26 +53,20 @@ public:
 
   /**
    * Class constructor
-   * @param name
    * @param parameters
    */
-  Checkpoint(const std::string & name, InputParameters & parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~Checkpoint();
+  Checkpoint(const InputParameters & parameters);
 
   /**
    * Outputs a checkpoint file.
    * Each call to this function creates various files associated with
    */
-  void output(const ExecFlagType & type);
+  void output(const ExecFlagType & type) override;
 
   /**
    * Returns the base filename for the checkpoint files
    */
-  std::string filename();
+  virtual std::string filename() override;
 
   /**
    * Retrieve the checkpoint output directory
@@ -101,6 +89,9 @@ private:
   /// True if outputing checkpoint files in binary format
   bool _binary;
 
+  /// True if running with parallel mesh
+  bool _parallel_mesh;
+
   /// Reference to the restartable data
   const RestartableDatas & _restartable_data;
 
@@ -112,9 +103,6 @@ private:
 
   /// Reference to the boundary material property storage
   const MaterialPropertyStorage & _bnd_material_property_storage;
-
-  /// MaterialProperty input/output interface
-  MaterialPropertyIO _material_property_io;
 
   /// RestrableData input/output interface
   RestartableDataIO _restartable_data_io;

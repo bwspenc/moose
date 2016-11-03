@@ -26,16 +26,13 @@ InputParameters validParams<NumVars>();
 class NumVars : public GeneralPostprocessor
 {
 public:
-  NumVars(const std::string & name, InputParameters parameters);
+  NumVars(const InputParameters & parameters);
 
-  virtual void initialize() {}
+  virtual void initialize() override {}
 
-  virtual void execute() {}
+  virtual void execute() override {}
 
-  /**
-   * This will return the number of elements in the system
-   */
-  virtual Real getValue();
+  virtual Real getValue() override;
 
 protected:
   MooseEnum _system;

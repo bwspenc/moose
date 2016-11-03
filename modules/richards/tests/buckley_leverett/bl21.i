@@ -178,7 +178,6 @@
   [./initial_water]
     type = ParsedFunction
     value = 1000000*(1-min(x/5,1))-100000*(max(x-5,0)/max(abs(x-5),1E-10))
-    #value = max(1000000*(1-x/5),-100000)
   [../]
   [./initial_gas]
     type = ParsedFunction
@@ -241,8 +240,6 @@
 
 [Outputs]
   file_base = bl21
-  output_initial = true
   interval = 10000
   exodus = true
-  print_perf_log = true
 []

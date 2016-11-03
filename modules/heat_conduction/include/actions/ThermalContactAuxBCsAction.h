@@ -12,7 +12,7 @@
 class ThermalContactAuxBCsAction : public Action
 {
 public:
-  ThermalContactAuxBCsAction(const std::string & name, InputParameters params);
+  ThermalContactAuxBCsAction(const InputParameters & params);
   virtual ~ThermalContactAuxBCsAction(){}
   virtual void act();
 };

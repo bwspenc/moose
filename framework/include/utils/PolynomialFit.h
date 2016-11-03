@@ -15,15 +15,12 @@
 #ifndef POLYNOMIALFIT_H
 #define POLYNOMIALFIT_H
 
-#include "Moose.h"
-
-//libMesh
-#include "libmesh/libmesh_common.h"
-
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <string>
+
+#include "Moose.h"
 
 /**
  * This class applies the Least Squares algorithm to a set of points to provide a smooth curve for
@@ -43,8 +40,7 @@ public:
    */
   PolynomialFit(std::vector<Real> X, std::vector<Real> Y, unsigned int order, bool truncate_order = false);
 
-  virtual ~PolynomialFit()
-    {}
+  virtual ~PolynomialFit() = default;
 
   /**
    * This function generates the polynomial fit.  This function must be called prior to using

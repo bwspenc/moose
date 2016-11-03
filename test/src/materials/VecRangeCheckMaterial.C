@@ -29,7 +29,12 @@ InputParameters validParams<VecRangeCheckMaterial>()
   return params;
 }
 
-VecRangeCheckMaterial::VecRangeCheckMaterial(const std::string & name, InputParameters parameters) :
-    Material(name, parameters)
+VecRangeCheckMaterial::VecRangeCheckMaterial(const InputParameters & parameters) :
+    Material(parameters)
+{
+}
+
+void
+VecRangeCheckMaterial::computeQpProperties()
 {
 }

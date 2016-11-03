@@ -26,15 +26,15 @@ InputParameters validParams<RunTime>();
 class RunTime : public GeneralPostprocessor
 {
 public:
-  RunTime(const std::string & name, InputParameters parameters);
+  RunTime(const InputParameters & parameters);
 
-  virtual void initialize() {}
-  virtual void execute() {}
+  virtual void initialize() override {}
+  virtual void execute() override {}
 
   /**
    * This will return the elapsed wall time.
    */
-  virtual Real getValue();
+  virtual Real getValue() override;
 
 protected:
   MooseEnum _time_type;

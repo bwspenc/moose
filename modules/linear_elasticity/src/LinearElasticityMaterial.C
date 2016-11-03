@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "LinearElasticityMaterial.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<LinearElasticityMaterial>()
@@ -22,9 +26,8 @@ InputParameters validParams<LinearElasticityMaterial>()
   return params;
 }
 
-LinearElasticityMaterial::LinearElasticityMaterial(const std::string & name,
-                   InputParameters parameters)
-  :Material(name, parameters),
+LinearElasticityMaterial::LinearElasticityMaterial(const InputParameters & parameters) :
+    Material(parameters),
     _has_temp(isCoupled("temp")),
     _temp(_has_temp ? coupledValue("temp") : _zero),
     _my_thermal_expansion(getParam<Real>("thermal_expansion")),
@@ -53,3 +56,4 @@ LinearElasticityMaterial::computeProperties()
     _poissons_ratio[qp] = _my_poissons_ratio;
   }
 }
+

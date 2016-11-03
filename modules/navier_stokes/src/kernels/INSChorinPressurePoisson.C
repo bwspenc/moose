@@ -4,7 +4,9 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "INSChorinPressurePoisson.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<INSChorinPressurePoisson>()
@@ -24,8 +26,8 @@ InputParameters validParams<INSChorinPressurePoisson>()
 
 
 
-INSChorinPressurePoisson::INSChorinPressurePoisson(const std::string & name, InputParameters parameters) :
-  Kernel(name, parameters),
+INSChorinPressurePoisson::INSChorinPressurePoisson(const InputParameters & parameters) :
+  Kernel(parameters),
 
   // Gradients
   _grad_u_star(coupledGradient("u_star")),
@@ -81,3 +83,4 @@ Real INSChorinPressurePoisson::computeQpOffDiagJacobian(unsigned jvar)
   else
     return 0;
 }
+

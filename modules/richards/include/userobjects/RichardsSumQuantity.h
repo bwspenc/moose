@@ -26,7 +26,7 @@ InputParameters validParams<RichardsSumQuantity>();
 class RichardsSumQuantity : public GeneralUserObject
 {
 public:
-  RichardsSumQuantity(const std::string & name, InputParameters parameters);
+  RichardsSumQuantity(const InputParameters & parameters);
   virtual ~RichardsSumQuantity();
 
   /// sets _total = 0

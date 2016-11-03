@@ -12,27 +12,24 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "ComputeNodalUserObjectsThread.h"
-
-#include "AuxiliarySystem.h"
-#include "SubProblem.h"
+#include "FEProblem.h"
 #include "NodalUserObject.h"
 
 // libmesh includes
 #include "libmesh/threads.h"
 
-ComputeNodalUserObjectsThread::ComputeNodalUserObjectsThread(SubProblem & problem, std::vector<UserObjectWarehouse> & user_objects, UserObjectWarehouse::GROUP group) :
-    _sub_problem(problem),
-    _user_objects(user_objects),
-    _group(group)
+ComputeNodalUserObjectsThread::ComputeNodalUserObjectsThread(FEProblem & fe_problem, const MooseObjectWarehouse<NodalUserObject> & user_objects) :
+    ThreadedNodeLoop<ConstNodeRange, ConstNodeRange::const_iterator>(fe_problem),
+    _user_objects(user_objects)
 {
 }
 
 // Splitting Constructor
-ComputeNodalUserObjectsThread::ComputeNodalUserObjectsThread(ComputeNodalUserObjectsThread & x, Threads::split /*split*/) :
-    _sub_problem(x._sub_problem),
-    _user_objects(x._user_objects),
-    _group(x._group)
+ComputeNodalUserObjectsThread::ComputeNodalUserObjectsThread(ComputeNodalUserObjectsThread & x, Threads::split split) :
+    ThreadedNodeLoop<ConstNodeRange, ConstNodeRange::const_iterator>(x, split),
+    _user_objects(x._user_objects)
 {
 }
 
@@ -41,50 +38,44 @@ ComputeNodalUserObjectsThread::~ComputeNodalUserObjectsThread()
 }
 
 void
-ComputeNodalUserObjectsThread::operator() (const ConstNodeRange & range)
+ComputeNodalUserObjectsThread::onNode(ConstNodeRange::const_iterator & node_it)
 {
-  ParallelUniqueId puid;
-  _tid = puid.id;
+  const Node * node = *node_it;
+  _fe_problem.reinitNode(node, _tid);
 
-  for (ConstNodeRange::const_iterator node_it = range.begin() ; node_it != range.end(); ++node_it)
+  // Boundary Restricted
+  std::vector<BoundaryID> nodeset_ids;
+  _fe_problem.mesh().getMesh().get_boundary_info().boundary_ids(node, nodeset_ids);
+  for (const auto & bnd : nodeset_ids)
   {
-    const Node * node = *node_it;
-    _sub_problem.reinitNode(node, _tid);
-
-    // All Nodes
-    for (std::vector<NodalUserObject *>::const_iterator nodal_user_object_it =
-           _user_objects[_tid].nodalUserObjects(Moose::ANY_BOUNDARY_ID, _group).begin();
-         nodal_user_object_it != _user_objects[_tid].nodalUserObjects(Moose::ANY_BOUNDARY_ID, _group).end();
-         ++nodal_user_object_it)
+    if (_user_objects.hasActiveBoundaryObjects(bnd, _tid))
     {
-      (*nodal_user_object_it)->execute();
-    }
-
-    // Boundary Restricted UserObjects
-    std::vector<BoundaryID> nodeset_ids = _sub_problem.mesh().getMesh().get_boundary_info().boundary_ids(node);
-
-    for (std::vector<BoundaryID>::iterator it = nodeset_ids.begin(); it != nodeset_ids.end(); ++it)
-    {
-      for (std::vector<NodalUserObject *>::const_iterator nodal_user_object_it = _user_objects[_tid].nodalUserObjects(*it, _group).begin();
-           nodal_user_object_it != _user_objects[_tid].nodalUserObjects(*it, _group).end();
-           ++nodal_user_object_it)
-      {
-        (*nodal_user_object_it)->execute();
-      }
-    }
-
-    // Subdomain Restricted UserObjects
-    const std::set<SubdomainID> & block_ids = _sub_problem.mesh().getNodeBlockIds(*node);
-    for (std::set<SubdomainID>::const_iterator block_it = block_ids.begin(); block_it != block_ids.end(); ++block_it)
-    {
-      for (std::vector<NodalUserObject *>::const_iterator nodal_user_object_it = _user_objects[_tid].blockNodalUserObjects(*block_it, _group).begin();
-           nodal_user_object_it != _user_objects[_tid].blockNodalUserObjects(*block_it, _group).end();
-           ++nodal_user_object_it)
-      {
-        (*nodal_user_object_it)->execute();
-      }
+      const std::vector<MooseSharedPointer<NodalUserObject> > & objects = _user_objects.getActiveBoundaryObjects(bnd, _tid);
+      for (const auto & uo : objects)
+        uo->execute();
     }
   }
+
+  // Block Restricted
+  // NodalUserObjects may be block restricted, in this case by default the execute() method is called for
+  // each subdomain that the node "belongs". This may be disabled in the NodalUserObject by setting
+  // "unique_node_execute = true".
+
+  // To inforce the unique execution this vector is populated and checked if the unique flag is enabled.
+  std::vector<MooseSharedPointer<NodalUserObject> > computed;
+
+  const std::set<SubdomainID> & block_ids = _fe_problem.mesh().getNodeBlockIds(*node);
+  for (const auto & block : block_ids)
+    if (_user_objects.hasActiveBlockObjects(block, _tid))
+    {
+      const std::vector<MooseSharedPointer<NodalUserObject> > & objects = _user_objects.getActiveBlockObjects(block, _tid);
+      for (const auto & uo : objects)
+        if (!uo->isUniqueNodeExecute() || std::count(computed.begin(), computed.end(), uo) == 0)
+        {
+          uo->execute();
+          computed.push_back(uo);
+        }
+    }
 }
 
 void

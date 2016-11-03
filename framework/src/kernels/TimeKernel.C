@@ -13,6 +13,10 @@
 /****************************************************************/
 
 #include "TimeKernel.h"
+#include "Assembly.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<TimeKernel>()
@@ -21,12 +25,8 @@ InputParameters validParams<TimeKernel>()
   return params;
 }
 
-TimeKernel::TimeKernel(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters)
-{
-}
-
-TimeKernel::~TimeKernel()
+TimeKernel::TimeKernel(const InputParameters & parameters) :
+    Kernel(parameters)
 {
 }
 

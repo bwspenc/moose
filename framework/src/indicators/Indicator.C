@@ -39,12 +39,12 @@ InputParameters validParams<Indicator>()
 }
 
 
-Indicator::Indicator(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
+Indicator::Indicator(const InputParameters & parameters) :
+    MooseObject(parameters),
     BlockRestrictable(parameters),
-    SetupInterface(parameters),
-    FunctionInterface(parameters),
-    UserObjectInterface(parameters),
+    SetupInterface(this),
+    FunctionInterface(this),
+    UserObjectInterface(this),
     Restartable(parameters, "Indicators"),
     OutputInterface(parameters),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
@@ -53,13 +53,6 @@ Indicator::Indicator(const std::string & name, InputParameters parameters) :
     _solution(_sys.solution()),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
-
     _mesh(_subproblem.mesh())
-//    _dim(_mesh.dimension())
-{
-}
-
-void
-Indicator::IndicatorSetup()
 {
 }

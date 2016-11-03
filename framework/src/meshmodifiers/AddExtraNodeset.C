@@ -31,8 +31,8 @@ InputParameters validParams<AddExtraNodeset>()
   return params;
 }
 
-AddExtraNodeset::AddExtraNodeset(const std::string & name, InputParameters params) :
-    MeshModifier(name, params)
+AddExtraNodeset::AddExtraNodeset(const InputParameters & params) :
+    MeshModifier(params)
 {
 }
 
@@ -65,38 +65,38 @@ AddExtraNodeset::modify()
 
   // add nodes with their ids
   const std::vector<unsigned int> & nodes = getParam<std::vector<unsigned int> >("nodes");
-  for (unsigned int i=0; i<nodes.size(); i++)
-    for (unsigned int j=0; j<boundary_ids.size(); ++j)
-      boundary_info.add_node(nodes[i], boundary_ids[j]);
+  for (const auto & node_id : nodes)
+    for (const auto & boundary_id : boundary_ids)
+      boundary_info.add_node(node_id, boundary_id);
 
   // add nodes with their coordinates
   const std::vector<Real> & coord = getParam<std::vector<Real> >("coord");
   unsigned int dim = _mesh_ptr->dimension();
   unsigned int n_nodes = coord.size() / dim;
 
-  for (unsigned int i=0; i<n_nodes; i++)
+  for (unsigned int i = 0; i < n_nodes; ++i)
   {
     Point p;
-    for (unsigned int j=0; j<dim; j++)
+    for (unsigned int j = 0; j < dim; ++j)
       p(j) = coord[i*dim+j];
 
-    const Elem* elem = _mesh_ptr->getMesh().point_locator() (p);
+    const Elem * elem = _mesh_ptr->getMesh().point_locator() (p);
     if (!elem)
       mooseError("Unable to locate the following point within the domain, please check its coordinates:\n" << p);
 
     bool on_node = false;
-    for (unsigned int j=0; j<elem->n_nodes(); j++)
+    for (unsigned int j = 0; j<elem->n_nodes(); ++j)
     {
-      const Node* node = elem->get_node(j);
+      const Node * node = elem->node_ptr(j);
 
       Point q;
-      for (unsigned int k=0; k<dim; k++)
+      for (unsigned int k = 0; k < dim; ++k)
         q(k) = (*node)(k);
 
       if (p.absolute_fuzzy_equals(q, getParam<Real>("tolerance")))
       {
-        for (unsigned int j=0; j<boundary_ids.size(); ++j)
-          boundary_info.add_node(node, boundary_ids[j]);
+        for (const auto & boundary_id : boundary_ids)
+          boundary_info.add_node(node, boundary_id);
 
         on_node = true;
         break;
@@ -106,6 +106,6 @@ AddExtraNodeset::modify()
       mooseError("Point can not be located!");
   }
 
-  for (unsigned int i=0; i<boundary_ids.size(); ++i)
-    boundary_info.sideset_name(boundary_ids[i]) = boundary_names[i];
+  for (unsigned int i = 0; i < boundary_ids.size(); ++i)
+    boundary_info.nodeset_name(boundary_ids[i]) = boundary_names[i];
 }

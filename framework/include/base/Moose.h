@@ -28,6 +28,15 @@ using namespace libMesh;
 class ActionFactory;
 class Factory;
 
+
+/**
+ * MOOSE now contains C++11 code, so give a reasonable error message
+ * stating the minimum required compiler versions.
+ */
+#ifndef LIBMESH_HAVE_CXX11
+#error MOOSE requires a C++11 compatible compiler (GCC >= 4.8.4, Clang >= 3.4.0, Intel >= 20130607). Please update your compiler and try again.
+#endif
+
 /**
  * Testing a condition on a local CPU that need to be propagated across all processes.
  *
@@ -51,57 +60,6 @@ class Factory;
 class Syntax;
 class FEProblem;
 
-/// Execution flags - when is the object executed/evaluated
-// Note: If this enum is changed, make sure to modify:
-//   (1) the local function populateExecTypes in Moose.C.
-//   (2) the method SetupInterface::getExecuteOptions
-//   (3) the function Output::getExecuteOptions
-enum ExecFlagType {
-  EXEC_NONE              = 0x00,
-  /// Object is evaluated only once at the beginning of the simulation
-  EXEC_INITIAL           = 0x01,
-  /// Object is evaluated in every residual computation
-  EXEC_LINEAR            = 0x02,
-  /// Object is evaluated in every jacobian computation
-  EXEC_NONLINEAR         = 0x04,
-  /// Object is evaluated at the end of every time step
-  EXEC_TIMESTEP_END      = 0x08,
-  /// Object is evaluated at the beginning of every time step
-  EXEC_TIMESTEP_BEGIN    = 0x10,
-  /// Object is evaluated at the end of the simulations (output only)
-  EXEC_FINAL             = 0x20,
-  /// Forces execution to occur (output only)
-  EXEC_FORCED            = 0x40,
-  /// Forces execution on failed solve (output only)
-  EXEC_FAILED            = 0x80,
-  /// For use with custom executioners that want to fire objects at a specific time
-  EXEC_CUSTOM            = 0x100,
-  ///@{
-  /// Deprecated
-  EXEC_RESIDUAL          = 0x200, // EXEC_LINEAR
-  EXEC_JACOBIAN          = 0x400, // EXEC_NONLINEAR
-  EXEC_TIMESTEP          = 0x800, // EXEC_TIMESTEP_END
-  OUTPUT_NONE            = 0x00,
-  OUTPUT_INITIAL         = 0x01,
-  OUTPUT_LINEAR          = 0x02,
-  OUTPUT_NONLINEAR       = 0x04,
-  OUTPUT_TIMESTEP_END    = 0x08,
-  OUTPUT_TIMESTEP_BEGIN  = 0x10,
-  OUTPUT_FINAL           = 0x20,
-  OUTPUT_FORCED          = 0x40,
-  OUTPUT_FAILED          = 0x80,
-  OUTPUT_CUSTOM          = 0x100
-  ///@}
-};
-
-// Support for deprecated output flags
-typedef ExecFlagType OutputExecFlagType;
-
-// Some define trickery to allow YAK to continue to operate, this will
-// allow the update to MOOSE to occur w/o an integration branch
-#define EXEC_RESIDUAL EXEC_LINEAR
-#define EXEC_JACOBIAN EXEC_NONLINEAR
-#define EXEC_TIMESTEP EXEC_TIMESTEP_END
 
 namespace Moose
 {
@@ -117,11 +75,6 @@ extern PerfLog perf_log;
 extern PerfLog setup_perf_log;
 
 /**
- * A static list of all the exec types.
- */
-extern const std::vector<ExecFlagType> exec_types;
-
-/**
  * Variable indicating whether we will enable FPE trapping for this run.
  */
 extern bool _trap_fpe;
@@ -132,9 +85,14 @@ extern bool _trap_fpe;
 extern bool _color_console;
 
 /**
- * Variable to toggle any warning into an error
+ * Variable to toggle any warning into an error (includes deprecated code warnings)
  */
 extern bool _warnings_are_errors;
+
+/**
+ * Variable to toggle only deprecated warnings as errors.
+ */
+extern bool _deprecated_is_error;
 
 /**
  * Variable to turn on exceptions during mooseError() and mooseWarning(), should
@@ -145,15 +103,15 @@ extern bool _throw_on_error;
 /**
  * Macros for coloring any output stream (_console, std::ostringstream, etc.)
  */
-#define COLOR_BLACK   (Moose::_color_console ? BLACK : "")
-#define COLOR_RED     (Moose::_color_console ? RED : "")
-#define COLOR_GREEN   (Moose::_color_console ? GREEN : "")
-#define COLOR_YELLOW  (Moose::_color_console ? YELLOW : "")
-#define COLOR_BLUE    (Moose::_color_console ? BLUE : "")
-#define COLOR_MAGENTA (Moose::_color_console ? MAGENTA : "")
-#define COLOR_CYAN    (Moose::_color_console ? CYAN : "")
-#define COLOR_WHITE   (Moose::_color_console ? WHITE : "")
-#define COLOR_DEFAULT (Moose::_color_console ? DEFAULT : "")
+#define COLOR_BLACK   (Moose::_color_console ? XTERM_BLACK : "")
+#define COLOR_RED     (Moose::_color_console ? XTERM_RED : "")
+#define COLOR_GREEN   (Moose::_color_console ? XTERM_GREEN : "")
+#define COLOR_YELLOW  (Moose::_color_console ? XTERM_YELLOW : "")
+#define COLOR_BLUE    (Moose::_color_console ? XTERM_BLUE : "")
+#define COLOR_MAGENTA (Moose::_color_console ? XTERM_MAGENTA : "")
+#define COLOR_CYAN    (Moose::_color_console ? XTERM_CYAN : "")
+#define COLOR_WHITE   (Moose::_color_console ? XTERM_WHITE : "")
+#define COLOR_DEFAULT (Moose::_color_console ? XTERM_DEFAULT : "")
 
 /**
  * Import libMesh::out, and libMesh::err for use in MOOSE.

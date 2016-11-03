@@ -14,6 +14,9 @@
 
 #include "ErrorToleranceMarker.h"
 
+// libMesh includes
+#include "libmesh/error_vector.h"
+
 template<>
 InputParameters validParams<ErrorToleranceMarker>()
 {
@@ -24,8 +27,8 @@ InputParameters validParams<ErrorToleranceMarker>()
 }
 
 
-ErrorToleranceMarker::ErrorToleranceMarker(const std::string & name, InputParameters parameters) :
-    IndicatorMarker(name, parameters),
+ErrorToleranceMarker::ErrorToleranceMarker(const InputParameters & parameters) :
+    IndicatorMarker(parameters),
     _coarsen(parameters.get<Real>("coarsen")),
     _refine(parameters.get<Real>("refine"))
 {
@@ -43,4 +46,5 @@ ErrorToleranceMarker::computeElementMarker()
 
   return DO_NOTHING;
 }
+
 

@@ -41,6 +41,7 @@
   [./grow]
     type = TestPostprocessor
     execute_on = 'initial timestep_end'
+    test_type = 'grow'
   [../]
 []
 
@@ -54,7 +55,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
 []

@@ -18,8 +18,8 @@ InputParameters validParams<TensorMechanicsHardeningGaussian>()
   return params;
 }
 
-TensorMechanicsHardeningGaussian::TensorMechanicsHardeningGaussian(const std::string & name, InputParameters parameters) :
-  TensorMechanicsHardeningModel(name, parameters),
+TensorMechanicsHardeningGaussian::TensorMechanicsHardeningGaussian(const InputParameters & parameters) :
+  TensorMechanicsHardeningModel(parameters),
   _val_0(getParam<Real>("value_0")),
   _val_res(parameters.isParamValid("value_residual") ? getParam<Real>("value_residual") : _val_0),
   _intnl_0(getParam<Real>("internal_0")),
@@ -28,7 +28,7 @@ TensorMechanicsHardeningGaussian::TensorMechanicsHardeningGaussian(const std::st
 }
 
 Real
-TensorMechanicsHardeningGaussian::value(const Real & intnl) const
+TensorMechanicsHardeningGaussian::value(Real intnl) const
 {
   Real x = intnl - _intnl_0;
   if (x <= 0)
@@ -38,11 +38,17 @@ TensorMechanicsHardeningGaussian::value(const Real & intnl) const
 }
 
 Real
-TensorMechanicsHardeningGaussian::derivative(const Real & intnl) const
+TensorMechanicsHardeningGaussian::derivative(Real intnl) const
 {
   Real x = intnl - _intnl_0;
   if (x <= 0)
     return 0;
   else
     return -_rate*x*(_val_0 - _val_res)*std::exp(-0.5*_rate*x*x);
+}
+
+std::string
+TensorMechanicsHardeningGaussian::modelName() const
+{
+  return "Gaussian";
 }

@@ -34,15 +34,14 @@ public:
   /**
    * Constructor: Same as the rest of the MOOSE Objects
    */
-  ExampleIC(const std::string & name,
-            InputParameters parameters);
+  ExampleIC(const InputParameters & parameters);
 
   /**
    * The value of the variable at a point.
    *
    * This must be overriden by derived classes.
    */
-  virtual Real value(const Point & p);
+  virtual Real value(const Point & p) override;
 
 private:
   Real _coefficient;

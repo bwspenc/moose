@@ -5,11 +5,14 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
+#include "RichardsMaterial.h"
+#include "Assembly.h"
+#include "MooseMesh.h"
 
 #include <cmath> // std::sinh and std::cosh
-#include "RichardsMaterial.h"
 
-
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<RichardsMaterial>()
@@ -17,7 +20,7 @@ InputParameters validParams<RichardsMaterial>()
   InputParameters params = validParams<Material>();
 
   params.addRequiredParam<Real>("mat_porosity", "The porosity of the material.  Should be between 0 and 1.  Eg, 0.1");
-  params.addCoupledVar("por_change", "An auxillary variable describing porosity changes.  Porosity = mat_porosity + por_change.  If this is not provided, zero is used.");
+  params.addCoupledVar("por_change", 0, "An auxillary variable describing porosity changes.  Porosity = mat_porosity + por_change.  If this is not provided, zero is used.");
   params.addRequiredParam<RealTensorValue>("mat_permeability", "The permeability tensor (m^2).");
   params.addCoupledVar("perm_change", "A list of auxillary variable describing permeability changes.  There must be 9 of these, corresponding to the xx, xy, xz, yx, yy, yz, zx, zy, zz components respectively.  Permeability = mat_permeability*10^(perm_change).");
   params.addRequiredParam<UserObjectName>("richardsVarNames_UO", "The UserObject that holds the list of Richards variable names.");
@@ -33,12 +36,12 @@ InputParameters validParams<RichardsMaterial>()
   return params;
 }
 
-RichardsMaterial::RichardsMaterial(const std::string & name, InputParameters parameters) :
-    Material(name, parameters),
+RichardsMaterial::RichardsMaterial(const InputParameters & parameters) :
+    Material(parameters),
 
     _material_por(getParam<Real>("mat_porosity")),
-    _por_change(isCoupled("por_change") ? coupledValue("por_change") : _zero),
-    _por_change_old(isCoupled("por_change") ? coupledValueOld("por_change") : _zero),
+    _por_change(coupledValue("por_change")),
+    _por_change_old(coupledValueOld("por_change")),
 
     _material_perm(getParam<RealTensorValue>("mat_permeability")),
 
@@ -119,7 +122,7 @@ RichardsMaterial::RichardsMaterial(const std::string & name, InputParameters par
   for (unsigned int i = 0; i < LIBMESH_DIM*LIBMESH_DIM; ++i)
     _perm_change[i] = (isCoupled("perm_change")? &coupledValue("perm_change", i) : &_zero); // coupledValue returns a reference (an alias) to a VariableValue, and the & turns it into a pointer
 
-  if (!(_material_viscosity.size() == _num_p && getParam<std::vector<UserObjectName> >("relperm_UO").size() && getParam<std::vector<UserObjectName> >("seff_UO").size() && getParam<std::vector<UserObjectName> >("sat_UO").size() && getParam<std::vector<UserObjectName> >("density_UO").size() && getParam<std::vector<UserObjectName> >("SUPG_UO").size()))
+  if (!(_material_viscosity.size() == _num_p && getParam<std::vector<UserObjectName> >("relperm_UO").size() == _num_p && getParam<std::vector<UserObjectName> >("seff_UO").size() == _num_p && getParam<std::vector<UserObjectName> >("sat_UO").size() == _num_p && getParam<std::vector<UserObjectName> >("density_UO").size() == _num_p && getParam<std::vector<UserObjectName> >("SUPG_UO").size() == _num_p))
     mooseError("There are " << _num_p << " Richards fluid variables, so you need to specify this number of viscosities, relperm_UO, seff_UO, sat_UO, density_UO, SUPG_UO");
 
   _d2density.resize(_num_p);
@@ -207,8 +210,9 @@ RichardsMaterial::computePandSeff()
 
       }
     }
-    else
-      mooseError("RichardsMaterial not yet defined for the variable types " << _richards_name_UO.var_types() << " defined in your VarNames UserObject");
+    // the above lines of code are only valid for "pppp"
+    // if you decide to code other RichardsVariables (eg "psss")
+    // you will need to add some lines here
   }
 }
 
@@ -547,3 +551,4 @@ RichardsMaterial::computeProperties()
     computeSUPG();
 
 }
+

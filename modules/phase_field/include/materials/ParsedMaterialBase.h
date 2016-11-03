@@ -22,8 +22,7 @@ InputParameters validParams<ParsedMaterialBase>();
 class ParsedMaterialBase
 {
 public:
-  ParsedMaterialBase(const std::string & name,
-                     InputParameters parameters);
+  ParsedMaterialBase(const InputParameters & parameters);
 
 protected:
   /// function expression

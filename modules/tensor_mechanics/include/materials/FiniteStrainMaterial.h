@@ -24,7 +24,7 @@
 class FiniteStrainMaterial : public TensorMechanicsMaterial
 {
 public:
-  FiniteStrainMaterial(const std::string & name, InputParameters parameters);
+  FiniteStrainMaterial(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();

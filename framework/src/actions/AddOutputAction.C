@@ -18,7 +18,6 @@
 #include "Factory.h"
 #include "OutputWarehouse.h"
 #include "Output.h"
-#include "Exodus.h"
 #include "MooseApp.h"
 #include "FileMesh.h"
 #include "MooseApp.h"
@@ -35,8 +34,8 @@ InputParameters validParams<AddOutputAction>()
    return params;
 }
 
-AddOutputAction::AddOutputAction(const std::string & name, InputParameters params) :
-    MooseObjectAction(name, params)
+AddOutputAction::AddOutputAction(InputParameters params) :
+    MooseObjectAction(params)
 {
 }
 
@@ -50,17 +49,14 @@ AddOutputAction::act()
   // Get a reference to the OutputWarehouse
   OutputWarehouse & output_warehouse = _app.getOutputWarehouse();
 
-  // Get the output object name
-  std::string object_name = getShortName();
-
   // Reject the reserved names for objects not built by MOOSE
-  if (!_moose_object_pars.get<bool>("_built_by_moose") && output_warehouse.isReservedName(object_name))
-    mooseError("The name '" << object_name << "' is a reserved name for output objects");
+  if (!_moose_object_pars.get<bool>("_built_by_moose") && output_warehouse.isReservedName(_name))
+    mooseError("The name '" << _name << "' is a reserved name for output objects");
 
   // Check that an object by the same name does not already exist; this must be done before the object
   // is created to avoid getting misleading errors from the Parser
-  if (output_warehouse.hasOutput(object_name))
-    mooseError("The output object named '" << object_name << "' already exists");
+  if (output_warehouse.hasOutput(_name))
+    mooseError("An output object named '" << _name << "' already exists");
 
   // Add a pointer to the FEProblem class
   _moose_object_pars.addPrivateParam<FEProblem *>("_fe_problem",  _problem.get());
@@ -68,7 +64,13 @@ AddOutputAction::act()
   // Create common parameter exclude list
   std::vector<std::string> exclude;
   if (_type == "Console")
-    exclude.push_back("output_on");
+  {
+    exclude.push_back("execute_on");
+
+    // --show-input should enable the display of the input file on the screen
+    if (_app.getParam<bool>("show_input") && _moose_object_pars.get<bool>("output_screen"))
+      _moose_object_pars.set<MultiMooseEnum>("execute_input_on") = "initial";
+  }
 
   // Apply the common parameters
   InputParameters * common = output_warehouse.getCommonParameters();
@@ -82,22 +84,10 @@ AddOutputAction::act()
     _moose_object_pars.set<bool>("_binary") = false;
 
   // Adjust the checkpoint suffix if auto recovery was enabled
-  if (object_name == "auto_recovery_checkpoint")
+  if (_name == "auto_recovery_checkpoint")
     _moose_object_pars.set<std::string>("suffix") = "auto_recovery";
 
   // Create the object and add it to the warehouse
-  MooseSharedPointer<Output> output = MooseSharedNamespace::static_pointer_cast<Output>(_factory.create(_type, object_name, _moose_object_pars));
+  MooseSharedPointer<Output> output = _factory.create<Output>(_type, _name, _moose_object_pars);
   output_warehouse.addOutput(output);
-
-  // If creating an Exodus output and "ensight_time" is enabled, create a postprocessor for reporting the time
-  MooseSharedPointer<Exodus> exodus = MooseSharedNamespace::dynamic_pointer_cast<Exodus>(output);
-  if (exodus && exodus->getParam<bool>("ensight_time"))
-  {
-    InputParameters params = _factory.getValidParams("TimePostprocessor");
-    params.set<MultiMooseEnum>("execute_on") = "initial timestep_end";
-    params.set<MooseEnum>("time_part") = "integer";
-    _problem->addPostprocessor("TimePostprocessor", "simulation_time_integer", params);
-    params.set<MooseEnum>("time_part") = "fractional";
-    _problem->addPostprocessor("TimePostprocessor", "simulation_time_fractional", params);
-  }
 }

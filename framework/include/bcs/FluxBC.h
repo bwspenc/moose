@@ -30,12 +30,11 @@ InputParameters validParams<FluxBC>();
 class FluxBC : public IntegratedBC
 {
 public:
-  FluxBC(const std::string & name, InputParameters params);
-  virtual ~FluxBC();
+  FluxBC(const InputParameters & params);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
+  virtual Real computeQpResidual() override;
+  virtual Real computeQpJacobian() override;
 
   virtual RealGradient computeQpFluxResidual() = 0;
   virtual RealGradient computeQpFluxJacobian() = 0;

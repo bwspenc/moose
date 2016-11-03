@@ -12,81 +12,73 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-#include "ComputeNodalAuxBcsThread.h"
+// libMesh includes
+#include "libmesh/threads.h"
 
+// MOOSE includes
+#include "ComputeNodalAuxBcsThread.h"
 #include "AuxiliarySystem.h"
 #include "FEProblem.h"
 #include "AuxKernel.h"
 
-// libmesh includes
-#include "libmesh/threads.h"
 
 ComputeNodalAuxBcsThread::ComputeNodalAuxBcsThread(FEProblem & fe_problem,
                                                    AuxiliarySystem & sys,
-                                                   std::vector<AuxWarehouse> & auxs) :
-    _fe_problem(fe_problem),
-    _sys(sys),
-    _auxs(auxs)
+                                                   const MooseObjectWarehouse<AuxKernel> & storage) :
+    ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(fe_problem),
+    _aux_sys(sys),
+    _storage(storage)
 {
 }
 
 // Splitting Constructor
-ComputeNodalAuxBcsThread::ComputeNodalAuxBcsThread(ComputeNodalAuxBcsThread & x, Threads::split /*split*/) :
-    _fe_problem(x._fe_problem),
-    _sys(x._sys),
-    _auxs(x._auxs)
+ComputeNodalAuxBcsThread::ComputeNodalAuxBcsThread(ComputeNodalAuxBcsThread & x, Threads::split split) :
+    ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>(x, split),
+    _aux_sys(x._aux_sys),
+    _storage(x._storage)
 {
 }
 
 void
-ComputeNodalAuxBcsThread::operator() (const ConstBndNodeRange & range)
+ComputeNodalAuxBcsThread::onNode(ConstBndNodeRange::const_iterator & node_it)
 {
-  ParallelUniqueId puid;
-  _tid = puid.id;
+  const BndNode * bnode = *node_it;
 
-  for (ConstBndNodeRange::const_iterator nd = range.begin() ; nd != range.end(); ++nd)
+  BoundaryID boundary_id = bnode->_bnd_id;
+
+  // prepare variables
+  for (const auto & it : _aux_sys._nodal_vars[_tid])
   {
-    const BndNode * bnode = *nd;
+    MooseVariable * var = it.second;
+    var->prepareAux();
+  }
 
-    BoundaryID boundary_id = bnode->_bnd_id;
+  Node * node = bnode->_node;
 
-    // prepare variables
-    for (std::map<std::string, MooseVariable *>::iterator it = _sys._nodal_vars[_tid].begin(); it != _sys._nodal_vars[_tid].end(); ++it)
+  if (node->processor_id() == _fe_problem.processor_id())
+  {
+    // Get a map of all active block restricted AuxKernel objects
+    const std::map<BoundaryID, std::vector<MooseSharedPointer<AuxKernel> > > & kernels = _storage.getActiveBoundaryObjects(_tid);
+
+    // Operate on the node BoundaryID only
+    const std::map<BoundaryID, std::vector<MooseSharedPointer<AuxKernel> > >::const_iterator iter = kernels.find(boundary_id);
+    if (iter != kernels.end())
     {
-      MooseVariable * var = it->second;
-      var->prepareAux();
+      _fe_problem.reinitNodeFace(node, boundary_id, _tid);
+
+      for (const auto & aux : iter->second)
+        aux->compute();
     }
+  }
 
-    if (_auxs[_tid].activeBCs(boundary_id).size() > 0)
+  // We are done, so update the solution vector
+  {
+    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+    // update the solution vector
+    for (const auto & it : _aux_sys._nodal_vars[_tid])
     {
-      Node * node = bnode->_node;
-
-//      if (unlikely(_calculate_element_time))
-//        startNodeTiming(node.id());
-
-      if (node->processor_id() == _fe_problem.processor_id())
-      {
-        _fe_problem.reinitNodeFace(node, boundary_id, _tid);
-
-        for (std::vector<AuxKernel *>::const_iterator aux_it = _auxs[_tid].activeBCs(boundary_id).begin();
-            aux_it != _auxs[_tid].activeBCs(boundary_id).end();
-            ++aux_it)
-          (*aux_it)->compute();
-      }
-
-//      if (unlikely(_calculate_element_time))
-//        stopNodeTiming(node.id());
-    }
-
-    // We are done, so update the solution vector
-    {
-      Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-      // update the solution vector
-      for (std::map<std::string, MooseVariable *>::iterator it = _sys._nodal_vars[_tid].begin(); it != _sys._nodal_vars[_tid].end(); ++it)
-      {
-        MooseVariable * var = it->second;
-        var->insert(_sys.solution());
-      }
+      MooseVariable * var = it.second;
+      var->insert(_aux_sys.solution());
     }
   }
 }

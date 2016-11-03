@@ -30,15 +30,13 @@ class AutoPositionsMultiApp :
   public BoundaryRestrictable
 {
 public:
-  AutoPositionsMultiApp(const std::string & name, InputParameters parameters);
-
-  virtual ~AutoPositionsMultiApp();
+  AutoPositionsMultiApp(const InputParameters & parameters);
 
 protected:
   /**
    * _must_ fill in _positions with the positions of the sub-aps
    */
-  virtual void fillPositions();
+  virtual void fillPositions() override;
 };
 
 #endif // AUTOPOSITIONSMULTIAPP_H

@@ -46,7 +46,7 @@
   [../]
 
   [./time]
-    type = CoupledImplicitEuler
+    type = CoupledTimeDerivative
     variable = w
     v = c
   [../]
@@ -70,10 +70,9 @@
 
 [Materials]
   [./constant]
-    type = PFMobility
-    block = 0
-    mob = 1.0
-    kappa = 2.0
+    type = GenericConstantMaterial
+    prop_names  = 'M kappa_c'
+    prop_values = '1.0 2.0'
   [../]
 []
 
@@ -111,7 +110,6 @@
 
 [Outputs]
   file_base = integral
-  output_initial = true
   csv = true
   console = true
 []

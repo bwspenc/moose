@@ -23,7 +23,7 @@ InputParameters validParams<FunctionMaterialBase>();
 class FunctionMaterialBase : public DerivativeMaterialInterface<Material>
 {
 public:
-  FunctionMaterialBase(const std::string & name, InputParameters parameters);
+  FunctionMaterialBase(const InputParameters & parameters);
 
 protected:
 
@@ -39,13 +39,13 @@ protected:
    */
   unsigned int argIndex(unsigned int i_var) const
   {
-    mooseAssert(i_var < _number_of_nl_variables, "Requesting argIndex() for an invalid Moose variable number. Maybe an AuxVariable?");
-    mooseAssert(_arg_numbers[_arg_index[i_var]] == i_var, "Requesting argIndex() for a derivative w.r.t. a variable not coupled to.");
-    return _arg_index[i_var];
+    const unsigned int idx = libMeshVarNumberRemap(i_var);
+    mooseAssert(idx < _arg_index.size() && _arg_numbers[_arg_index[idx]] == i_var, "Requesting argIndex() for a derivative w.r.t. a variable not coupled to.");
+    return _arg_index[idx];
   }
 
   /// Coupled variables for function arguments
-  std::vector<VariableValue *> _args;
+  std::vector<const VariableValue *> _args;
 
   /**
    * Name of the function value material property and used as a base name to
@@ -68,16 +68,23 @@ protected:
   /// String vector of the input file coupling parameter name for each argument.
   std::vector<std::string> _arg_param_names;
 
+  /// coupled variables with default values
+  std::vector<std::string> _arg_constant_defaults;
+
   /// Calculate (and allocate memory for) the third derivatives of the free energy.
   bool _third_derivatives;
 
   /// Material property to store the function value.
   MaterialProperty<Real> * _prop_F;
 
-  /// number of non-linear variables in the problem
-  const unsigned int _number_of_nl_variables;
-
 private:
+  /// map the variable numbers to an even/odd interspersed pattern
+  unsigned int libMeshVarNumberRemap(unsigned int var) const
+  {
+    const int b = static_cast<int>(var);
+    return b >= 0 ? b<<1 : (-b<<1)-1;
+  }
+
   /// Vector to look up the internal coupled variable index into _arg_*  through the libMesh variable number
   std::vector<unsigned int> _arg_index;
 };

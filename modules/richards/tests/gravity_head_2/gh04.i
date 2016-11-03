@@ -83,15 +83,15 @@
 []
 
 [ICs]
-  # get non-convergence if initial condition is too crazy
+  # get nonconvergence if initial condition is too crazy
   [./water_ic]
     type = FunctionIC
-    function = pwater_initial
+    function = '1-x/2'
     variable = pwater
   [../]
   [./gas_ic]
     type = FunctionIC
-    function = pgas_initial
+    function = '4-x/5'
     variable = pgas
   [../]
 []
@@ -141,42 +141,6 @@
 []
 
 [Postprocessors]
-  [./mwater_init]
-    type = RichardsMass
-    variable = pwater
-    execute_on = timestep_begin
-    outputs = none
-  [../]
-  [./mgas_init]
-    type = RichardsMass
-    variable = pgas
-    execute_on = timestep_begin
-    outputs = none
-  [../]
-  [./mwater_fin]
-    type = RichardsMass
-    variable = pwater
-    execute_on = timestep_end
-    outputs = none
-  [../]
-  [./mgas_fin]
-    type = RichardsMass
-    variable = pgas
-    execute_on = timestep_end
-    outputs = none
-  [../]
-
-  [./mass_error_water]
-    type = PlotFunction
-    function = fcn_mass_error_w
-    outputs = none # no reason why mass should be conserved
-  [../]
-  [./mass_error_gas]
-    type = PlotFunction
-    function = fcn_mass_error_g
-    outputs = none # no reason why mass should be conserved
-  [../]
-
   [./pw_left]
     type = PointValue
     point = '0 0 0'
@@ -190,7 +154,7 @@
     outputs = none
   [../]
   [./error_water]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_error_water
   [../]
 
@@ -207,33 +171,12 @@
     outputs = none
   [../]
   [./error_gas]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_error_gas
   [../]
 []
 
 [Functions]
-  [./pwater_initial]
-    type = ParsedFunction
-    value = 1-x/2
-  [../]
-  [./pgas_initial]
-    type = ParsedFunction
-    value = 2-x/5
-  [../]
-
-  [./fcn_mass_error_w]
-    type = ParsedFunction
-    value = 'abs(0.5*(mi-mf)/(mi+mf))'
-    vars = 'mi mf'
-    vals = 'mwater_init mwater_fin'
-  [../]
-  [./fcn_mass_error_g]
-    type = ParsedFunction
-    value = 'abs(0.5*(mi-mf)/(mi+mf))'
-    vars = 'mi mf'
-    vals = 'mgas_init mgas_fin'
-  [../]
   [./fcn_error_water]
     type = ParsedFunction
     value = 'abs((-b*log(-(gdens0*xval+(-b*exp(-p0/b)))/b)-p1)/p1)'
@@ -271,9 +214,8 @@
   [./andy]
     type = SMP
     full = true
-    #petsc_options = '-snes_test_display'
-    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it'
-    petsc_options_value = 'bcgs bjacobi 1E-10 1E-10 10000'
+    petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -sub_pc_factor_shift_type -snes_atol -snes_rtol -snes_max_it'
+    petsc_options_value = 'gmres asm lu NONZERO 1E-10 1E-10 10000'
   [../]
 []
 
@@ -283,7 +225,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = gh04
   csv = true
-  print_perf_log = true
 []

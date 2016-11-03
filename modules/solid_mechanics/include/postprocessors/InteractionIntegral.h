@@ -24,29 +24,32 @@ InputParameters validParams<InteractionIntegral>();
 class InteractionIntegral: public ElementIntegralPostprocessor
 {
 public:
-  InteractionIntegral(const std::string & name, InputParameters parameters);
+  InteractionIntegral(const InputParameters & parameters);
 
   virtual Real getValue();
 
 protected:
   virtual void initialSetup();
   virtual Real computeQpIntegral();
+  const VariableValue & _scalar_q;
   /// The gradient of the scalar q field
-  VariableGradient & _grad_of_scalar_q;
+  const VariableGradient & _grad_of_scalar_q;
   const CrackFrontDefinition * const _crack_front_definition;
   bool _has_crack_front_point_index;
   const unsigned int _crack_front_point_index;
   bool _treat_as_2d;
-  const MaterialProperty<ColumnMajorMatrix> & _Eshelby_tensor;
   const MaterialProperty<SymmTensor> & _stress;
   const MaterialProperty<SymmTensor> & _strain;
-  VariableGradient & _grad_disp_x;
-  VariableGradient & _grad_disp_y;
-  VariableGradient & _grad_disp_z;
+  const VariableGradient & _grad_disp_x;
+  const VariableGradient & _grad_disp_y;
+  const VariableGradient & _grad_disp_z;
+  const bool _has_temp;
+  const VariableGradient & _grad_temp;
   std::string _aux_stress_name;
   const MaterialProperty<ColumnMajorMatrix> & _aux_stress;
   std::string _aux_grad_disp_name;
   const MaterialProperty<ColumnMajorMatrix> & _aux_grad_disp;
+  const MaterialProperty<Real> * _current_instantaneous_thermal_expansion_coef;
   Real _K_factor;
   bool _has_symmetry_plane;
   bool _t_stress;

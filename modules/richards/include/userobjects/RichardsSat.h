@@ -25,7 +25,7 @@ InputParameters validParams<RichardsSat>();
 class RichardsSat : public GeneralUserObject
 {
 public:
-  RichardsSat(const std::string & name, InputParameters parameters);
+  RichardsSat(const InputParameters & parameters);
 
   void initialize();
   void execute();
@@ -39,9 +39,6 @@ public:
 
   /// derivative of saturation wrt effective saturation
   Real dsat(Real /*seff*/) const;
-
-  /// second derivative of saturation wrt effective saturation
-  Real d2sat(Real /*seff*/) const;
 
 protected:
 

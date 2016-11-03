@@ -22,16 +22,19 @@ class Diffusion;
 template<>
 InputParameters validParams<Diffusion>();
 
-
+/**
+ * This kernel implements the Laplacian operator:
+ * $\nabla u \cdot \nabla \phi_i$
+ */
 class Diffusion : public Kernel
 {
 public:
-  Diffusion(const std::string & name, InputParameters parameters);
-  virtual ~Diffusion();
+  Diffusion(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
+  virtual Real computeQpResidual() override;
+
+  virtual Real computeQpJacobian() override;
 };
 
 

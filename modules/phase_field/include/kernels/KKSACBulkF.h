@@ -16,7 +16,7 @@ template<>
 InputParameters validParams<KKSACBulkF>();
 
 /**
- * KKSACBulkBase child class for the freee energy difference term
+ * KKSACBulkBase child class for the free energy difference term
  * \f$ -\frac{dh}{d\eta}(F_a-F_b)+w\frac{dg}{d\eta} \f$
  * in the the Allen-Cahn bulk residual.
  *
@@ -25,7 +25,7 @@ InputParameters validParams<KKSACBulkF>();
 class KKSACBulkF : public KKSACBulkBase
 {
 public:
-  KKSACBulkF(const std::string & name, InputParameters parameters);
+  KKSACBulkF(const InputParameters & parameters);
 
 protected:
   virtual Real computeDFDOP(PFFunctionType type);
@@ -33,9 +33,6 @@ protected:
 
   /// double well height parameter
   Real _w;
-
-  /// double well function material property base names
-  std::string _g_name;
 
   /// Derivative of the double well function \f$ \frac d{d\eta} g(\eta) \f$
   const MaterialProperty<Real> & _prop_dg;

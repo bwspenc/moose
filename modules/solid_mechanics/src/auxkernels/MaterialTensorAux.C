@@ -19,9 +19,9 @@ InputParameters validParams<MaterialTensorAux>()
   return params;
 }
 
-MaterialTensorAux::MaterialTensorAux( const std::string & name, InputParameters parameters ) :
-    AuxKernel(name, parameters),
-    _material_tensor_calculator(name, parameters),
+MaterialTensorAux::MaterialTensorAux( const InputParameters & parameters) :
+    AuxKernel(parameters),
+    _material_tensor_calculator(parameters),
     _tensor(getMaterialProperty<SymmTensor>("tensor")),
     _has_qp_select(isParamValid("qp_select")),
     _qp_select(_has_qp_select ? getParam<unsigned int>("qp_select") : 0)
@@ -50,7 +50,7 @@ MaterialTensorAux::computeValue()
     qp_call = _qp;
 
   Real value = _material_tensor_calculator.getTensorQuantity(_tensor[qp_call],
-                                                             &_q_point[qp_call],
+                                                             _q_point[qp_call],
                                                              direction);
   return value;
 }

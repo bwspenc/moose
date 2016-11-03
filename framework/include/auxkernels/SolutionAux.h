@@ -16,10 +16,10 @@
 #define SOLUTIONAUX_H
 
 #include "AuxKernel.h"
-#include "SolutionUserObject.h"
 
 // Forward declaration
 class SolutionAux;
+class SolutionUserObject;
 
 template<>
 InputParameters validParams<SolutionAux>();
@@ -34,19 +34,14 @@ class SolutionAux : public AuxKernel
 public:
 
   /** Constructor
-   * @param name The name of the SolutionAux kernel
    * @param parameters The input parameters for the kernel
    */
-  SolutionAux(const std::string & name, InputParameters parameters);
-
-  /** Empty destructor
-   */
-  virtual ~SolutionAux();
+  SolutionAux(const InputParameters & parameters);
 
   /**
    * Sets up the variable name for extraction from the SolutionUserObject
    */
-  void initialSetup();
+  virtual void initialSetup() override;
 
 protected:
 
@@ -56,7 +51,7 @@ protected:
    * flag is set to true.
    * @ return The desired value of the solution for the current node or element
    */
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   /// Reference to the SolutionUserObject storing the solution
   const SolutionUserObject & _solution_object;
@@ -65,7 +60,7 @@ protected:
   std::string _var_name;
 
   /// Flag for directly grabbing the data based on the dof
-   bool _direct;
+  bool _direct;
 
   /// Multiplier for the solution, the a of ax+b
   const Real _scale_factor;

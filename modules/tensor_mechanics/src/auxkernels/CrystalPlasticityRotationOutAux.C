@@ -16,8 +16,8 @@ InputParameters validParams<CrystalPlasticityRotationOutAux>()
   return params;
 }
 
-CrystalPlasticityRotationOutAux::CrystalPlasticityRotationOutAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+CrystalPlasticityRotationOutAux::CrystalPlasticityRotationOutAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _rotout_file_name(getParam<FileName>("rotout_file_name")),
     _out_freq(getParam<unsigned int>("output_frequency")),
     _update_rot( getMaterialProperty<RankTwoTensor>("update_rot"))
@@ -40,3 +40,4 @@ CrystalPlasticityRotationOutAux::computeValue()
 
   return 0;
 }
+

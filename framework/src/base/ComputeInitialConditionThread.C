@@ -15,8 +15,6 @@
 #include "ComputeInitialConditionThread.h"
 #include "FEProblem.h"
 #include "InitialCondition.h"
-// libmesh includes
-#include "libmesh/threads.h"
 
 ComputeInitialConditionThread::ComputeInitialConditionThread(FEProblem & fe_problem) :
     _fe_problem(fe_problem)
@@ -34,24 +32,24 @@ ComputeInitialConditionThread::operator() (const ConstElemRange & range)
   ParallelUniqueId puid;
   _tid = puid.id;
 
-  // Iterate over all the elements in the range
-  for (ConstElemRange::const_iterator elem_it=range.begin(); elem_it != range.end(); ++elem_it)
-  {
-    const Elem* elem = *elem_it;
+  const InitialConditionWarehouse & warehouse = _fe_problem.getInitialConditionWarehouse();
 
+  // Iterate over all the elements in the range
+  for (const auto & elem : range)
+  {
     SubdomainID subdomain = elem->subdomain_id();
 
-    _fe_problem._ics[_tid].updateActiveICs(subdomain);
     _fe_problem.prepare(elem, _tid);
 
-    const std::vector<InitialCondition *> & ics = _fe_problem._ics[_tid].active();
-    for (std::vector<InitialCondition *>::const_iterator it = ics.begin(); it != ics.end(); ++it)
+    if (warehouse.hasActiveBlockObjects(subdomain, _tid))
     {
-      InitialCondition * ic = (*it);
-      ic->compute();
+      const std::vector<MooseSharedPointer<InitialCondition> > & ics = warehouse.getActiveBlockObjects(subdomain, _tid);
+      for (std::vector<MooseSharedPointer<InitialCondition> >::const_iterator it = ics.begin(); it != ics.end(); ++it)
+        (*it)->compute();
     }
   }
 }
+
 
 void
 ComputeInitialConditionThread::join(const ComputeInitialConditionThread & /*y*/)

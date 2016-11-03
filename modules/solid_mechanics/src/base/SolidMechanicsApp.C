@@ -5,75 +5,53 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 #include "SolidMechanicsApp.h"
+#include "TensorMechanicsApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 #include "AbaqusCreepMaterial.h"
 #include "AbaqusUmatMaterial.h"
-#include "AdaptiveTransient.h"
 #include "CLSHPlasticMaterial.h"
 #include "CLSHPlasticModel.h"
 #include "CombinedCreepPlasticity.h"
-#include "DashpotBC.h"
 #include "Elastic.h"
 #include "ElasticModel.h"
-#include "ElasticEnergyAux.h"
-#include "ElementsOnLineAux.h"
-#include "Gravity.h"
 #include "HomogenizationKernel.h"
 #include "HomogenizedElasticConstants.h"
-#include "HomogenizationHeatConduction.h"
-#include "HomogenizedThermalConductivity.h"
 #include "IsotropicPlasticity.h"
+#include "IsotropicPowerLawHardening.h"
+#include "IsotropicTempDepHardening.h"
 #include "LinearAnisotropicMaterial.h"
 #include "LinearGeneralAnisotropicMaterial.h"
 #include "LinearIsotropicMaterial.h"
 #include "LinearStrainHardening.h"
 #include "MacroElastic.h"
-#include "Mass.h"
 #include "JIntegral.h"
 #include "CrackFrontData.h"
 #include "CrackFrontDefinition.h"
 #include "InteractionIntegral.h"
 #include "InteractionIntegralAuxFields.h"
+#include "MixedModeEquivalentK.h"
 #include "MaterialSymmElasticityTensorAux.h"
 #include "MaterialTensorAux.h"
-#include "MaterialTensorOnLine.h"
-#include "MaterialVectorAux.h"
-#include "AccumulateAux.h"
-#include "NewmarkAccelAux.h"
-#include "NewmarkVelAux.h"
 #include "DomainIntegralQFunction.h"
 #include "DomainIntegralTopologicalQFunction.h"
 #include "PLC_LSH.h"
 #include "PowerLawCreep.h"
 #include "PowerLawCreepModel.h"
-#include "CavityPressureAction.h"
-#include "CavityPressurePostprocessor.h"
-#include "LineMaterialSymmTensorSampler.h"
-#include "CavityPressurePPAction.h"
-#include "CavityPressureUserObject.h"
-#include "CavityPressureUOAction.h"
-#include "PresetVelocity.h"
-#include "Pressure.h"
-#include "PressureAction.h"
-#include "DisplacementAboutAxis.h"
-#include "DisplacementAboutAxisAction.h"
 #include "InteractionIntegralBenchmarkBC.h"
-#include "TorqueReaction.h"
-#include "MaterialTensorIntegral.h"
+#include "MaterialTensorIntegralSM.h"
 #include "CrackDataSampler.h"
+#include "LineMaterialSymmTensorSampler.h"
 #include "SolidMechanicsAction.h"
 #include "DomainIntegralAction.h"
-#include "SolidMechInertialForce.h"
 #include "SolidMechImplicitEuler.h"
 #include "SolidModel.h"
 #include "StressDivergence.h"
 #include "OutOfPlaneStress.h"
 #include "StressDivergenceRZ.h"
 #include "StressDivergenceRSpherical.h"
-#include "StressDivergenceTruss.h"
-#include "TrussMaterial.h"
 #include "RateDepSmearCrackModel.h"
 #include "RateDepSmearIsoCrackModel.h"
 
@@ -84,19 +62,18 @@ InputParameters validParams<SolidMechanicsApp>()
   InputParameters params = validParams<MooseApp>();
   params.set<bool>("use_legacy_uo_initialization") = false;
   params.set<bool>("use_legacy_uo_aux_computation") = false;
-
   return params;
 }
 
-SolidMechanicsApp::SolidMechanicsApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+SolidMechanicsApp::SolidMechanicsApp(const InputParameters & parameters) :
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
+  TensorMechanicsApp::registerObjects(_factory);
   SolidMechanicsApp::registerObjects(_factory);
 
   Moose::associateSyntax(_syntax, _action_factory);
+  TensorMechanicsApp::associateSyntax(_syntax, _action_factory);
   SolidMechanicsApp::associateSyntax(_syntax, _action_factory);
 }
 
@@ -117,24 +94,12 @@ extern "C" void SolidMechanicsApp__registerObjects(Factory & factory) { SolidMec
 void
 SolidMechanicsApp::registerObjects(Factory & factory)
 {
-  registerAux(ElasticEnergyAux);
   registerAux(MaterialSymmElasticityTensorAux);
   registerAux(MaterialTensorAux);
-  registerAux(MaterialVectorAux);
-  registerAux(AccumulateAux);
-  registerAux(NewmarkAccelAux);
-  registerAux(NewmarkVelAux);
   registerAux(DomainIntegralQFunction);
   registerAux(DomainIntegralTopologicalQFunction);
-  registerAux(ElementsOnLineAux);
 
-  registerBoundaryCondition(DashpotBC);
-  registerBoundaryCondition(PresetVelocity);
-  registerBoundaryCondition(Pressure);
-  registerBoundaryCondition(DisplacementAboutAxis);
   registerBoundaryCondition(InteractionIntegralBenchmarkBC);
-
-  registerExecutioner(AdaptiveTransient);
 
   registerMaterial(AbaqusCreepMaterial);
   registerMaterial(AbaqusUmatMaterial);
@@ -145,6 +110,8 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(ElasticModel);
   registerMaterial(InteractionIntegralAuxFields);
   registerMaterial(IsotropicPlasticity);
+  registerMaterial(IsotropicPowerLawHardening);
+  registerMaterial(IsotropicTempDepHardening);
   registerMaterial(LinearAnisotropicMaterial);
   registerMaterial(LinearGeneralAnisotropicMaterial);
   registerMaterial(LinearIsotropicMaterial);
@@ -154,36 +121,26 @@ SolidMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(PowerLawCreep);
   registerMaterial(PowerLawCreepModel);
   registerMaterial(SolidModel);
-  registerMaterial(TrussMaterial);
   registerMaterial(RateDepSmearCrackModel);
   registerMaterial(RateDepSmearIsoCrackModel);
 
-  registerKernel(Gravity);
   registerKernel(HomogenizationKernel);
   registerKernel(SolidMechImplicitEuler);
-  registerKernel(SolidMechInertialForce);
   registerKernel(StressDivergence);
   registerKernel(OutOfPlaneStress);
   registerKernel(StressDivergenceRZ);
   registerKernel(StressDivergenceRSpherical);
-  registerKernel(StressDivergenceTruss);
-  registerKernel(HomogenizationHeatConduction);
 
-  registerPostprocessor(HomogenizedThermalConductivity);
   registerPostprocessor(HomogenizedElasticConstants);
-  registerPostprocessor(Mass);
   registerPostprocessor(JIntegral);
   registerPostprocessor(CrackFrontData);
   registerPostprocessor(InteractionIntegral);
-  registerPostprocessor(CavityPressurePostprocessor);
-  registerPostprocessor(TorqueReaction);
-  registerPostprocessor(MaterialTensorIntegral);
+  registerPostprocessor(MaterialTensorIntegralSM);
+  registerPostprocessor(MixedModeEquivalentK);
 
   registerVectorPostprocessor(CrackDataSampler);
   registerVectorPostprocessor(LineMaterialSymmTensorSampler);
 
-  registerUserObject(MaterialTensorOnLine);
-  registerUserObject(CavityPressureUserObject);
   registerUserObject(CrackFrontDefinition);
 }
 
@@ -192,17 +149,6 @@ extern "C" void SolidMechanicsApp__associateSyntax(Syntax & syntax, ActionFactor
 void
 SolidMechanicsApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 {
-  syntax.registerActionSyntax("EmptyAction", "BCs/CavityPressure");
-  syntax.registerActionSyntax("CavityPressureAction", "BCs/CavityPressure/*");
-  syntax.registerActionSyntax("CavityPressurePPAction", "BCs/CavityPressure/*");
-  syntax.registerActionSyntax("CavityPressureUOAction", "BCs/CavityPressure/*");
-
-  syntax.registerActionSyntax("EmptyAction", "BCs/Pressure");
-  syntax.registerActionSyntax("PressureAction", "BCs/Pressure/*");
-
-  syntax.registerActionSyntax("EmptyAction", "BCs/DisplacementAboutAxis");
-  syntax.registerActionSyntax("DisplacementAboutAxisAction", "BCs/DisplacementAboutAxis/*");
-
   syntax.registerActionSyntax("SolidMechanicsAction", "SolidMechanics/*");
 
   syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_user_object");
@@ -212,11 +158,6 @@ SolidMechanicsApp::associateSyntax(Syntax & syntax, ActionFactory & action_facto
   syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_vector_postprocessor");
   syntax.registerActionSyntax("DomainIntegralAction", "DomainIntegral","add_material");
 
-  registerAction(PressureAction, "add_bc");
-  registerAction(DisplacementAboutAxisAction, "add_bc");
-  registerAction(CavityPressureAction, "add_bc");
-  registerAction(CavityPressurePPAction, "add_postprocessor");
-  registerAction(CavityPressureUOAction, "add_user_object");
   registerAction(SolidMechanicsAction, "add_kernel");
   registerAction(DomainIntegralAction, "add_user_object");
   registerAction(DomainIntegralAction, "add_aux_variable");

@@ -9,25 +9,12 @@
 template<>
 InputParameters validParams<MatDiffusion>()
 {
-  InputParameters params = validParams<Diffusion>();
-  params.addClassDescription("Diffusion equation Kernel that takes teh Diffusivity from a material property");
-  params.addParam<MaterialPropertyName>("D_name", "D", "The name of the diffusivity");
+  InputParameters params = MatDiffusionBase<Real>::validParams();
+  params.addClassDescription("Diffusion equation Kernel that takes an isotropic Diffusivity from a material property");
   return params;
 }
 
-MatDiffusion::MatDiffusion(const std::string & name, InputParameters parameters) :
-    Diffusion(name, parameters),
-    _D(getMaterialProperty<Real>("D_name"))
-{}
-
-Real
-MatDiffusion::computeQpResidual()
+MatDiffusion::MatDiffusion(const InputParameters & parameters) :
+    MatDiffusionBase<Real>(parameters)
 {
-  return _D[_qp] * _grad_test[_i][_qp] * _grad_u[_qp];
-}
-
-Real
-MatDiffusion::computeQpJacobian()
-{
-  return _D[_qp] * _grad_test[_i][_qp] * _grad_phi[_j][_qp];
 }

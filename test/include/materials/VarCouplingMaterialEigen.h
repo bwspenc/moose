@@ -27,13 +27,13 @@ InputParameters validParams<VarCouplingMaterialEigen>();
 class VarCouplingMaterialEigen : public Material
 {
 public:
-  VarCouplingMaterialEigen(const std::string & name, InputParameters parameters);
+  VarCouplingMaterialEigen(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
 
-  VariableValue & _var;
-  VariableValue & _var_old;
+  const VariableValue & _var;
+  const VariableValue & _var_old;
   std::string _propname;
   MaterialProperty<Real> & _mat;
   MaterialProperty<Real> & _mat_old;

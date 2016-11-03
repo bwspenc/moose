@@ -26,14 +26,10 @@ class SideSetsBetweenSubdomains :
   public MeshModifier
 {
 public:
-  SideSetsBetweenSubdomains(const std::string & name, InputParameters parameters);
-
-  virtual ~SideSetsBetweenSubdomains();
-
-  virtual void modify();
+  SideSetsBetweenSubdomains(const InputParameters & parameters);
 
 protected:
-
+  virtual void modify() override;
 };
 
 #endif /* SIDESETSBETWEENSUBDOMAINS_H */

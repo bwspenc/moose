@@ -26,8 +26,7 @@ class FDAdvection : public FDKernel
 {
 public:
 
-  FDAdvection(const std::string & name,
-             InputParameters parameters);
+  FDAdvection(const InputParameters & parameters);
 
 protected:
 
@@ -35,7 +34,7 @@ protected:
 
 private:
 
-  VariableGradient & _grad_advector;
+  const VariableGradient & _grad_advector;
 };
 
 #endif //FDADVECTION_H

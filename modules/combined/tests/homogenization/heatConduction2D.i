@@ -55,13 +55,13 @@
   [../]
 
   [./heat_rhs_x]
-    type = HomogenizationHeatConduction
+    type = HomogenizedHeatConduction
     variable = temp_x
     component = 0
   [../]
 
   [./heat_rhs_y]
-    type = HomogenizationHeatConduction
+    type = HomogenizedHeatConduction
     variable = temp_y
     component = 1
   [../]
@@ -150,10 +150,7 @@
 [] # Executioner
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 [] # Outputs
 
 [Postprocessors]

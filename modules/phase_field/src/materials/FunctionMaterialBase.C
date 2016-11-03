@@ -15,23 +15,25 @@ InputParameters validParams<FunctionMaterialBase>()
   return params;
 }
 
-FunctionMaterialBase::FunctionMaterialBase(const std::string & name,
-                                               InputParameters parameters) :
-    DerivativeMaterialInterface<Material>(name, parameters),
+FunctionMaterialBase::FunctionMaterialBase(const InputParameters & parameters) :
+    DerivativeMaterialInterface<Material>(parameters),
     _F_name(getParam<std::string>("f_name")),
-    _prop_F(&declareProperty<Real>(_F_name)),
-    _number_of_nl_variables(_fe_problem.getNonlinearSystem().nVariables()),
-    _arg_index(_number_of_nl_variables)
+    _prop_F(&declareProperty<Real>(_F_name))
 {
   // fetch names and numbers of all coupled variables
   _mapping_is_unique = true;
   for (std::set<std::string>::const_iterator it = _pars.coupledVarsBegin(); it != _pars.coupledVarsEnd(); ++it)
   {
+    // find the variable in the list of coupled variables
     std::map<std::string, std::vector<MooseVariable *> >::iterator vars = _coupled_vars.find(*it);
 
-    // no MOOSE variable was provided for this coupling, skip derivatives w.r.t. this variable
+    // no MOOSE variable was provided for this coupling, add to a list of variables set to constant default values
     if (vars == _coupled_vars.end())
+    {
+      if (_pars.hasDefaultCoupledValue(*it))
+        _arg_constant_defaults.push_back(*it);
       continue;
+    }
 
     // check if we have a 1:1 mapping between parameters and variables
     if (vars->second.size() != 1)
@@ -51,9 +53,12 @@ FunctionMaterialBase::FunctionMaterialBase(const std::string & name,
       _arg_numbers.push_back(number);
       _arg_param_names.push_back(*it);
 
-      // populate number -> arg index lookup table skipping aux variables
-      if (number < _number_of_nl_variables)
-        _arg_index[number] = _args.size();
+      // populate number -> arg index lookup table
+      unsigned int idx = libMeshVarNumberRemap(number);
+      if (idx >= _arg_index.size())
+        _arg_index.resize(idx + 1, -1);
+
+      _arg_index[idx] = _args.size();
 
       // get variable value
       _args.push_back(&coupledValue(*it, j));

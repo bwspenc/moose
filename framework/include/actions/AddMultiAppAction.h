@@ -26,9 +26,9 @@ InputParameters validParams<AddMultiAppAction>();
 class AddMultiAppAction : public MooseObjectAction
 {
 public:
-  AddMultiAppAction(const std::string & name, InputParameters params);
+  AddMultiAppAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // ADDMULTIAPPACTION_H

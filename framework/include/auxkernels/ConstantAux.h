@@ -35,12 +35,10 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  ConstantAux(const std::string & name, InputParameters parameters);
-
-  virtual ~ConstantAux() {}
+  ConstantAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   /// The value being set for the current node/element
   const Real & _value;

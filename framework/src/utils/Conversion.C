@@ -12,20 +12,22 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "Conversion.h"
 #include "MooseError.h"
+#include "MultiMooseEnum.h"
 
-#include <map>
-#include <algorithm>
-
+// libMesh includes
 #include "libmesh/string_to_enum.h"
 
-namespace Moose {
+// system includes
+#include <iomanip>
 
+namespace Moose
+{
   std::map<std::string, ExecFlagType> execstore_type_to_enum;
   std::map<std::string, QuadratureType> quadrature_type_to_enum;
   std::map<std::string, CoordinateSystemType> coordinate_system_type_to_enum;
-  std::map<std::string, PPSOutputType> pps_output_type_to_enum;
   std::map<std::string, SolveType> solve_type_to_enum;
   std::map<std::string, LineSearchType> line_search_type_to_enum;
 
@@ -39,11 +41,6 @@ namespace Moose {
       execstore_type_to_enum["TIMESTEP_END"] = EXEC_TIMESTEP_END;
       execstore_type_to_enum["TIMESTEP_BEGIN"] = EXEC_TIMESTEP_BEGIN;
       execstore_type_to_enum["CUSTOM"] = EXEC_CUSTOM;
-
-      // Deprecated syntax
-      execstore_type_to_enum["RESIDUAL"] = EXEC_LINEAR;
-      execstore_type_to_enum["JACOBIAN"] = EXEC_NONLINEAR;
-      execstore_type_to_enum["TIMESTEP"] = EXEC_TIMESTEP_END;
     }
   }
 
@@ -69,18 +66,6 @@ namespace Moose {
       coordinate_system_type_to_enum["XYZ"] = COORD_XYZ;
       coordinate_system_type_to_enum["RZ"]  = COORD_RZ;
       coordinate_system_type_to_enum["RSPHERICAL"]  = COORD_RSPHERICAL;
-    }
-  }
-
-  void initPPSOutputType()
-  {
-    if (pps_output_type_to_enum.empty())
-    {
-      pps_output_type_to_enum["NONE"]   = PPS_OUTPUT_NONE;
-      pps_output_type_to_enum["AUTO"]   = PPS_OUTPUT_AUTO;
-      pps_output_type_to_enum["SCREEN"] = PPS_OUTPUT_SCREEN;
-      pps_output_type_to_enum["FILE"]   = PPS_OUTPUT_FILE;
-      pps_output_type_to_enum["BOTH"]   = PPS_OUTPUT_BOTH;
     }
   }
 
@@ -174,20 +159,6 @@ namespace Moose {
   }
 
   template<>
-  PPSOutputType stringToEnum<PPSOutputType>(const std::string & s)
-  {
-    initPPSOutputType();
-
-    std::string upper(s);
-    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
-
-    if (!pps_output_type_to_enum.count(upper))
-      mooseError("Unknown PPS output type: " << upper);
-
-    return pps_output_type_to_enum[upper];
-  }
-
-  template<>
   SolveType stringToEnum<SolveType>(const std::string & s)
   {
     initSolveType();
@@ -230,13 +201,44 @@ namespace Moose {
   {
     switch (t)
     {
-    case ST_NEWTON: return "NEWTON";
-    case ST_JFNK:   return "JFNK";
-    case ST_PJFNK:  return "Preconditioned JFNK";
-    case ST_FD:     return "FD";
-    case ST_LINEAR: return "Linear";
+      case ST_NEWTON: return "NEWTON";
+      case ST_JFNK:   return "JFNK";
+      case ST_PJFNK:  return "Preconditioned JFNK";
+      case ST_FD:     return "FD";
+      case ST_LINEAR: return "Linear";
     }
     return "";
+  }
+
+  template<>
+  std::string stringify(const ExecFlagType & t)
+  {
+    switch (t)
+    {
+      case EXEC_INITIAL:        return "INITIAL";
+      case EXEC_LINEAR:         return "LINEAR";
+      case EXEC_NONLINEAR:      return "NONLINEAR";
+      case EXEC_TIMESTEP_END:   return "TIMESTEP_END";
+      case EXEC_TIMESTEP_BEGIN: return "TIMESTEP_BEGIN";
+      case EXEC_CUSTOM:         return "CUSTOM";
+      case EXEC_FINAL:          return "FINAL";
+      case EXEC_FORCED:         return "FORCED";
+      case EXEC_FAILED:         return "FAILED";
+      case EXEC_SUBDOMAIN:      return "SUBDOMAIN";
+      case EXEC_NONE:           return "NONE";
+    }
+    return "";
+  }
+
+  std::string stringifyExact(Real t)
+  {
+    // this or std::numeric_limits<T>::max_digits10
+    const unsigned int max_digits10 = std::floor(std::numeric_limits<Real>::digits * std::log10(2) + 2);
+
+    std::ostringstream os;
+    os << std::setprecision(max_digits10)
+       << t;
+    return os.str();
   }
 }
 

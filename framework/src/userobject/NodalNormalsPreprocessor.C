@@ -12,7 +12,13 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NodalNormalsPreprocessor.h"
+#include "Assembly.h"
+#include "MooseMesh.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 Threads::spin_mutex nodal_normals_preprocessor_mutex;
 
@@ -28,18 +34,14 @@ InputParameters validParams<NodalNormalsPreprocessor>()
   return params;
 }
 
-NodalNormalsPreprocessor::NodalNormalsPreprocessor(const std::string & name, InputParameters parameters) :
-    ElementUserObject(name, parameters),
-    BoundaryRestrictable(parameters),
+NodalNormalsPreprocessor::NodalNormalsPreprocessor(const InputParameters & parameters) :
+    ElementUserObject(parameters),
+    BoundaryRestrictable(parameters, true), // true for applying to nodesets
     _aux(_fe_problem.getAuxiliarySystem()),
     _fe_type(getParam<Order>("fe_order"), getParam<FEFamily>("fe_family")),
     _has_corners(isParamValid("corner_boundary")),
     _corner_boundary_id(_has_corners ? _mesh.getBoundaryID(getParam<BoundaryName>("corner_boundary")) : static_cast<BoundaryID>(-1)),
     _grad_phi(_assembly.feGradPhi(_fe_type))
-{
-}
-
-NodalNormalsPreprocessor::~NodalNormalsPreprocessor()
 {
 }
 
@@ -60,17 +62,20 @@ NodalNormalsPreprocessor::execute()
   // Get a reference to our BoundaryInfo object for later use...
   BoundaryInfo & boundary_info = _mesh.getMesh().get_boundary_info();
 
+  // Container to catch IDs handed back by BoundaryInfo.
+  std::vector<BoundaryID> node_boundary_ids;
+
   // Loop through each node on the current element
   for (unsigned int i = 0; i < _current_elem->n_nodes(); i++)
   {
     // Extract a pointer to a node
-    const Node * node = _current_elem->get_node(i);
+    const Node * node = _current_elem->node_ptr(i);
 
     // Only continue if the node is on a boundary
     if (_mesh.isBoundaryNode(node->id()))
     {
       // List of IDs for the boundary
-      std::vector<BoundaryID> node_boundary_ids = boundary_info.boundary_ids(node);
+      boundary_info.boundary_ids(node, node_boundary_ids);
 
       // Perform the calculation, the node must be:
       //    (1) On a boundary to which the object is restricted

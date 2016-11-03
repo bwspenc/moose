@@ -12,7 +12,11 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "LayeredBase.h"
+#include "UserObject.h"
+#include "SubProblem.h"
+#include "MooseMesh.h"
 
 // libmesh includes
 #include "libmesh/mesh_tools.h"
@@ -32,20 +36,23 @@ InputParameters validParams<LayeredBase>()
 
   params.addParam<unsigned int>("average_radius", 1, "When using 'average' sampling this is how the number of values both above and below the layer that will be averaged.");
 
+  params.addParam<bool>("cumulative", false, "When true the value in each layer is the sum of the values up to and including that layer");
+
   return params;
 }
 
-LayeredBase::LayeredBase(const std::string & name, InputParameters parameters) :
-    _layered_base_name(name),
+LayeredBase::LayeredBase(const InputParameters & parameters) :
+    _layered_base_name(parameters.get<std::string>("_object_name")),
     _layered_base_params(parameters),
     _direction_enum(parameters.get<MooseEnum>("direction")),
     _direction(_direction_enum),
     _sample_type(parameters.get<MooseEnum>("sample_type")),
     _average_radius(parameters.get<unsigned int>("average_radius")),
-    _layered_base_subproblem(*parameters.get<SubProblem *>("_subproblem"))
+    _layered_base_subproblem(*parameters.get<SubProblem *>("_subproblem")),
+    _cumulative(parameters.get<bool>("cumulative"))
 {
   if (_layered_base_params.isParamValid("num_layers") && _layered_base_params.isParamValid("bounds"))
-    mooseError("'bounds' and 'num_layers' cannot both be set in " << name);
+    mooseError("'bounds' and 'num_layers' cannot both be set in " << _layered_base_name);
 
   if (_layered_base_params.isParamValid("num_layers"))
   {
@@ -64,10 +71,10 @@ LayeredBase::LayeredBase(const std::string & name, InputParameters parameters) :
     _num_layers = _layer_bounds.size() - 1;  // Layers are only in-between the bounds
   }
   else
-    mooseError("One of 'bounds' or 'num_layers' must be specified for " << name);
+    mooseError("One of 'bounds' or 'num_layers' must be specified for " << _layered_base_name);
 
   if (!_interval_based && _sample_type == 1)
-    mooseError("'sample_type = interpolate' not supported with 'bounds' in " << name);
+    mooseError("'sample_type = interpolate' not supported with 'bounds' in " << _layered_base_name);
 
   MeshTools::BoundingBox bounding_box = MeshTools::bounding_box(_layered_base_subproblem.mesh());
   _layer_values.resize(_num_layers);
@@ -211,6 +218,17 @@ LayeredBase::finalize()
 {
   _layered_base_subproblem.comm().sum(_layer_values);
   _layered_base_subproblem.comm().max(_layer_has_value);
+
+  if (_cumulative)
+  {
+    Real value = 0;
+
+    for (unsigned i = 0; i < _num_layers; ++i)
+    {
+      value += getLayerValue(i);
+      setLayerValue(i, value);
+    }
+  }
 }
 
 void
@@ -232,7 +250,7 @@ LayeredBase::getLayer(Point p) const
 
   if (_interval_based)
   {
-    unsigned int layer = std::floor(((direction_x - _direction_min) / (_direction_max - _direction_min)) * (Real)_num_layers);
+    unsigned int layer = std::floor(((direction_x - _direction_min) / (_direction_max - _direction_min)) * static_cast<Real>(_num_layers));
 
     if (layer >= _num_layers)
       layer = _num_layers-1;

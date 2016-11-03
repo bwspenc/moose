@@ -18,8 +18,7 @@ InputParameters validParams<NSEnergyInviscidFlux>();
 class NSEnergyInviscidFlux : public NSKernel
 {
 public:
-
-  NSEnergyInviscidFlux(const std::string & name, InputParameters parameters);
+  NSEnergyInviscidFlux(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
@@ -27,7 +26,7 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   // Coupled variables
-  VariableValue & _enthalpy;
+  const VariableValue & _enthalpy;
 };
 
 #endif

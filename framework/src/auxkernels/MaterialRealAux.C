@@ -21,13 +21,13 @@ InputParameters validParams<MaterialRealAux>()
   return params;
 }
 
-MaterialRealAux::MaterialRealAux(const std::string & name, InputParameters parameters):
-    MaterialAuxBase<Real>(name, parameters)
+MaterialRealAux::MaterialRealAux(const InputParameters & parameters):
+    MaterialAuxBase<Real>(parameters)
 {
 }
 
 Real
-MaterialRealAux::computeValue()
+MaterialRealAux::getRealValue()
 {
-  return _factor * _prop[_qp] + _offset;
+  return _prop[_qp];
 }

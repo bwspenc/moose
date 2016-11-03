@@ -23,8 +23,8 @@ InputParameters validParams<FDDiffusion>()
 }
 
 
-FDDiffusion::FDDiffusion(const std::string & name, InputParameters parameters) :
-    FDKernel(name, parameters)
+FDDiffusion::FDDiffusion(const InputParameters & parameters) :
+    FDKernel(parameters)
 {
 
 }
@@ -39,4 +39,3 @@ FDDiffusion::computeQpResidual()
 {
   return _grad_u[_qp] * _grad_test[_i][_qp];
 }
-

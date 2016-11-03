@@ -39,10 +39,10 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  VectorNeumannBC(const std::string & name, InputParameters parameters);
+  VectorNeumannBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   /// Vector to dot with the normal.
   const RealVectorValue & _value;

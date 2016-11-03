@@ -58,10 +58,10 @@
 
 [Materials]
   [./constant]
-    type = PFMobility
+    type = GenericConstantMaterial
+    prop_names  = 'M kappa_c'
+    prop_values = '1.0 1.0'
     block = 0
-    mob = 1.0
-    kappa = 1.0
   [../]
 []
 
@@ -82,14 +82,10 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
 
 [Problem]
   register_objects_from = 'PhaseFieldApp'
-  object_names = 'CHMath CHInterface PFMobility'
   library_path = '../../../../phase_field/lib'
 []

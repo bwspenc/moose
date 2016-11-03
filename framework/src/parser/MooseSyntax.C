@@ -33,6 +33,7 @@ void associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   syntax.registerActionSyntax("CopyNodalVarsAction", "AuxVariables/*", "copy_nodal_aux_vars");
 
   syntax.registerActionSyntax("AddKernelAction", "Kernels/*", "add_kernel");
+  syntax.registerActionSyntax("AddNodalKernelAction", "NodalKernels/*", "add_nodal_kernel");
   syntax.registerActionSyntax("AddKernelAction", "AuxKernels/*", "add_aux_kernel");
   syntax.registerActionSyntax("AddKernelAction", "Bounds/*", "add_aux_kernel");
 
@@ -47,7 +48,7 @@ void associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   syntax.registerActionSyntax("SetupMeshCompleteAction", "Mesh");
 //  syntax.registerActionSyntax("SetupMeshCompleteAction", "Mesh", "prepare_mesh");
 //  syntax.registerActionSyntax("SetupMeshCompleteAction", "Mesh", "setup_mesh_complete");
-  syntax.registerActionSyntax("InitDisplacedProblemAction", "Mesh");
+  syntax.registerActionSyntax("CreateDisplacedProblemAction", "Mesh");
   syntax.registerActionSyntax("AddMeshModifierAction", "MeshModifiers/*");
   syntax.registerActionSyntax("AddMortarInterfaceAction", "Mesh/MortarInterfaces/*");
 
@@ -90,26 +91,31 @@ void associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 
   // Note: Preconditioner Actions will be built by this setup action
   syntax.registerActionSyntax("SetupPreconditionerAction", "Preconditioning/*");
-  syntax.registerActionSyntax("AddSplitAction","Splits/*");
+  syntax.registerActionSyntax("AddFieldSplitAction", "Preconditioning/*/*");
 
   syntax.registerActionSyntax("DetermineSystemType", "Executioner");
   syntax.registerActionSyntax("CreateExecutionerAction", "Executioner");
   syntax.registerActionSyntax("SetupTimeStepperAction", "Executioner/TimeStepper");
-  syntax.registerActionSyntax("SetupTimePeriodsAction", "Executioner/TimePeriods/*");
+  syntax.registerActionSyntax("SetupTimeIntegratorAction", "Executioner/TimeIntegrator");
+
   syntax.registerActionSyntax("SetupQuadratureAction", "Executioner/Quadrature");
   syntax.registerActionSyntax("SetupPredictorAction", "Executioner/Predictor");
 #ifdef LIBMESH_ENABLE_AMR
   syntax.registerActionSyntax("AdaptivityAction", "Executioner/Adaptivity");
 #endif
 
+  syntax.registerActionSyntax("PartitionerAction", "Mesh/Partitioner");
+
   syntax.registerActionSyntax("AddDiracKernelAction", "DiracKernels/*");
 
   syntax.registerActionSyntax("AddDGKernelAction", "DGKernels/*");
 
+  syntax.registerActionSyntax("AddInterfaceKernelAction", "InterfaceKernels/*");
+
   syntax.registerActionSyntax("AddConstraintAction", "Constraints/*");
 
   syntax.registerActionSyntax("AddUserObjectAction", "UserObjects/*");
-
+  syntax.registerActionSyntax("AddControlAction", "Controls/*");
   syntax.registerActionSyntax("AddBoundsVectorsAction", "Bounds");
 
   syntax.registerActionSyntax("AddNodalNormalsAction", "NodalNormals");

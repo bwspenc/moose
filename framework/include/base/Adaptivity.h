@@ -15,25 +15,31 @@
 #ifndef ADAPTIVITY_H
 #define ADAPTIVITY_H
 
-#include "Moose.h"
-#include "MooseError.h"
-#include "MooseEnum.h"
-#include "ConsoleStreamInterface.h"
+#include "libmesh/libmesh_config.h"
 
 #ifdef LIBMESH_ENABLE_AMR
 
-#include <string>
+#include "Moose.h"
+#include "MooseError.h"
+#include "ConsoleStreamInterface.h"
+#include "MooseTypes.h"
 
 // libMesh
-#include "libmesh/system_norm.h"
 #include "libmesh/mesh_refinement.h"
-#include "libmesh/error_vector.h"
-#include "libmesh/error_estimator.h"
 
 class FEProblem;
 class MooseMesh;
 class DisplacedProblem;
 class MooseVariable;
+class MooseEnum;
+
+// Forward declare classes in libMesh
+namespace libMesh
+{
+class SystemNorm;
+class ErrorVector;
+class ErrorEstimator;
+}
 
 /**
  * Takes care of everything related to mesh adaptivity
@@ -107,16 +113,31 @@ public:
   void setCyclesPerStep(const unsigned int & num){ _cycles_per_step = num; }
 
   /**
+   * Pull out the _recompute_markers_during_cycles flag previously set through the AdaptivityAction
+   *
+   * @return the flag to recompute markers during adaptivity cycles
+   */
+  bool getRecomputeMarkersFlag() const { return _recompute_markers_during_cycles; }
+
+  /**
+   * Set the flag to recompute markers during adaptivity cycles
+   * @param flag The flag to recompute markers
+   */
+  void setRecomputeMarkersFlag(const bool flag){ _recompute_markers_during_cycles = flag; }
+
+  /**
    * Adapts the mesh based on the error estimator used
    *
    * @return a boolean that indicates whether the mesh was changed
    */
-  bool adaptMesh();
+  bool adaptMesh(std::string marker_name = std::string());
 
   /**
    * Used during initial adaptivity.
+   *
+   * @return a boolean that indicates whether the mesh was changed
    */
-  void initialAdaptMesh();
+  bool initialAdaptMesh();
 
   /**
    * Performs uniform refinement of the passed Mesh object. The
@@ -175,12 +196,9 @@ public:
   void setMaxHLevel(unsigned int level) { _max_h_level = level; }
 
   /**
-   * Get the MooseVariable corresponding to the Marker Field Name that is actually going to be used
-   * to refine / coarsen the mesh.
-   *
-   * @return The MooseVariable
+   * Set the interval (number of timesteps) between refinement steps.
    */
-  MooseVariable & getMarkerVariable();
+  void setInterval(unsigned int interval) { _interval = interval; }
 
   /**
    * Get an ErrorVector that will be filled up with values corresponding to the
@@ -190,12 +208,17 @@ public:
    *
    * @param indicator_field The name of the field to get an ErrorVector for.
    */
-  ErrorVector & getErrorVector(std::string indicator_field);
+  ErrorVector & getErrorVector(const std::string & indicator_field);
 
   /**
    * Update the ErrorVectors that have been requested through calls to getErrorVector().
    */
   void updateErrorVectors();
+
+  /**
+   * Query if an adaptivity step should be performed at the current time / time step
+   */
+  bool isAdaptivityDue();
 
 protected:
   FEProblem & _subproblem;
@@ -204,15 +227,16 @@ protected:
   /// on/off flag reporting if the adaptivity is being used
   bool _mesh_refinement_on;
   /// A mesh refinement object to be used either with initial refinement or with Adaptivity.
-  MeshRefinement * _mesh_refinement;
+  std::unique_ptr<MeshRefinement> _mesh_refinement;
   /// Error estimator to be used by the apps.
-  ErrorEstimator * _error_estimator;
+  std::unique_ptr<ErrorEstimator> _error_estimator;
   /// Error vector for use with the error estimator.
-  ErrorVector * _error;
+  std::unique_ptr<ErrorVector> _error;
 
-  DisplacedProblem * & _displaced_problem;
+  MooseSharedPointer<DisplacedProblem> _displaced_problem;
+
   /// A mesh refinement object for displaced mesh
-  MeshRefinement * _displaced_mesh_refinement;
+  std::unique_ptr<MeshRefinement> _displaced_mesh_refinement;
 
   /// the number of adaptivity steps to do at the beginning of simulation
   unsigned int _initial_steps;
@@ -224,6 +248,10 @@ protected:
 
   /// Time
   Real & _t;
+  /// Time Step
+  int & _step;
+  /// intreval between adaptivity runs
+  unsigned int _interval;
   /// When adaptivity start
   Real _start_time;
   /// When adaptivity stops
@@ -243,8 +271,11 @@ protected:
   /// The maximum number of refinement levels
   unsigned int _max_h_level;
 
+  /// Whether or not to recompute markers during adaptivity cycles
+  bool _recompute_markers_during_cycles;
+
   /// Stores pointers to ErrorVectors associated with indicator field names
-  std::map<std::string, ErrorVector *> _indicator_field_to_error_vector;
+  std::map<std::string, std::unique_ptr<ErrorVector> > _indicator_field_to_error_vector;
 };
 
 template<typename T>
@@ -271,6 +302,8 @@ Adaptivity::setParam(const std::string &param_name, const T &param_value)
   }
   else if (param_name == "cycles_per_step")
     _cycles_per_step = param_value;
+  else if (param_name == "recompute_markers_during_cycles")
+    _recompute_markers_during_cycles = param_value;
   else
     mooseError("Invalid Param in adaptivity object");
 }

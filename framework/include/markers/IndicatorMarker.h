@@ -25,8 +25,7 @@ InputParameters validParams<IndicatorMarker>();
 class IndicatorMarker : public Marker
 {
 public:
-  IndicatorMarker(const std::string & name, InputParameters parameters);
-  virtual ~IndicatorMarker(){};
+  IndicatorMarker(const InputParameters & parameters);
 
 protected:
   ErrorVector & _error_vector;

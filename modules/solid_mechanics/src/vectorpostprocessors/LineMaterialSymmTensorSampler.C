@@ -16,14 +16,14 @@ InputParameters validParams<LineMaterialSymmTensorSampler>()
   return params;
 }
 
-LineMaterialSymmTensorSampler::LineMaterialSymmTensorSampler(const std::string & name, InputParameters parameters) :
-    LineMaterialSamplerBase<SymmTensor>(name, parameters),
-    MaterialTensorCalculator(name, parameters)
+LineMaterialSymmTensorSampler::LineMaterialSymmTensorSampler(const InputParameters & parameters) :
+    LineMaterialSamplerBase<SymmTensor>(parameters),
+    MaterialTensorCalculator(parameters)
 {
 }
 
 Real
-LineMaterialSymmTensorSampler::getScalarFromProperty(const SymmTensor &property, const Point * curr_point)
+LineMaterialSymmTensorSampler::getScalarFromProperty(const SymmTensor &property, const Point & curr_point)
 {
   RealVectorValue direction;
   return getTensorQuantity(property, curr_point, direction);

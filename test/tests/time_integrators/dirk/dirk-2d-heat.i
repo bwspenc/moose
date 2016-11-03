@@ -75,16 +75,24 @@
 
 [Executioner]
   type = Transient
-  scheme = 'dirk'
+
+  # Preconditioned JFNK (default)
+  solve_type = 'PJFNK'
+  petsc_options_iname = '-pc_type -pc_hypre_type'
+  petsc_options_value = 'hypre boomeramg'
+
   start_time = 0.0
   end_time   = 1.0
   dt         = 1.0
   nl_abs_tol=1e-13
   nl_rel_tol=1e-13
+
+  [./TimeIntegrator]
+    type = LStableDirk2
+  [../]
 []
 
 [Outputs]
-  output_initial = false
+  execute_on = 'timestep_end'
   exodus         = true
-  print_perf_log = false
 []

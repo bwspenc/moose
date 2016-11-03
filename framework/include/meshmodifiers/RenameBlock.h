@@ -18,9 +18,6 @@
 // MOOSE includes
 #include "MeshModifier.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
 // Forward declerations
 class RenameBlock;
 
@@ -33,23 +30,14 @@ InputParameters validParams<RenameBlock>();
 class RenameBlock : public MeshModifier
 {
 public:
-
   /**
    * Class constructor
-   * @param name The name of the RenameBlock
    * @param parameters The input parameters
    */
-  RenameBlock(const std::string & name, InputParameters parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~RenameBlock();
-
-  /// Perform the actual subdomain modification
-  virtual void modify();
+  RenameBlock(const InputParameters & parameters);
 
 private:
+  virtual void modify() override;
 
   std::vector<SubdomainID> _old_block_id;
 

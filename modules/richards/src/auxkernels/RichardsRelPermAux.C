@@ -20,8 +20,8 @@ InputParameters validParams<RichardsRelPermAux>()
   return params;
 }
 
-RichardsRelPermAux::RichardsRelPermAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+RichardsRelPermAux::RichardsRelPermAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _seff_var(coupledValue("seff_var")),
     _relperm_UO(getUserObject<RichardsRelPerm>("relperm_UO"))
 {}
@@ -31,3 +31,4 @@ RichardsRelPermAux::computeValue()
 {
   return _relperm_UO.relperm(_seff_var[_qp]);
 }
+

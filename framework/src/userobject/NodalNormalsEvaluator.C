@@ -24,19 +24,16 @@ InputParameters validParams<NodalNormalsEvaluator>()
   return params;
 }
 
-NodalNormalsEvaluator::NodalNormalsEvaluator(const std::string & name, InputParameters parameters) :
-    NodalUserObject(name, parameters),
+NodalNormalsEvaluator::NodalNormalsEvaluator(const InputParameters & parameters) :
+    NodalUserObject(parameters),
     _aux(_fe_problem.getAuxiliarySystem())
-{
-}
-
-NodalNormalsEvaluator::~NodalNormalsEvaluator()
 {
 }
 
 void
 NodalNormalsEvaluator::execute()
 {
+
   if (_current_node->processor_id() == processor_id())
   {
     if (_current_node->n_dofs(_aux.number(), _fe_problem.getVariable(_tid, "nodal_normal_x").number()) > 0)

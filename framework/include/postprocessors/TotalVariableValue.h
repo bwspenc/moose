@@ -28,12 +28,11 @@ InputParameters validParams<TotalVariableValue>();
 class TotalVariableValue : public GeneralPostprocessor
 {
 public:
-  TotalVariableValue(const std::string & name, InputParameters parameters);
-  virtual ~TotalVariableValue();
+  TotalVariableValue(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual Real getValue();
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual Real getValue() override;
 
 protected:
   /// The total value of the variable

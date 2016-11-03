@@ -25,6 +25,10 @@
 #include "FileMesh.h"
 #include "MooseUtils.h"
 
+// libMesh includes
+#include "libmesh/equation_systems.h"
+
+
 template<>
 InputParameters validParams<Output>()
 {
@@ -42,29 +46,21 @@ InputParameters validParams<Output>()
   params.addParam<Real>("end_time", "Time at which this output object stop operating");
   params.addParam<Real>("time_tolerance", 1e-14, "Time tolerance utilized checking start and end times");
 
-  // Add the 'output_on' input parameter for users to set
-  params.addParam<MultiMooseEnum>("output_on", Output::getExecuteOptions("timestep_end"), "Set to (none|initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to execute only at that moment");
+  // Add the 'execute_on' input parameter for users to set
+  params.addParam<MultiMooseEnum>("execute_on", Output::getExecuteOptions("initial timestep_end"), "Set to (none|initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to execute only at that moment");
 
-  // Add ability to append to the 'output_on' list
-  params.addParam<MultiMooseEnum>("additional_output_on", Output::getExecuteOptions(), "This list of output flags is added to the existing flags (initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to execute only at that moment");
+  // Add ability to append to the 'execute_on' list
+  params.addParam<MultiMooseEnum>("additional_execute_on", Output::getExecuteOptions(), "This list of output flags is added to the existing flags (initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to execute only at that moment");
 
   // 'Timing' group
-  params.addParamNamesToGroup("time_tolerance interval output_initial output_final sync_times sync_only start_time end_time ", "Timing");
-
-  // Output toggles
-  params.addParam<bool>("output_initial", false, "Request that the initial condition is output to the solution file");
-  params.addParam<bool>("output_timestep_end", true, "Request that data be output at the end of the timestep");
-  params.addParam<bool>("output_final", false, "Force the final time step to be output, regardless of output interval");
-  params.addParam<bool>("output_failed", false, "When true all time attempted time steps are output");
-
-  // **** DEPRECATED PARAMETERS ****
-  params.addDeprecatedParam<bool>("output_intermediate", true, "Request that all intermediate steps (not initial or final) are output", "Replace this output with 'output_timestep_end'");
+  params.addParamNamesToGroup("time_tolerance interval sync_times sync_only start_time end_time ", "Timing");
 
   // Add a private parameter for indicating if it was created with short-cut syntax
   params.addPrivateParam<bool>("_built_by_moose", false);
 
   // Register this class as base class
   params.registerBase("Output");
+
   return params;
 }
 
@@ -78,16 +74,16 @@ Output::getExecuteOptions(std::string default_type)
   return MultiMooseEnum(options, default_type);
 }
 
-Output::Output(const std::string & name, InputParameters & parameters) :
-    MooseObject(name, parameters),
+Output::Output(const InputParameters & parameters) :
+    MooseObject(parameters),
     Restartable(parameters, "Output"),
     MeshChangedInterface(parameters),
-    SetupInterface(parameters),
+    SetupInterface(this),
     _problem_ptr(getParam<FEProblem *>("_fe_problem")),
     _transient(_problem_ptr->isTransient()),
     _use_displaced(getParam<bool>("use_displaced")),
     _es_ptr(_use_displaced ? &_problem_ptr->getDisplacedProblem()->es() : &_problem_ptr->es()),
-    _output_on(getParam<MultiMooseEnum>("output_on")),
+    _execute_on(getParam<MultiMooseEnum>("execute_on")),
     _time(_problem_ptr->time()),
     _time_old(_problem_ptr->timeOld()),
     _t_step(_problem_ptr->timeStep()),
@@ -103,20 +99,15 @@ Output::Output(const std::string & name, InputParameters & parameters) :
     _initialized(false),
     _allow_output(true),
     _is_advanced(false),
-    _advanced_output_on(_output_on, parameters)
+    _advanced_execute_on(_execute_on, parameters)
 {
-
-  // Handle the short-cut output flags
-  applyOutputOnShortCutFlags(_output_on);
-
   // Apply the additional output flags
-  MultiMooseEnum add = getParam<MultiMooseEnum>("additional_output_on");
-  for (MooseEnumIterator it = add.begin(); it != add.end(); ++it)
-    _output_on.push_back(*it);
-
-  // **** DEPRECATED PARAMETER SUPPORT ****
-  if (!getParam<bool>("output_intermediate"))
-    _output_on.erase("timestep_end");
+  if (isParamValid("additional_execute_on"))
+  {
+    MultiMooseEnum add = getParam<MultiMooseEnum>("additional_execute_on");
+    for (auto & me : add)
+      _execute_on.push_back(me);
+  }
 }
 
 void
@@ -133,7 +124,7 @@ Output::solveSetup()
 bool
 Output::shouldOutput(const ExecFlagType & type)
 {
-  if (_output_on.contains(type) || type == EXEC_FORCED)
+  if (_execute_on.contains(type) || type == EXEC_FORCED)
     return true;
   return false;
 }
@@ -203,9 +194,9 @@ Output::timeStep()
 }
 
 const MultiMooseEnum &
-Output::outputOn() const
+Output::executeOn() const
 {
-  return _output_on;
+  return _execute_on;
 }
 
 bool
@@ -215,35 +206,8 @@ Output::isAdvanced()
 }
 
 const OutputOnWarehouse &
-Output::advancedOutputOn() const
+Output::advancedExecuteOn() const
 {
   mooseError("The output object " << name() << " is not an AdvancedOutput, use isAdvanced() to check.");
-  return _advanced_output_on;
-}
-
-void
-Output::
-applyOutputOnShortCutFlags(MultiMooseEnum & input)
-{
-  /*
-   * output_initial/final/failed are false by default
-   * If they are enabled, then update the output_on
-   * to include this execution time.
-   */
-  if (getParam<bool>("output_initial"))
-    input.push_back("initial");
-
-  if (getParam<bool>("output_final"))
-    input.push_back("final");
-
-  if (getParam<bool>("output_failed"))
-    input.push_back("failed");
-
-  /*
-   * output_timestep_end is true by default
-   * If it is disabled, then update the output_on
-   * by removing it from the execution time.
-   */
-  if (!getParam<bool>("output_timestep_end"))
-    input.erase("timestep_end");
+  return _advanced_execute_on;
 }

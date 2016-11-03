@@ -12,7 +12,7 @@
 class ThermalContactDiracKernelsAction : public Action
 {
 public:
-  ThermalContactDiracKernelsAction(const std::string & name, InputParameters params);
+  ThermalContactDiracKernelsAction(const InputParameters & params);
   virtual ~ThermalContactDiracKernelsAction(){}
   virtual void act();
 };

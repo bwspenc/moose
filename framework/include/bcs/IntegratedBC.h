@@ -18,14 +18,11 @@
 #include "BoundaryCondition.h"
 #include "RandomInterface.h"
 #include "CoupleableMooseVariableDependencyIntermediateInterface.h"
-#include "MooseVariable.h"
 #include "MaterialPropertyInterface.h"
 
-// libMesh
-#include "libmesh/fe.h"
-#include "libmesh/quadrature.h"
-
+// Forward declarations
 class IntegratedBC;
+class MooseVariable;
 
 template<>
 InputParameters validParams<IntegratedBC>();
@@ -40,7 +37,7 @@ class IntegratedBC :
   public MaterialPropertyInterface
 {
 public:
-  IntegratedBC(const std::string & name, InputParameters parameters);
+  IntegratedBC(const InputParameters & parameters);
 
   virtual ~IntegratedBC();
 

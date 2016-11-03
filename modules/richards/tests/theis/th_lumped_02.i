@@ -159,8 +159,6 @@
 
   [./TimeStepper]
     type = FunctionDT
-    #time_dt = '0.1 0.5 1 2'
-    #time_t = '0 1 10 100'
     time_dt = '1 2 4 20'
     time_t = '0 1 10 100'
   [../]
@@ -170,7 +168,5 @@
 
 [Outputs]
   file_base = th_lumped_02
-  output_initial = true
   csv = true
-  print_perf_log = true
 []

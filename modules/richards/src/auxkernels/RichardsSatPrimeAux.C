@@ -20,8 +20,8 @@ InputParameters validParams<RichardsSatPrimeAux>()
   return params;
 }
 
-RichardsSatPrimeAux::RichardsSatPrimeAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+RichardsSatPrimeAux::RichardsSatPrimeAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _seff_var(coupledValue("seff_var")),
     _sat_UO(getUserObject<RichardsSat>("sat_UO"))
 {}
@@ -32,3 +32,4 @@ RichardsSatPrimeAux::computeValue()
 {
   return _sat_UO.dsat(_seff_var[_qp]);
 }
+

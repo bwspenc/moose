@@ -14,9 +14,6 @@
 
 #include "LayeredSideAverage.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
 template<>
 InputParameters validParams<LayeredSideAverage>()
 {
@@ -25,8 +22,8 @@ InputParameters validParams<LayeredSideAverage>()
   return params;
 }
 
-LayeredSideAverage::LayeredSideAverage(const std::string & name, InputParameters parameters) :
-    LayeredSideIntegral(name, parameters)
+LayeredSideAverage::LayeredSideAverage(const InputParameters & parameters) :
+    LayeredSideIntegral(parameters)
 {
   _layer_volumes.resize(_num_layers);
 }
@@ -36,8 +33,8 @@ LayeredSideAverage::initialize()
 {
   LayeredSideIntegral::initialize();
 
-  for (unsigned int i=0; i<_layer_volumes.size(); i++)
-    _layer_volumes[i] = 0.0;
+  for (auto & vol : _layer_volumes)
+    vol = 0.0;
 }
 
 void
@@ -71,3 +68,4 @@ LayeredSideAverage::threadJoin(const UserObject & y)
     if (lsa.layerHasValue(i))
       _layer_volumes[i] += lsa._layer_volumes[i];
 }
+

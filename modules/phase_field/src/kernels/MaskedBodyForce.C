@@ -16,8 +16,8 @@ InputParameters validParams<MaskedBodyForce>()
   return params;
 }
 
-MaskedBodyForce::MaskedBodyForce(const std::string & name, InputParameters parameters) :
-    BodyForce(name, parameters),
+MaskedBodyForce::MaskedBodyForce(const InputParameters & parameters) :
+    BodyForce(parameters),
     _mask(getMaterialProperty<Real>("mask"))
 {
 }
@@ -27,3 +27,4 @@ MaskedBodyForce::computeQpResidual()
 {
   return BodyForce::computeQpResidual()*_mask[_qp];
 }
+

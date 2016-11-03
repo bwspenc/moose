@@ -32,9 +32,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -236,16 +234,14 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./mc]
     type = ComputeMultiPlasticityStress
     block = 0
     ep_plastic_tolerance = 1E-9
     plastic_models = mc
-    debug_fspb = 1
+    debug_fspb = crash
     debug_jac_at_stress = '10 1 2 1 11 -3 2 -3 8'
     debug_jac_at_pm = 1
     debug_jac_at_intnl = 1
@@ -265,12 +261,8 @@
 
 [Outputs]
   file_base = small_deform_hard3
-  output_initial = true
   exodus = false
-  print_linear_residuals = true
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
-  [../]
+    [../]
 []

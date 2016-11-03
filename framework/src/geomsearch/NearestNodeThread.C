@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "NearestNodeThread.h"
+#include "MooseMesh.h"
 
 // libmesh includes
 #include "libmesh/threads.h"
@@ -41,11 +42,9 @@ NearestNodeThread::NearestNodeThread(NearestNodeThread & x, Threads::split /*spl
 void
 NearestNodeThread::operator() (const NodeIdRange & range)
 {
-  for (NodeIdRange::const_iterator nd = range.begin() ; nd != range.end(); ++nd)
+  for (const auto & node_id : range)
   {
-    dof_id_type node_id = *nd;
-
-    const Node & node = _mesh.node(node_id);
+    const Node & node = _mesh.nodeRef(node_id);
 
     const Node * closest_node = NULL;
     Real closest_distance = std::numeric_limits<Real>::max();
@@ -56,12 +55,12 @@ NearestNodeThread::operator() (const NodeIdRange & range)
 
     for (unsigned int k=0; k<n_neighbor_nodes; k++)
     {
-      const Node * cur_node = &_mesh.node(neighbor_nodes[k]);
-      Real distance = ((*cur_node) - node).size();
+      const Node * cur_node = &_mesh.nodeRef(neighbor_nodes[k]);
+      Real distance = ((*cur_node) - node).norm();
 
       if (distance < closest_distance)
       {
-        Real patch_percentage = (Real)k / (Real)n_neighbor_nodes;
+        Real patch_percentage = static_cast<Real>(k) / static_cast<Real>(n_neighbor_nodes);
 
         // Save off the maximum we had to go through the patch to find the closes node
         if (patch_percentage > _max_patch_percentage)

@@ -7,6 +7,7 @@
 #ifndef NSENTHALPYAUX_H
 #define NSENTHALPYAUX_H
 
+// MOOSE includes
 #include "AuxKernel.h"
 
 //Forward Declarations
@@ -28,23 +29,14 @@ InputParameters validParams<NSEnthalpyAux>();
 class NSEnthalpyAux : public AuxKernel
 {
 public:
-
-  /**
-   * Factory constructor, takes parameters so that all derived classes can be built using the same
-   * constructor.
-   */
-  NSEnthalpyAux(const std::string & name, InputParameters parameters);
-
-  virtual ~NSEnthalpyAux() {}
+  NSEnthalpyAux(const InputParameters & parameters);
 
 protected:
   virtual Real computeValue();
 
-  VariableValue & _rho;
-  VariableValue & _rhoe;
-  VariableValue & _pressure;
-
-  Real _gamma;
+  const VariableValue & _rho;
+  const VariableValue & _rhoE;
+  const VariableValue & _pressure;
 };
 
 #endif // NSENTHALPYAUX_H

@@ -25,14 +25,14 @@
   [../]
   [./SeffBW]
     type = RichardsSeff1BWsmall
-    Sn = 0.0 # use Sn=0.1 later
+    Sn = 0.0
     Ss = 1.0
     C = 1.5
     las = 2
   [../]
   [./RelPermBW]
     type = RichardsRelPermBW
-    Sn = 0.0 # use Sn=0.1 later
+    Sn = 0.0
     Ss = 1.0
     Kn = 0
     Ks = 1
@@ -142,8 +142,6 @@
 [Outputs]
   file_base = wli02
   interval = 10000
-  output_initial = true
-  output_final = true
+  execute_on = 'timestep_end final'
   exodus = true
-  print_perf_log = true
 []

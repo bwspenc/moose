@@ -24,7 +24,7 @@ InputParameters validParams<RichardsRelPermVG>();
 class RichardsRelPermVG : public RichardsRelPerm
 {
 public:
-  RichardsRelPermVG(const std::string & name, InputParameters parameters);
+  RichardsRelPermVG(const InputParameters & parameters);
 
   /**
    * relative permeability as a function of effective saturation

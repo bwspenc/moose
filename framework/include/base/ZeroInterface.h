@@ -20,7 +20,7 @@
 #include "ParallelUniqueId.h"
 #include "libmesh/libmesh_common.h"
 
-class SubProblem;
+class FEProblem;
 
 /**
  * Interface to bring zero values inside objects
@@ -38,14 +38,13 @@ public:
   ZeroInterface(const InputParameters & parameters);
 
 protected:
-  SubProblem & _zi_subproblem;
+  FEProblem & _zi_feproblem;
   THREAD_ID _zi_tid;
-
-  Real & _real_zero;
-  VariableValue & _zero;
-  VariableGradient & _grad_zero;
-  VariableSecond & _second_zero;
-  VariablePhiSecond & _second_phi_zero;
+  const Real & _real_zero;
+  const VariableValue & _zero;
+  const VariableGradient & _grad_zero;
+  const VariableSecond & _second_zero;
+  const VariablePhiSecond & _second_phi_zero;
 };
 
 #endif /* ZEROINTERFACE_H */

@@ -17,23 +17,22 @@
 
 #include "MultiAppTransfer.h"
 
-class MooseVariable;
+// Forward declarations
 class MultiAppPostprocessorTransfer;
 
 template<>
 InputParameters validParams<MultiAppPostprocessorTransfer>();
 
 /**
- * Copies the value of a Postprocessor from the Master to a MultiApp
+ * Copies the value of a Postprocessor from the Master to a MultiApp.
  */
 class MultiAppPostprocessorTransfer :
   public MultiAppTransfer
 {
 public:
-  MultiAppPostprocessorTransfer(const std::string & name, InputParameters parameters);
-  virtual ~MultiAppPostprocessorTransfer() {}
+  MultiAppPostprocessorTransfer(const InputParameters & parameters);
 
-  virtual void execute();
+  virtual void execute() override;
 
   enum
   {

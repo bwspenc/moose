@@ -24,17 +24,18 @@ InputParameters validParams<DerivativeTwoPhaseMaterial>();
 class DerivativeTwoPhaseMaterial : public DerivativeFunctionMaterialBase
 {
 public:
-  DerivativeTwoPhaseMaterial(const std::string & name,
-                             InputParameters parameters);
+  DerivativeTwoPhaseMaterial(const InputParameters & parameters);
+
+  virtual void initialSetup();
 
 protected:
   virtual Real computeF();
-  virtual Real computeDF(unsigned int);
-  virtual Real computeD2F(unsigned int, unsigned int);
-  virtual Real computeD3F(unsigned int, unsigned int, unsigned int);
+  virtual Real computeDF(unsigned int i_var);
+  virtual Real computeD2F(unsigned int i_var, unsigned int j_var);
+  virtual Real computeD3F(unsigned int i_var, unsigned int j_var, unsigned int k_var);
 
   /// Phase parameter (0=A-phase, 1=B-phase)
-  VariableValue & _eta;
+  const VariableValue & _eta;
 
   /// name of the order parameter variable
   VariableName _eta_name;
@@ -42,14 +43,8 @@ protected:
   /// libMesh variable number for eta
   unsigned int _eta_var;
 
-  /// A-phase derivative material name
-  MaterialPropertyName _fa_name;
-  /// B-phase derivative material name
-  MaterialPropertyName _fb_name;
-
   ///@{
   /// h(eta) switching function
-  MaterialPropertyName _h_name;
   const MaterialProperty<Real> & _h;
   const MaterialProperty<Real> & _dh;
   const MaterialProperty<Real> & _d2h;
@@ -58,7 +53,6 @@ protected:
 
   ///@{
   /// g(eta) switching function
-  MaterialPropertyName _g_name;
   const MaterialProperty<Real> & _g;
   const MaterialProperty<Real> & _dg;
   const MaterialProperty<Real> & _d2g;

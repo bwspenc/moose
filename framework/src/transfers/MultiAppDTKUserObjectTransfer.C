@@ -14,9 +14,11 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #include "MultiAppDTKUserObjectTransfer.h"
+#include "DTKInterpolationAdapter.h"
+#include "MultiApp.h"
 
 // Moose Includes
 #include "MooseTypes.h"
@@ -31,9 +33,9 @@ InputParameters validParams<MultiAppDTKUserObjectTransfer>()
   return params;
 }
 
-MultiAppDTKUserObjectTransfer::MultiAppDTKUserObjectTransfer(const std::string & name, InputParameters parameters) :
-    MultiAppTransfer(name, parameters),
-    MooseVariableInterface(parameters, true),
+MultiAppDTKUserObjectTransfer::MultiAppDTKUserObjectTransfer(const InputParameters & parameters) :
+    MultiAppTransfer(parameters),
+    MooseVariableInterface(this, true),
     _user_object_name(getParam<UserObjectName>("user_object")),
     _setup(false)
 {
@@ -54,7 +56,7 @@ MultiAppDTKUserObjectTransfer::execute()
 
     _multi_app_geom = _multi_app_user_object_evaluator->createSourceGeometry(_comm_default);
 
-    _to_adapter = new DTKInterpolationAdapter(_comm_default, _multi_app->problem()->es(), Point(), 3);
+    _to_adapter = new DTKInterpolationAdapter(_comm_default, _multi_app->problem().es(), Point(), 3);
 
     _src_to_tgt_map = new DataTransferKit::VolumeSourceMap<DataTransferKit::Box, GlobalOrdinal, DataTransferKit::MeshContainer<GlobalOrdinal> >(_comm_default, 3, true);
 
@@ -75,7 +77,7 @@ MultiAppDTKUserObjectTransfer::execute()
   _console << "--Finished Mapping--" << std::endl;
 
   _to_adapter->update_variable_values(_variable->name(), _src_to_tgt_map->getMissedTargetPoints());
-  _multi_app->problem()->es().update();
+  _multi_app->problem().es().update();
 }
 
-#endif //LIBMESH_HAVE_DTK
+#endif //LIBMESH_TRILINOS_HAVE_DTK

@@ -16,9 +16,10 @@
 #include "AppFactory.h"
 #include "ActionFactory.h"  // <- Actions are special (they have their own factory)
 #include "Syntax.h"
+#include "MooseSyntax.h"
 
 // Example 15 Includes
-#include "Convection.h"
+#include "ExampleConvection.h"
 #include "ConvectionDiffusionAction.h"
 
 template<>
@@ -31,8 +32,8 @@ InputParameters validParams<ExampleApp>()
   return params;
 }
 
-ExampleApp::ExampleApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ExampleApp::ExampleApp(InputParameters parameters) :
+    MooseApp(parameters)
 {
   srand(processor_id());
 
@@ -57,7 +58,7 @@ ExampleApp::registerApps()
 void
 ExampleApp::registerObjects(Factory & factory)
 {
-  registerKernel(Convection);
+  registerKernel(ExampleConvection);
 }
 
 void

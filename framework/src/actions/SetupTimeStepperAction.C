@@ -25,12 +25,8 @@ InputParameters validParams<SetupTimeStepperAction>()
   return params;
 }
 
-SetupTimeStepperAction::SetupTimeStepperAction(const std::string & name, InputParameters parameters) :
-    MooseObjectAction(name, parameters)
-{
-}
-
-SetupTimeStepperAction::~SetupTimeStepperAction()
+SetupTimeStepperAction::SetupTimeStepperAction(InputParameters parameters) :
+    MooseObjectAction(parameters)
 {
 }
 
@@ -45,7 +41,7 @@ SetupTimeStepperAction::act()
 
     _moose_object_pars.set<FEProblem *>("_fe_problem") = _problem.get();
     _moose_object_pars.set<Transient *>("_executioner") = transient;
-    MooseSharedPointer<TimeStepper> ts = MooseSharedNamespace::static_pointer_cast<TimeStepper>(_factory.create(_type, "TimeStepper", _moose_object_pars));
+    MooseSharedPointer<TimeStepper> ts = _factory.create<TimeStepper>(_type, "TimeStepper", _moose_object_pars);
     transient->setTimeStepper(ts);
   }
 }

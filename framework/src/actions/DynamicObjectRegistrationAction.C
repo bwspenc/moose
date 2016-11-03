@@ -29,8 +29,8 @@ InputParameters validParams<DynamicObjectRegistrationAction>()
 }
 
 
-DynamicObjectRegistrationAction::DynamicObjectRegistrationAction(const std::string & name, InputParameters parameters) :
-    Action(name, parameters)
+DynamicObjectRegistrationAction::DynamicObjectRegistrationAction(InputParameters parameters) :
+    Action(parameters)
 {
   /**
    * Dynamic object registration must occur before parsing. The parser needs to retrieve parameters for each
@@ -42,11 +42,12 @@ DynamicObjectRegistrationAction::DynamicObjectRegistrationAction(const std::stri
     if (isParamValid("object_names"))
       _factory.restrictRegisterableObjects(getParam<std::vector<std::string> >("object_names"));
 
+
     std::vector<std::string> application_names = getParam<std::vector<std::string> >("register_objects_from");
-    for (unsigned int i = 0; i < application_names.size(); ++i)
+    for (const auto & app_name : application_names)
     {
-      _app.dynamicObjectRegistration(application_names[i], &_factory, getParam<std::string>("library_path"));
-      _app.dynamicSyntaxAssociation(application_names[i], &_awh.syntax(), &_action_factory, getParam<std::string>("library_path"));
+      _app.dynamicObjectRegistration(app_name, &_factory, getParam<std::string>("library_path"));
+      _app.dynamicSyntaxAssociation(app_name, &_awh.syntax(), &_action_factory, getParam<std::string>("library_path"));
     }
   }
 }

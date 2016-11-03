@@ -32,7 +32,10 @@ InputParameters validParams<CreateProblemAction>()
 
   params.addParam<bool>("fe_cache", false, "Whether or not to turn on the finite element shape function caching system.  This can increase speed with an associated memory cost.");
 
-  params.addParam<bool>("kernel_coverage_check", true, "Set to false to disable kernel->subdomain kernel coverage check");
+  params.addParam<bool>("kernel_coverage_check", true, "Set to false to disable kernel->subdomain coverage check");
+  params.addParam<bool>("material_coverage_check", true, "Set to false to disable material->subdomain coverage check");
+
+  params.addParam<FileNameNoExtension>("restart_file_base", "File base name used for restart (e.g. <path>/<filebase> or <path>/LATEST to grab the latest file available)");
 
   params.addParam<bool>("use_legacy_uo_aux_computation", "Set to true to have MOOSE recompute *all* AuxKernel types every time *any* UserObject type is executed.\nThis behavior is non-intuitive and will be removed late fall 2014, The default is controlled through MooseApp");
   params.addParam<bool>("use_legacy_uo_initialization", "Set to true to have MOOSE compute all UserObjects and Postprocessors during the initial setup phase of the problem recompute *all* AuxKernel types every time *any* UserObject type is executed.\nThis behavior is non-intuitive and will be removed late fall 2014, The default is controlled through MooseApp");
@@ -41,9 +44,8 @@ InputParameters validParams<CreateProblemAction>()
 }
 
 
-CreateProblemAction::CreateProblemAction(const std::string & name, InputParameters parameters) :
-    MooseObjectAction(name, parameters),
-    _problem_name(getParam<std::string>("name")),
+CreateProblemAction::CreateProblemAction(InputParameters parameters) :
+    MooseObjectAction(parameters),
     _blocks(getParam<std::vector<SubdomainName> >("block")),
     _coord_sys(getParam<MultiMooseEnum>("coord_type")),
     _fe_cache(getParam<bool>("fe_cache"))
@@ -59,7 +61,14 @@ CreateProblemAction::act()
     {
       _moose_object_pars.set<MooseMesh *>("mesh") = _mesh.get();
       _moose_object_pars.set<bool>("use_nonlinear") = _app.useNonlinear();
-      _problem = MooseSharedNamespace::dynamic_pointer_cast<FEProblem>(_factory.create(_type, _problem_name, _moose_object_pars));
+
+#ifdef LIBMESH_HAVE_PETSC
+      // put in empty arrays for PETSc options
+      _moose_object_pars.set<MultiMooseEnum>("petsc_options") = MultiMooseEnum("", "", true);
+      _moose_object_pars.set<std::vector<std::string> >("petsc_inames") = std::vector<std::string>();
+      _moose_object_pars.set<std::vector<std::string> >("petsc_values") = std::vector<std::string>();
+#endif
+      _problem = _factory.create<FEProblem>(_type, getParam<std::string>("name"), _moose_object_pars);
       if (!_problem.get())
         mooseError("Problem has to be of a FEProblem type");
     }
@@ -68,6 +77,33 @@ CreateProblemAction::act()
     _problem->setAxisymmetricCoordAxis(getParam<MooseEnum>("rz_coord_axis"));
     _problem->useFECache(_fe_cache);
     _problem->setKernelCoverageCheck(getParam<bool>("kernel_coverage_check"));
+    _problem->setMaterialCoverageCheck(getParam<bool>("material_coverage_check"));
+
+    if (isParamValid("restart_file_base"))
+    {
+      std::string restart_file_base = getParam<FileNameNoExtension>("restart_file_base");
+
+      std::size_t slash_pos = restart_file_base.find_last_of("/");
+      std::string path = restart_file_base.substr(0, slash_pos);
+      std::string file = restart_file_base.substr(slash_pos + 1);
+
+      /**
+       * If the user specified LATEST as the file in their directory path, find the file with the
+       * latest timestep and the largest serial number.
+       */
+      if (file == "LATEST")
+      {
+        std::list<std::string> dir_list(1, path);
+        std::list<std::string> files = MooseUtils::getFilesInDirs(dir_list);
+        restart_file_base = MooseUtils::getRecoveryFileBase(files);
+
+        if (restart_file_base == "")
+          mooseError("Unable to find suitable restart file");
+      }
+
+      _console << "\nUsing " << restart_file_base << " for restart.\n\n";
+      _problem->setRestartFile(restart_file_base);
+    }
 
     // input file specific legacy overrides (takes precedence over application level settings)
     _problem->legacyUoAuxComputation() = _pars.isParamValid("use_legacy_uo_aux_computation") ?

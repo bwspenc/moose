@@ -16,8 +16,9 @@
 #define PIECEWISEMULTILINEAR_H
 
 #include "Function.h"
-#include "GriddedData.h"
 
+// Forward declarations
+class GriddedData;
 
 /**
  * Uses GriddedData to define data on a grid,
@@ -39,18 +40,17 @@ public:
    * Create new PiecewiseMultilinear object.
    * This calls GriddedData to do most of the work
    */
-  PiecewiseMultilinear(const std::string & name, InputParameters parameters);
-  virtual ~PiecewiseMultilinear();
+  PiecewiseMultilinear(const InputParameters & parameters);
 
   /**
    * Given t and p, return the interpolated value.
    */
-  virtual Real value(Real t, const Point & pt);
+  virtual Real value(Real t, const Point & pt) override;
 
 private:
 
   /// object to provide function evaluations at points on the grid
-  GriddedData * _gridded_data;
+  MooseSharedPointer<GriddedData> _gridded_data;
   /// dimension of the grid
   unsigned int _dim;
 
@@ -88,7 +88,3 @@ private:
 };
 
 #endif //PIECEWISEMULTILINEAR_H
-
-
-
-

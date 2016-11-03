@@ -3,5 +3,6 @@
     type = 'Exodiff'
     input = 'meta_action_test.i'
     exodiff = 'out.e'
+    group = 'requirements'
   [../]
 []

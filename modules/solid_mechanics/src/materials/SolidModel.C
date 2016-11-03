@@ -1,40 +1,43 @@
-/****************************************************************/
+ /****************************************************************/
 /* MOOSE - Multiphysics Object Oriented Simulation Environment  */
 /*                                                              */
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#include "SolidModel.h"
 
+#include "SolidModel.h"
 #include "AxisymmetricRZ.h"
 #include "NonlinearRZ.h"
 #include "SphericalR.h"
 #include "Linear.h"
 #include "Nonlinear3D.h"
 #include "PlaneStrain.h"
+#include "NonlinearPlaneStrain.h"
 #include "VolumetricModel.h"
-
 #include "ConstitutiveModel.h"
 #include "SymmIsotropicElasticityTensor.h"
-
 #include "MooseApp.h"
 #include "Problem.h"
 #include "PiecewiseLinear.h"
 
+// libmesh includes
+#include "libmesh/quadrature.h"
+
 template<>
 InputParameters validParams<SolidModel>()
 {
-  MooseEnum formulation("Nonlinear3D NonlinearRZ AxisymmetricRZ SphericalR Linear PlaneStrain");
+  MooseEnum formulation("Nonlinear3D NonlinearRZ AxisymmetricRZ SphericalR Linear PlaneStrain NonlinearPlaneStrain");
+  MooseEnum compute_method("NoShearRetention ShearRetention");
 
   InputParameters params = validParams<Material>();
   params.addParam<std::string>("appended_property_name", "", "Name appended to material properties to make them unique");
   params.addParam<Real>("bulk_modulus", "The bulk modulus for the material.");
   params.addParam<Real>("lambda", "Lame's first parameter for the material.");
   params.addParam<Real>("poissons_ratio", "Poisson's ratio for the material.");
-  params.addParam<FunctionName>("poissons_ratio_function", "", "Poisson's ratio as a function of temperature.");
+  params.addParam<FunctionName>("poissons_ratio_function", "Poisson's ratio as a function of temperature.");
   params.addParam<Real>("shear_modulus", "The shear modulus of the material.");
   params.addParam<Real>("youngs_modulus", "Young's modulus of the material.");
-  params.addParam<FunctionName>("youngs_modulus_function", "", "Young's modulus as a function of temperature.");
+  params.addParam<FunctionName>("youngs_modulus_function", "Young's modulus as a function of temperature.");
   params.addParam<Real>("thermal_expansion", "The thermal expansion coefficient.");
   params.addParam<FunctionName>("thermal_expansion_function", "Thermal expansion coefficient as a function of temperature.");
   params.addCoupledVar("temp", "Coupled Temperature");
@@ -46,6 +49,8 @@ InputParameters validParams<SolidModel>()
   params.addParam<std::string>("cracking_release", "abrupt", "The cracking release type.  Choices are abrupt (default) and exponential.");
   params.addParam<Real>("cracking_stress", 0.0, "The stress threshold beyond which cracking occurs.  Must be positive.");
   params.addParam<Real>("cracking_residual_stress", 0.0, "The fraction of the cracking stress allowed to be maintained following a crack.");
+  params.addParam<Real>("cracking_beta", 1.0, "The coefficient used in the exponetional model.");
+  params.addParam<MooseEnum>("compute_method", compute_method, "The method  used in the stress calculation.");
   params.addParam<FunctionName>("cracking_stress_function", "", "The cracking stress as a function of time and location" );
   params.addParam<std::vector<unsigned int> >("active_crack_planes", "Planes on which cracks are allowed (0,1,2 -> x,z,theta in RZ)");
   params.addParam<unsigned int>("max_cracks", 3, "The maximum number of cracks allowed at a material point.");
@@ -54,6 +59,8 @@ InputParameters validParams<SolidModel>()
   params.addParam<std::string>("increment_calculation", "RashidApprox", "The algorithm to use when computing the incremental strain and rotation (RashidApprox or Eigen). For use with Nonlinear3D/RZ formulation.");
   params.addParam<bool>("large_strain", false, "Whether to include large strain terms in AxisymmetricRZ, SphericalR, and PlaneStrain formulations.");
   params.addParam<bool>("compute_JIntegral", false, "Whether to compute the J Integral.");
+  params.addParam<bool>("compute_InteractionIntegral", false, "Whether to compute the Interaction Integral.");
+  params.addParam<bool>("store_stress_older", false, "Parameter which indicates whether the older stress state, required for HHT time integration, needs to be stored");
   params.addCoupledVar("disp_r", "The r displacement");
   params.addCoupledVar("disp_x", "The x displacement");
   params.addCoupledVar("disp_y", "The y displacement");
@@ -61,8 +68,8 @@ InputParameters validParams<SolidModel>()
   params.addCoupledVar("strain_zz", "The zz strain");
   params.addCoupledVar("scalar_strain_zz", "The zz strain (scalar variable)");
   params.addParam<std::vector<std::string> >("dep_matl_props", "Names of material properties this material depends on.");
-
   params.addParam<std::string>("constitutive_model", "ConstitutiveModel to use (optional)");
+  params.addParam<bool>("volumetric_locking_correction", true, "Set to false to turn off volumetric locking correction");
   return params;
 }
 
@@ -75,28 +82,19 @@ namespace
     std::transform( n.begin(), n.end(), n.begin(), ::tolower);
     SolidModel::CRACKING_RELEASE cm(SolidModel::CR_UNKNOWN);
     if (n == "abrupt")
-    {
       cm = SolidModel::CR_ABRUPT;
-    }
     else if (n == "exponential")
-    {
       cm = SolidModel::CR_EXPONENTIAL;
-    }
     else if (n == "power")
-    {
       cm = SolidModel::CR_POWER;
-    }
     if (cm == SolidModel::CR_UNKNOWN)
-    {
       mooseError("Unknown cracking model");
-    }
     return cm;
   }
 }
 
-SolidModel::SolidModel( const std::string & name,
-                        InputParameters parameters ) :
-  DerivativeMaterialInterface<Material>( name, parameters ),
+SolidModel::SolidModel( const InputParameters & parameters) :
+  DerivativeMaterialInterface<Material>(parameters),
   _appended_property_name( getParam<std::string>("appended_property_name") ),
   _bulk_modulus_set( parameters.isParamValid("bulk_modulus") ),
   _lambda_set( parameters.isParamValid("lambda") ),
@@ -108,12 +106,14 @@ SolidModel::SolidModel( const std::string & name,
   _poissons_ratio( _poissons_ratio_set ?  getParam<Real>("poissons_ratio") : -1 ),
   _shear_modulus( _shear_modulus_set ? getParam<Real>("shear_modulus") : -1 ),
   _youngs_modulus( _youngs_modulus_set ? getParam<Real>("youngs_modulus") : -1 ),
-  _youngs_modulus_function( getParam<FunctionName>("youngs_modulus_function") != "" ? &getFunction("youngs_modulus_function") : NULL),
-  _poissons_ratio_function( getParam<FunctionName>("poissons_ratio_function") != "" ? &getFunction("poissons_ratio_function") : NULL),
+  _youngs_modulus_function( isParamValid("youngs_modulus_function") ? &getFunction("youngs_modulus_function") : NULL),
+  _poissons_ratio_function( isParamValid("poissons_ratio_function") ? &getFunction("poissons_ratio_function") : NULL),
   _cracking_release( getCrackingModel( getParam<std::string>("cracking_release"))),
   _cracking_stress( parameters.isParamValid("cracking_stress") ?
                     (getParam<Real>("cracking_stress") > 0 ? getParam<Real>("cracking_stress") : -1) : -1 ),
   _cracking_residual_stress( getParam<Real>("cracking_residual_stress") ),
+  _cracking_beta(getParam<Real>("cracking_beta")),
+  _compute_method(getParam<MooseEnum>("compute_method")),
   _cracking_stress_function( getParam<FunctionName>("cracking_stress_function") != "" ? &getFunction("cracking_stress_function") : NULL),
   _cracking_alpha( 0 ),
   _active_crack_planes(3,1),
@@ -151,30 +151,39 @@ SolidModel::SolidModel( const std::string & name,
   _crack_max_strain_old(NULL),
   _principal_strain(3,1),
   _elasticity_tensor(createProperty<SymmElasticityTensor>("elasticity_tensor")),
+  _elasticity_tensor_old(createPropertyOld<SymmElasticityTensor>("elasticity_tensor")),
   _Jacobian_mult(createProperty<SymmElasticityTensor>("Jacobian_mult")),
   _d_strain_dT(),
   _d_stress_dT(createProperty<SymmTensor>("d_stress_dT")),
   _total_strain_increment(0),
   _strain_increment(0),
   _compute_JIntegral(getParam<bool>("compute_JIntegral")),
+  _compute_InteractionIntegral(getParam<bool>("compute_InteractionIntegral")),
+  _store_stress_older(getParam<bool>("store_stress_older")),
   _SED(NULL),
   _SED_old(NULL),
   _Eshelby_tensor(NULL),
   _J_thermal_term_vec(NULL),
+  _current_instantaneous_thermal_expansion_coef(NULL),
   _block_id(std::vector<SubdomainID>(blockIDs().begin(), blockIDs().end())),
   _constitutive_active(false),
+  _step_zero(declareRestartableData<bool>("step_zero", true)),
+  _step_one(declareRestartableData<bool>("step_one", true)),
   _element(NULL),
   _local_elasticity_tensor(NULL)
 {
+  if (_store_stress_older)
+    declarePropertyOlder<SymmTensor>("stress");
+
   bool same_coord_type = true;
 
   for (unsigned int i=1; i<_block_id.size(); ++i)
     same_coord_type &= (_subproblem.getCoordSystem(_block_id[0]) == _subproblem.getCoordSystem(_block_id[i]));
   if (!same_coord_type)
-    mooseError("Material '" << name << "' was specified on multiple blocks that do not have the same coordinate system");
+    mooseError("Material '" << name() << "' was specified on multiple blocks that do not have the same coordinate system");
   // Use the first block to figure out the coordinate system (the above check ensures that they are the same)
   _coord_type = _subproblem.getCoordSystem(_block_id[0]);
-  _element = createElement(name, parameters);
+  _element = createElement();
 
   const std::vector<std::string> & dmp = getParam<std::vector<std::string> >("dep_matl_props");
   _dep_matl_props.insert(dmp.begin(), dmp.end());
@@ -184,7 +193,6 @@ SolidModel::SolidModel( const std::string & name,
     // Tell MOOSE that we need this MaterialProperty.  This enables dependency checking.
     getMaterialProperty<Real>( *i );
   }
-
 
   _cracking_alpha = -_youngs_modulus;
 
@@ -208,15 +216,12 @@ SolidModel::SolidModel( const std::string & name,
     {
       const std::vector<unsigned int> & planes = getParam<std::vector<unsigned> >("active_crack_planes");
       for (unsigned i(0); i < 3; ++i)
-      {
         _active_crack_planes[i] = 0;
-      }
+
       for (unsigned i(0); i < planes.size(); ++i)
       {
         if (planes[i] > 2)
-        {
           mooseError("Active planes must be 0, 1, or 2");
-        }
         _active_crack_planes[planes[i]] = 1;
       }
     }
@@ -270,17 +275,19 @@ SolidModel::SolidModel( const std::string & name,
     mooseError("Must specify thermal_expansion_reference_temperature if thermal_expansion_function_type = mean");
 
   if (parameters.isParamValid("thermal_expansion") && parameters.isParamValid("thermal_expansion_function"))
-  {
     mooseError("Cannot specify both thermal_expansion and thermal_expansion_function");
-  }
+
   if (_compute_JIntegral)
   {
     _SED = &declareProperty<Real>("strain_energy_density");
     _SED_old = &declarePropertyOld<Real>("strain_energy_density");
     _Eshelby_tensor = &declareProperty<ColumnMajorMatrix>("Eshelby_tensor");
     _J_thermal_term_vec = &declareProperty<RealVectorValue>("J_thermal_term_vec");
+    _current_instantaneous_thermal_expansion_coef = &declareProperty<Real>("current_instantaneous_thermal_expansion_coef");
   }
 
+  if (_compute_InteractionIntegral && !hasMaterialProperty<Real>("current_instantaneous_thermal_expansion_coef"))
+    _current_instantaneous_thermal_expansion_coef = &declareProperty<Real>("current_instantaneous_thermal_expansion_coef");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -302,7 +309,7 @@ SolidModel::checkElasticConstants()
   if ( num_elastic_constants != 2 )
   {
     std::string err("Exactly two elastic constants must be defined for material '");
-    err += _name;
+    err += name();
     err += "'.";
     mooseError(err);
   }
@@ -310,28 +317,28 @@ SolidModel::checkElasticConstants()
   if ( _bulk_modulus_set && _bulk_modulus <= 0 )
   {
     std::string err("Bulk modulus must be positive in material '");
-    err += _name;
+    err += name();
     err += "'.";
     mooseError(err);
   }
   if ( _poissons_ratio_set && (_poissons_ratio <= -1.0 || _poissons_ratio >= 0.5) )
   {
     std::string err("Poissons ratio must be greater than -1 and less than 0.5 in material '");
-    err += _name;
+    err += name();
     err += "'.";
     mooseError(err);
   }
   if ( _shear_modulus_set &&  _shear_modulus < 0 )
   {
     std::string err("Shear modulus must not be negative in material '");
-    err += _name;
+    err += name();
     err += "'.";
     mooseError(err);
   }
   if ( _youngs_modulus_set &&  _youngs_modulus <= 0 )
   {
     std::string err("Youngs modulus must be positive in material '");
-    err += _name;
+    err += name();
     err += "'.";
     mooseError(err);
   }
@@ -469,7 +476,7 @@ SolidModel::modifyStrainIncrement()
   const SubdomainID current_block = _current_elem->subdomain_id();
   if (_constitutive_active)
   {
-    ConstitutiveModel * cm = _constitutive_model[current_block];
+    MooseSharedPointer<ConstitutiveModel> cm = _constitutive_model[current_block];
 
     // Let's be a little careful and check for a non-existent
     // ConstitutiveModel, which could be returned as a default value
@@ -493,13 +500,13 @@ SolidModel::modifyStrainIncrement()
 void
 SolidModel::applyThermalStrain()
 {
-  if ( _has_temp && _t_step != 0 )
+  if ( _has_temp && !_step_zero )
   {
     Real inc_thermal_strain;
     Real d_thermal_strain_d_temp;
 
     Real old_temp;
-    if (_t_step == 1 && _has_stress_free_temp)
+    if (_step_one && _has_stress_free_temp)
       old_temp = _stress_free_temp;
     else
       old_temp = _temperature_old[_qp];
@@ -551,7 +558,7 @@ SolidModel::applyVolumetricStrain()
 {
   const Real V0Vold = 1/_element->volumeRatioOld(_qp);
   const SubdomainID current_block = _current_elem->subdomain_id();
-  const std::vector<VolumetricModel*> & vm( _volumetric_models[current_block] );
+  const std::vector<MooseSharedPointer<VolumetricModel> > & vm( _volumetric_models[current_block] );
   for (unsigned int i(0); i < vm.size(); ++i)
   {
     vm[i]->modifyStrain(_qp, V0Vold, _strain_increment, _d_strain_dT);
@@ -642,13 +649,17 @@ SolidModel::initQpStatefulProperties()
 void
 SolidModel::computeProperties()
 {
+  if (_t_step >= 1)
+    _step_zero = false;
+
+  if (_t_step >= 2)
+    _step_one = false;
 
   elementInit();
   _element->init();
 
   for ( _qp = 0; _qp < _qrule->n_points(); ++_qp )
   {
-
     _element->computeStrain( _qp,
                              _total_strain_old[_qp],
                              _total_strain[_qp],
@@ -678,6 +689,9 @@ SolidModel::computeProperties()
 
     if (_compute_JIntegral && _has_temp)
       computeThermalJvec();
+
+    if (_compute_InteractionIntegral && _has_temp)
+      computeCurrentInstantaneousThermalExpansionCoefficient();
 
     computePreconditioning();
 
@@ -747,10 +761,11 @@ SolidModel::computeConstitutiveModelStress()
   // Given the stretching, compute the stress increment and add it to the old stress. Also update the creep strain
   // stress = stressOld + stressIncrement
 
-  if (_t_step == 0) return;
+  if (_step_zero)
+    return;
 
   const SubdomainID current_block = _current_elem->subdomain_id();
-  ConstitutiveModel* cm = _constitutive_model[current_block];
+  MooseSharedPointer<ConstitutiveModel> cm = _constitutive_model[current_block];
 
   mooseAssert(_constitutive_active, "Logic error.  ConstitutiveModel not active.");
 
@@ -764,7 +779,6 @@ SolidModel::computeConstitutiveModelStress()
 }
 
 ////////////////////////////////////////////////////////////////////////
-
 void
 SolidModel::computeElasticityTensor()
 {
@@ -799,7 +813,7 @@ SolidModel::updateElasticityTensor(SymmElasticityTensor & tensor)
   if (_constitutive_active)
   {
     const SubdomainID current_block = _current_elem->subdomain_id();
-    ConstitutiveModel* cm = _constitutive_model[current_block];
+    MooseSharedPointer<ConstitutiveModel> cm = _constitutive_model[current_block];
 
     // Let's be a little careful and check for a non-existent
     // ConstitutiveModel, which could be returned as a default value
@@ -859,23 +873,30 @@ SolidModel::initialSetup()
 
   checkElasticConstants();
 
-
   createElasticityTensor();
 
   // Load in the volumetric models and constitutive models
-
+  bool set_constitutive_active = false;
   for (unsigned i(0); i < _block_id.size(); ++i)
   {
-    const std::vector<Material*> * mats_p;
-    if (_bnd)
-      mats_p = &_fe_problem.getMaterialWarehouse(_tid).getFaceMaterials(_block_id[i]);
-    else
-      mats_p = &_fe_problem.getMaterialWarehouse(_tid).getMaterials(_block_id[i]);
 
-    const std::vector<Material*> & mats = *mats_p;
+//    const std::vector<Material*> * mats_p;
+    std::vector<MooseSharedPointer<Material> > const * mats_p;
+    std::string suffix;
+    if (_bnd)
+    {
+      mats_p = &_fe_problem.getMaterialWarehouse()[Moose::FACE_MATERIAL_DATA].getActiveBlockObjects(_block_id[i], _tid);
+      suffix = "_face";
+    }
+    else
+      mats_p = &_fe_problem.getMaterialWarehouse().getActiveBlockObjects(_block_id[i], _tid);
+
+
+    const std::vector<MooseSharedPointer<Material> > & mats = *mats_p;
+
     for (unsigned int j=0; j < mats.size(); ++j)
     {
-      VolumetricModel * vm(dynamic_cast<VolumetricModel*>(mats[j]));
+      MooseSharedPointer<VolumetricModel> vm = MooseSharedNamespace::dynamic_pointer_cast<VolumetricModel>(mats[j]);
       if (vm)
       {
         const std::vector<std::string> & dep_matl_props = vm->getDependentMaterialProperties();
@@ -891,26 +912,35 @@ SolidModel::initialSetup()
         _volumetric_models[_block_id[i]].push_back( vm );
       }
     }
+
+    for (std::map<SubdomainID, MooseSharedPointer<ConstitutiveModel> >::iterator iter=_constitutive_model.begin(); iter != _constitutive_model.end(); ++iter)
+    {
+      iter->second->initialSetup();
+    }
+
     if (isParamValid("constitutive_model") && !_constitutive_active)
     {
-      const std::string & constitutive_model = getParam<std::string>("constitutive_model");
+      // User-defined name of the constitutive model (a Material object)
+      std::string constitutive_model = getParam<std::string>("constitutive_model") + suffix;
 
       for (unsigned int j=0; j < mats.size(); ++j)
       {
-        ConstitutiveModel * cm = dynamic_cast<ConstitutiveModel*>(mats[j]);
-        if (cm && cm->name() == constitutive_model)
+        MooseSharedPointer<ConstitutiveModel> cm = MooseSharedNamespace::dynamic_pointer_cast<ConstitutiveModel>(mats[j]);
+
+        if (cm && cm->name() ==constitutive_model)
         {
           _constitutive_model[_block_id[i]] = cm;
-          _constitutive_active = true;
+          set_constitutive_active = true;
           break;
         }
       }
-      if (!_constitutive_active)
-      {
-        mooseError("Unable to find constitutive model " + getParam<std::string>("constitutive_model"));
-      }
+
+      if (!set_constitutive_active)
+        mooseError("Unable to find constitutive model " + constitutive_model);
     }
   }
+  if (set_constitutive_active)
+    _constitutive_active = true;
 
   if (_compute_JIntegral && _alpha_function)
   {
@@ -919,7 +949,6 @@ SolidModel::initialSetup()
     Real dummy_temp = 0;
     _alpha_function->timeDerivative(dummy_temp,dummy_point);
   }
-
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -983,7 +1012,10 @@ SolidModel::crackingStrainDirections()
   {
     // Adjust the elasticity matrix for cracking.  This must be used by the
     // constitutive law.
-    _local_elasticity_tensor->adjustForCracking( _crack_flags_local );
+    if (_compute_method == "ShearRetention")
+      _local_elasticity_tensor->adjustForCracking(_crack_flags_local);
+    else
+      _local_elasticity_tensor->adjustForCrackingWithShearRetention(_crack_flags_local);
 
     ColumnMajorMatrix R_9x9(9,9);
     const ColumnMajorMatrix & R( (*_crack_rotation)[_qp] );
@@ -1117,10 +1149,9 @@ void
 SolidModel::crackingStressRotation()
 {
   if (_cracking_stress_function != NULL)
-   {
+  {
      _cracking_stress = _cracking_stress_function->value(_t, _q_point[_qp]);
-   }
-
+  }
 
   if (_cracking_stress > 0)
   {
@@ -1139,6 +1170,7 @@ SolidModel::crackingStressRotation()
     // This must be done in the crack-local coordinate frame.
 
     // Rotate stress to cracked orientation.
+    ColumnMajorMatrix R( (*_crack_rotation)[_qp]);
     ColumnMajorMatrix RT( (*_crack_rotation)[_qp].transpose() );
     SymmTensor sigmaPrime;
     rotateSymmetricTensor( RT, _stress[_qp], sigmaPrime );
@@ -1281,6 +1313,7 @@ SolidModel::crackingStressRotation()
     {
       applyCracksToTensor( _stress[_qp], sigma );
     }
+
   }
 }
 
@@ -1304,8 +1337,8 @@ SolidModel::computeCrackFactor( int i, Real & sigma, Real & flagVal )
     const Real crackMaxStrain( (*_crack_max_strain)[_qp](i) );
     // Compute stress that follows exponental curve
     sigma = _cracking_stress*
-           (_cracking_residual_stress + (1-_cracking_residual_stress)*
-            std::exp(_cracking_alpha/_cracking_stress*(crackMaxStrain-(*_crack_strain)[_qp](i))));
+           (_cracking_residual_stress + (1 - _cracking_residual_stress) *
+            std::exp(_cracking_alpha * _cracking_beta /_cracking_stress * (crackMaxStrain - (*_crack_strain)[_qp](i))));
     // Compute ratio of current stiffness to original stiffness
     flagVal = sigma * (*_crack_strain)[_qp](i) /
         (crackMaxStrain * _cracking_stress);
@@ -1350,9 +1383,12 @@ SolidModel::getNumKnownCrackDirs() const
 }
 
 SolidMechanics::Element *
-SolidModel::createElement( const std::string & name,
-                           InputParameters & parameters )
+SolidModel::createElement()
 {
+  std::string mat_name = name();
+  InputParameters parameters = emptyInputParameters();
+  parameters += this->parameters();
+
   SolidMechanics::Element * element(NULL);
 
   std::string formulation = getParam<MooseEnum>("formulation");
@@ -1360,167 +1396,133 @@ SolidModel::createElement( const std::string & name,
                   formulation.begin(), ::tolower );
   if ( formulation == "nonlinear3d" )
   {
-    if (!isCoupled("disp_x") ||
-        !isCoupled("disp_y") ||
-        !isCoupled("disp_z"))
-    {
+    if (!isCoupled("disp_x") || !isCoupled("disp_y") || !isCoupled("disp_z"))
       mooseError("Nonlinear3D requires all three displacements");
-    }
+
     if ( isCoupled("disp_r") )
-    {
       mooseError("Linear must not define disp_r");
-    }
+
     if ( _coord_type == Moose::COORD_RZ )
-    {
       mooseError("Nonlinear3D formulation requested for coord_type = RZ problem");
-    }
-    element = new SolidMechanics::Nonlinear3D(*this, name, parameters);
+
+    element = new SolidMechanics::Nonlinear3D(*this, mat_name, parameters);
   }
   else if ( formulation == "nonlinearrz" )
   {
-    if ( !isCoupled("disp_r") ||
-         !isCoupled("disp_z") )
-    {
+    if ( !isCoupled("disp_r") || !isCoupled("disp_z") )
       mooseError("NonlinearRZ must define disp_r and disp_z");
-    }
-    element = new SolidMechanics::NonlinearRZ(*this, name, parameters);
+
+    element = new SolidMechanics::NonlinearRZ(*this, mat_name, parameters);
   }
   else if ( formulation == "axisymmetricrz" )
   {
-    if ( !isCoupled("disp_r") ||
-         !isCoupled("disp_z") )
-    {
+    if ( !isCoupled("disp_r") || !isCoupled("disp_z") )
       mooseError("AxisymmetricRZ must define disp_r and disp_z");
-    }
-    element = new SolidMechanics::AxisymmetricRZ(*this, name, parameters);
+    element = new SolidMechanics::AxisymmetricRZ(*this, mat_name, parameters);
   }
   else if ( formulation == "sphericalr" )
   {
     if ( !isCoupled("disp_r") )
-    {
       mooseError("SphericalR must define disp_r");
-    }
-    element = new SolidMechanics::SphericalR(*this, name, parameters);
+    element = new SolidMechanics::SphericalR(*this, mat_name, parameters);
   }
   else if ( formulation == "planestrain" )
   {
+    if ( !isCoupled("disp_x") || !isCoupled("disp_y") )
+      mooseError("PlaneStrain must define disp_x and disp_y");
+    element = new SolidMechanics::PlaneStrain(*this, mat_name, parameters);
+  }
+  else if ( formulation == "nonlinearplanestrain" )
+  {
     if ( !isCoupled("disp_x") ||
          !isCoupled("disp_y") )
-    {
-      mooseError("PlaneStrain must define disp_x and disp_y");
-    }
-    element = new SolidMechanics::PlaneStrain(*this, name, parameters);
+      mooseError("NonlinearPlaneStrain must define disp_x and disp_y");
+    element = new SolidMechanics::NonlinearPlaneStrain(*this, mat_name, parameters);
   }
   else if ( formulation == "linear" )
   {
     if ( isCoupled("disp_r") )
-    {
       mooseError("Linear must not define disp_r");
-    }
     if ( _coord_type == Moose::COORD_RZ )
-    {
       mooseError("Linear formulation requested for coord_type = RZ problem");
-    }
-    element = new SolidMechanics::Linear(*this, name, parameters);
+    element = new SolidMechanics::Linear(*this, mat_name, parameters);
   }
   else if ( formulation != "" )
-  {
     mooseError("Unknown formulation: " + formulation);
-  }
 
   if ( !element && _coord_type == Moose::COORD_RZ )
   {
-    if ( !isCoupled("disp_r") ||
-         !isCoupled("disp_z") )
+    if ( !isCoupled("disp_r") || !isCoupled("disp_z") )
     {
-      std::string err(_name);
+      std::string err(name());
       err += ": RZ coord sys requires disp_r and disp_z for AxisymmetricRZ formulation";
       mooseError(err);
     }
-    element = new SolidMechanics::AxisymmetricRZ(*this, name, parameters);
+    element = new SolidMechanics::AxisymmetricRZ(*this, mat_name, parameters);
   }
   else if ( !element && _coord_type == Moose::COORD_RSPHERICAL )
   {
     if ( !isCoupled("disp_r") )
     {
-      std::string err(_name);
+      std::string err(name());
       err += ": RSPHERICAL coord sys requires disp_r for SphericalR formulation";
       mooseError(err);
     }
-    element = new SolidMechanics::SphericalR(*this, name, parameters);
+    element = new SolidMechanics::SphericalR(*this, mat_name, parameters);
   }
 
   if (!element)
   {
-    if (isCoupled("disp_x") &&
-        isCoupled("disp_y") &&
-        isCoupled("disp_z"))
+    if (isCoupled("disp_x") && isCoupled("disp_y") && isCoupled("disp_z"))
     {
       if (isCoupled("disp_r"))
-      {
-        mooseError("Error with displacement specification in material " + name);
-      }
-      element = new SolidMechanics::Nonlinear3D(*this, name, parameters);
+        mooseError("Error with displacement specification in material " + mat_name);
+      element = new SolidMechanics::Nonlinear3D(*this, mat_name, parameters);
     }
-    else if (isCoupled("disp_x") &&
-             isCoupled("disp_y"))
+    else if (isCoupled("disp_x") && isCoupled("disp_y"))
     {
       if (isCoupled("disp_r"))
-      {
-        mooseError("Error with displacement specification in material " + name);
-      }
-      element = new SolidMechanics::PlaneStrain(*this, name, parameters);
+        mooseError("Error with displacement specification in material " + mat_name);
+      element = new SolidMechanics::PlaneStrain(*this, mat_name, parameters);
     }
-    else if (isCoupled("disp_r") &&
-             isCoupled("disp_z"))
+    else if (isCoupled("disp_r") && isCoupled("disp_z"))
     {
       if ( _coord_type != Moose::COORD_RZ )
-      {
         mooseError("RZ coord system not specified, but disp_r and disp_z are");
-      }
-      element = new SolidMechanics::AxisymmetricRZ( *this, name, parameters );
+      element = new SolidMechanics::AxisymmetricRZ( *this, mat_name, parameters );
     }
     else if (isCoupled("disp_r"))
     {
       if ( _coord_type != Moose::COORD_RSPHERICAL )
-      {
         mooseError("RSPHERICAL coord system not specified, but disp_r is");
-      }
-      element = new SolidMechanics::SphericalR( *this, name, parameters );
+      element = new SolidMechanics::SphericalR( *this, mat_name, parameters );
     }
     else if (isCoupled("disp_x"))
-    {
-      element = new SolidMechanics::Linear( *this, name, parameters );
-    }
+      element = new SolidMechanics::Linear( *this, mat_name, parameters );
     else
-    {
-      mooseError("Unable to determine formulation for material " + name );
-    }
-
+      mooseError("Unable to determine formulation for material " + mat_name );
   }
 
-  mooseAssert( element, "No Element created for material " + name );
+  mooseAssert( element, "No Element created for material " + mat_name );
 
   return element;
 }
 
 void
-SolidModel::createConstitutiveModel(const std::string & cm_name, const InputParameters & params)
+SolidModel::createConstitutiveModel(const std::string & cm_name)
 {
 
   Factory & factory = _app.getFactory();
-  MooseSharedPointer<ConstitutiveModel> cm = MooseSharedNamespace::dynamic_pointer_cast<ConstitutiveModel>(factory.create(cm_name, _name+"Model", params));
+  InputParameters params = factory.getValidParams(cm_name);
+  params += parameters();
+  MooseSharedPointer<ConstitutiveModel> cm = factory.create<ConstitutiveModel>(cm_name, name()+"Model", params, _tid);
 
-  if (!cm.get())
-  {
-    mooseError("\""+_name+"\" is not a ConstitutiveModel");
-  }
   _models_to_free.insert(cm);  // Keep track of the dynamic memory that is created internally to this object
 
   _constitutive_active = true;
   for (unsigned i(0); i < _block_id.size(); ++i)
   {
-    _constitutive_model[_block_id[i]] = cm.get();
+    _constitutive_model[_block_id[i]] = cm;
   }
 
 }
@@ -1535,7 +1537,7 @@ SolidModel::initStatefulProperties(unsigned n_points)
   if (_constitutive_active)
   {
     const SubdomainID current_block = _current_elem->subdomain_id();
-    ConstitutiveModel* cm = _constitutive_model[current_block];
+    MooseSharedPointer<ConstitutiveModel> cm = _constitutive_model[current_block];
     cm->initStatefulProperties( n_points );
   }
 }
@@ -1545,8 +1547,22 @@ SolidModel::computeThermalJvec()
 {
   mooseAssert(_J_thermal_term_vec, "_J_thermal_term_vec not initialized");
 
-  Real stress_trace;
-  stress_trace = _stress[_qp].xx() + _stress[_qp].yy() + _stress[_qp].zz();
+  Real stress_trace = _stress[_qp].xx() + _stress[_qp].yy() + _stress[_qp].zz();
+
+  computeCurrentInstantaneousThermalExpansionCoefficient();
+  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
+  {
+    Real dthermstrain_dx = _temp_grad[_qp](i) * (*_current_instantaneous_thermal_expansion_coef)[_qp];
+    (*_J_thermal_term_vec)[_qp](i) = stress_trace * dthermstrain_dx;
+  }
+}
+
+void
+SolidModel::computeCurrentInstantaneousThermalExpansionCoefficient()
+{
+  mooseAssert(_current_instantaneous_thermal_expansion_coef, "_current_instantaneous_thermal_expansion_coef not initialized");
+
+  (*_current_instantaneous_thermal_expansion_coef)[_qp] = 0.0;
 
   if (_alpha_function)
   {
@@ -1556,11 +1572,7 @@ SolidModel::computeThermalJvec()
     if (!_mean_alpha_function)
     {
       Real alpha = _alpha_function->value(current_temp,p);
-      for (unsigned int i=0; i<3; ++i)
-      {
-        Real dthermstrain_dx = _temp_grad[_qp](i) * (alpha);
-        (*_J_thermal_term_vec)[_qp](i) = stress_trace*dthermstrain_dx;
-      }
+      (*_current_instantaneous_thermal_expansion_coef)[_qp] = alpha;
     }
     else
     {
@@ -1572,20 +1584,9 @@ SolidModel::computeThermalJvec()
       Real denominator = 1.0 + alphabar_Tsf * (_stress_free_temp - _ref_temp);
       if (denominator < small)
         mooseError("Denominator too small in thermal strain calculation");
-      Real dthermstrain_dT = numerator / denominator;
-      for (unsigned int i=0; i<3; ++i)
-      {
-        Real dthermstrain_dx = _temp_grad[_qp](i) * dthermstrain_dT;
-        (*_J_thermal_term_vec)[_qp](i) = stress_trace*dthermstrain_dx;
-      }
+      (*_current_instantaneous_thermal_expansion_coef)[_qp] = numerator / denominator;
     }
   }
   else
-  {
-    for (unsigned int i=0; i<3; ++i)
-    {
-      Real dthermstrain_dx = _temp_grad[_qp](i) * _alpha;
-      (*_J_thermal_term_vec)[_qp](i) = stress_trace*dthermstrain_dx;
-    }
-  }
+    (*_current_instantaneous_thermal_expansion_coef)[_qp] = _alpha;
 }

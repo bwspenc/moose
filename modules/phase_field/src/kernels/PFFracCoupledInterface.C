@@ -16,9 +16,8 @@ InputParameters validParams<PFFracCoupledInterface>()
   return params;
 }
 
-PFFracCoupledInterface::PFFracCoupledInterface(const std::string & name,
-                                               InputParameters parameters):
-  KernelGrad(name, parameters),
+PFFracCoupledInterface::PFFracCoupledInterface(const InputParameters & parameters):
+  KernelGrad(parameters),
   _c(coupledValue("c")),
   _grad_c(coupledGradient("c")),
   _c_var(coupled("c"))
@@ -48,3 +47,4 @@ PFFracCoupledInterface::computeQpOffDiagJacobian(unsigned int jvar)
   else
     return 0.0;
 }
+

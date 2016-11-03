@@ -27,34 +27,40 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dense_subvector.h"
 #include "libmesh/libmesh_common.h"
-
-const BoundaryID DGKernel::InternalBndId = 12345;
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<DGKernel>()
 {
   InputParameters params = validParams<MooseObject>();
+  params += validParams<TwoMaterialPropertyInterface>();
+  params += validParams<TransientInterface>();
+  params += validParams<BlockRestrictable>();
+  params += validParams<BoundaryRestrictable>();
+  params += validParams<MeshChangedInterface>();
   params.addRequiredParam<NonlinearVariableName>("variable", "The name of the variable that this boundary condition applies to");
-  params.addPrivateParam<BoundaryID>("_boundary_id", DGKernel::InternalBndId);
-
   params.addParam<bool>("use_displaced_mesh", false, "Whether or not this object should use the displaced mesh for computation. Note that in the case this is true but no displacements are provided in the Mesh block the undisplaced mesh will still be used.");
   params.addParamNamesToGroup("use_displaced_mesh", "Advanced");
 
+  params.declareControllable("enable");
   params.registerBase("DGKernel");
 
   return params;
 }
 
 
-DGKernel::DGKernel(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
-    SetupInterface(parameters),
-    TransientInterface(parameters, "dgkernels"),
-    FunctionInterface(parameters),
-    UserObjectInterface(parameters),
-    NeighborCoupleableMooseVariableDependencyIntermediateInterface(parameters, false, false),
-    TwoMaterialPropertyInterface(parameters),
+DGKernel::DGKernel(const InputParameters & parameters) :
+    MooseObject(parameters),
+    BlockRestrictable(parameters),
+    BoundaryRestrictable(parameters, false), // false for _not_ nodal
+    SetupInterface(this),
+    TransientInterface(this),
+    FunctionInterface(this),
+    UserObjectInterface(this),
+    NeighborCoupleableMooseVariableDependencyIntermediateInterface(this, false, false),
+    TwoMaterialPropertyInterface(this),
     Restartable(parameters, "DGKernels"),
+    ZeroInterface(parameters),
     MeshChangedInterface(parameters),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
     _sys(*parameters.get<SystemBase *>("_sys")),
@@ -79,10 +85,8 @@ DGKernel::DGKernel(const std::string & name, InputParameters parameters) :
     _JxW(_assembly.JxWFace()),
     _coord(_assembly.coordTransformation()),
 
-    _boundary_id(parameters.get<BoundaryID>("_boundary_id")),
-
-    _u(_var.sln()),
-    _grad_u(_var.gradSln()),
+    _u(_is_implicit ? _var.sln() : _var.slnOld()),
+    _grad_u(_is_implicit ? _var.gradSln() : _var.gradSlnOld()),
 
     _phi(_assembly.phiFace()),
     _grad_phi(_assembly.gradPhiFace()),
@@ -98,8 +102,8 @@ DGKernel::DGKernel(const std::string & name, InputParameters parameters) :
     _test_neighbor(_var.phiFaceNeighbor()),
     _grad_test_neighbor(_var.gradPhiFaceNeighbor()),
 
-    _u_neighbor(_var.slnNeighbor()),
-    _grad_u_neighbor(_var.gradSlnNeighbor())
+    _u_neighbor(_is_implicit ? _var.slnNeighbor() : _var.slnOldNeighbor()),
+    _grad_u_neighbor(_is_implicit ? _var.gradSlnNeighbor() : _var.gradSlnOldNeighbor())
 {
 }
 
@@ -129,15 +133,11 @@ DGKernel::computeElemNeighResidual(Moose::DGResidualType type)
 void
 DGKernel::computeResidual()
 {
-//  Moose::perf_log.push("computeResidual()","DGKernel");
-
   // Compute the residual for this element
   computeElemNeighResidual(Moose::Element);
 
   // Compute the residual for the neighbor
   computeElemNeighResidual(Moose::Neighbor);
-
-//  Moose::perf_log.pop("computeResidual()","DGKernel");
 }
 
 void
@@ -162,8 +162,6 @@ DGKernel::computeElemNeighJacobian(Moose::DGJacobianType type)
 void
 DGKernel::computeJacobian()
 {
-//  Moose::perf_log.push("computeJacobian()","DGKernel");
-
   // Compute element-element Jacobian
   computeElemNeighJacobian(Moose::ElementElement);
 
@@ -175,8 +173,6 @@ DGKernel::computeJacobian()
 
   // Compute neighbor-neighbor Jacobian
   computeElemNeighJacobian(Moose::NeighborNeighbor);
-
-//  Moose::perf_log.pop("computeJacobian()","DGKernel");
 }
 
 void

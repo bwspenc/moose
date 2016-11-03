@@ -16,7 +16,6 @@
 #define SIDESETSFROMPOINTS_H
 
 #include "AddSideSetsBase.h"
-#include "libmesh/fe.h"
 
 class SideSetsFromPoints;
 
@@ -27,13 +26,10 @@ class SideSetsFromPoints :
   public AddSideSetsBase
 {
 public:
-  SideSetsFromPoints(const std::string & name, InputParameters parameters);
-
-  virtual ~SideSetsFromPoints();
-
-  virtual void modify();
+  SideSetsFromPoints(const InputParameters & parameters);
 
 protected:
+  virtual void modify() override;
 
   std::vector<BoundaryName> _boundary_names;
 

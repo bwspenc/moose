@@ -22,7 +22,7 @@ InputParameters validParams<SlaveConstraint>();
 class SlaveConstraint : public DiracKernel
 {
 public:
-  SlaveConstraint(const std::string & name, InputParameters parameters);
+  SlaveConstraint(const InputParameters & parameters);
 
   virtual void addPoints();
   virtual Real computeQpResidual();

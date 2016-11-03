@@ -19,6 +19,8 @@
 #include "MooseApp.h"
 #include "Moose.h"
 #include "Conversion.h"
+#include "MooseMesh.h"
+#include "NonlinearSystem.h"
 
 // libMesh includes
 #include "libmesh/fe.h"
@@ -38,13 +40,13 @@ InputParameters validParams<DOFMapOutput>()
   params.addParam<std::string>("system_name", "nl0", "System to output");
 
   // By default this only executes on the initial timestep
-  params.set<MultiMooseEnum>("output_on") = "initial";
+  params.set<MultiMooseEnum>("execute_on") = "initial";
 
   return params;
 }
 
-DOFMapOutput::DOFMapOutput(const std::string & name, InputParameters parameters) :
-    BasicOutput<FileOutput>(name, parameters),
+DOFMapOutput::DOFMapOutput(const InputParameters & parameters) :
+    BasicOutput<FileOutput>(parameters),
     _write_file(getParam<bool>("output_file")),
     _write_screen(getParam<bool>("output_screen")),
     _system_name(getParam<std::string>("system_name")),
@@ -128,7 +130,7 @@ DOFMapOutput::output(const ExecFlagType & /*type*/)
 
   // fetch the KernelWarehouse through the NonlinearSystem
   NonlinearSystem & nl = _problem_ptr->getNonlinearSystem();
-  const KernelWarehouse & kernels = nl.getKernelWarehouse(0);
+  const KernelWarehouse & kernels = nl.getKernelWarehouse();
 
   // get a set of all subdomains
   const std::set<SubdomainID> & subdomains = _mesh.meshSubdomains();
@@ -157,25 +159,28 @@ DOFMapOutput::output(const ExecFlagType & /*type*/)
       {
         oss << (sd != subdomains.begin() ? ", " : "") << "{\"id\": " << *sd << ", \"kernels\": [";
 
-        // build a list of all kernels in the current subdomain
-        nl.updateActiveKernels(*sd, 0);
-
         // if this variable has active kernels output them
-        if (kernels.hasActiveKernels(var))
+        if (kernels.hasActiveVariableBlockObjects(var, *sd))
         {
-          const std::vector<KernelBase *> & active_kernels = kernels.activeVar(var);
+          const std::vector<MooseSharedPointer<KernelBase> > & active_kernels = kernels.getActiveVariableBlockObjects(var, *sd);
           for (unsigned i = 0; i<active_kernels.size(); ++i)
-            oss << (i>0 ? ", " : "") << "{\"name\": \""<< active_kernels[i]->name() << "\", \"type\": \"" << demangle(typeid(*active_kernels[i]).name()) << "\"}";
+          {
+            KernelBase & kb = *(active_kernels[i].get());
+            oss << (i>0 ? ", " : "")
+                << "{\"name\": \"" << kb.name()
+                << "\", \"type\": \"" << demangle(typeid(kb).name())
+                << "\"}";
+          }
         }
         oss << "], \"dofs\": [";
 
         // get the list of unique DOFs for this variable
         std::set<dof_id_type> dofs;
         for (unsigned int i = 0; i < _mesh.nElem(); ++i)
-          if (_mesh.elem(i)->subdomain_id() == *sd)
+          if (_mesh.elemPtr(i)->subdomain_id() == *sd)
           {
             std::vector<dof_id_type> di;
-            dof_map.dof_indices(_mesh.elem(i), di, var);
+            dof_map.dof_indices(_mesh.elemPtr(i), di, var);
             dofs.insert(di.begin(), di.end());
           }
         oss << join(dofs.begin(), dofs.end(), ", ") << "]}";

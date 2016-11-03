@@ -25,8 +25,8 @@ InputParameters validParams<OutputObjectTest>()
   return params;
 }
 
-OutputObjectTest::OutputObjectTest(const std::string & name, InputParameters parameters) :
-    Console(name, parameters),
+OutputObjectTest::OutputObjectTest(const InputParameters & parameters) :
+    Console(parameters),
     _type(getParam<MooseEnum>("test_type"))
 {
 }
@@ -42,7 +42,7 @@ OutputObjectTest::initialSetup()
 
   if (_type == "getOutput")
   {
-    OutputObjectTest * ptr = _app.getOutputWarehouse().getOutput<OutputObjectTest>(_name);
+    OutputObjectTest * ptr = _app.getOutputWarehouse().getOutput<OutputObjectTest>(name());
     if (ptr == this)
       mooseError("getOutput test passed");
   }

@@ -11,51 +11,68 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 #ifndef SOLUTIONUSEROBJECT_H
 #define SOLUTIONUSEROBJECT_H
 
+// MOOSE includes
 #include "GeneralUserObject.h"
-#include "libmesh/exodusII_io.h"
-#include "MooseUtils.h"
 
-// Forward Declarations
+// Forward declarations
 namespace libMesh
 {
-  class Mesh;
-  class EquationSystems;
-  class System;
-  class MeshFunction;
-  template<class T> class NumericVector;
+class ExodusII_IO;
+class EquationSystems;
+class System;
+class MeshFunction;
+template<class T> class NumericVector;
 }
 
+// Forward declarations
 class SolutionUserObject;
 
 template<>
 InputParameters validParams<SolutionUserObject>();
 
+/**
+ * User object that reads an existing solution from an input file and
+ * uses it in the current simulation.
+ */
 class SolutionUserObject : public GeneralUserObject
 {
 public:
-  SolutionUserObject(const std::string & name, InputParameters parameters);
-
-  /**
-   * Empty desctructor
-   */
-  virtual ~SolutionUserObject();
+  SolutionUserObject(const InputParameters & parameters);
+  virtual ~SolutionUserObject(); // empty dtor required for unique_ptr with forward declarations
 
   /**
    * When reading ExodusII files, this will update the interpolation times
    */
-  virtual void timestepSetup();
+  virtual void timestepSetup() override;
+
+  /**
+   * Returns the local index for a given variable name
+   * @param var_name The name of the variable for which the index is located
+   * @return The local index of the variable
+   */
+  unsigned int getLocalVarIndex(const std::string & var_name) const;
 
   /**
    * Returns a value at a specific location and variable (see SolutionFunction)
    * @param t The time at which to extract (not used, it is handled automatically when reading the data)
    * @param p The location at which to return a value
-   * @param var_name The variable that is desired
+   * @param var_name The variable to be evaluated
    * @return The desired value for the given variable at a location
    */
   virtual Real pointValue(Real t, const Point & p, const std::string & var_name) const;
+
+  /**
+   * Returns a value at a specific location and variable (see SolutionFunction)
+   * @param t The time at which to extract (not used, it is handled automatically when reading the data)
+   * @param p The location at which to return a value
+   * @param local_var_index The local index of the variable to be evaluated
+   * @return The desired value for the given variable at a location
+   */
+  virtual Real pointValue(Real t, const Point & p, const unsigned int local_var_index) const;
 
   /**
    * Return a value directly from a Node
@@ -74,16 +91,16 @@ public:
   Real directValue(const Elem * elem, const std::string & var_name) const;
 
   // Required pure virtual function (not used)
-  virtual void initialize();
+  virtual void initialize() override;
 
   // Required pure virtual function (not used)
-  virtual void finalize();
+  virtual void finalize() override;
 
   // Required pure virtual function (not used)
-  virtual void execute();
+  virtual void execute() override;
 
   /// Initialize the System and Mesh objects for the solution being read
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
 
   const std::vector<std::string> & variableNames() const;
@@ -135,10 +152,10 @@ protected:
   /**
    * A wrapper method for calling the various MeshFunctions used for reading the data
    * @param p The location at which data is desired
-   * @param var_name The variable name to extract data from
+   * @param local_var_index The local index of the variable to extract data from
    * @param func_num The MeshFunction index to use (1 = _mesh_function; 2 = _mesh_function2)
    */
-  Real evalMeshFunction(const Point & p, std::string var_name, unsigned int func_num) const;
+  Real evalMeshFunction(const Point & p, const unsigned int local_var_index, unsigned int func_num) const;
 
   /// File type to read (0 = xda; 1 = ExodusII)
   MooseEnum _file_type;
@@ -168,34 +185,34 @@ protected:
   bool _interpolate_times;
 
   /// Pointer the libmesh::mesh object
-  MeshBase * _mesh;
+  std::unique_ptr<MeshBase> _mesh;
 
   /// Pointer to the libmesh::EquationSystems object
-  EquationSystems * _es;
+  std::unique_ptr<EquationSystems> _es;
 
   /// Pointer libMesh::System class storing the read solution
   System * _system;
 
   /// Pointer the libMesh::MeshFunction object that the read data is stored
-  MeshFunction * _mesh_function;
+  std::unique_ptr<MeshFunction> _mesh_function;
 
   /// Pointer to the libMesh::ExodusII used to read the files
-  ExodusII_IO *_exodusII_io;
+  std::unique_ptr<ExodusII_IO> _exodusII_io;
 
   /// Pointer to the serial solution vector
-  NumericVector<Number> * _serialized_solution;
+  std::unique_ptr<NumericVector<Number> > _serialized_solution;
 
   /// Pointer to second libMesh::EquationSystems object, used for interpolation
-  EquationSystems * _es2;
+  std::unique_ptr<EquationSystems> _es2;
 
   /// Pointer to a second libMesh::System object, used for interpolation
   System * _system2;
 
   /// Pointer to second libMesh::MeshFuntion, used for interpolation
-  MeshFunction * _mesh_function2;
+  std::unique_ptr<MeshFunction> _mesh_function2;
 
   /// Pointer to second serial solution, used for interpolation
-  NumericVector<Number> * _serialized_solution2;
+  std::unique_ptr<NumericVector<Number> > _serialized_solution2;
 
   /// Interpolation time
   Real _interpolation_time;
@@ -244,6 +261,9 @@ protected:
 
   /// True if initial_setup has executed
   bool _initialized;
+
+private:
+  static Threads::spin_mutex _solution_user_object_mutex;
 };
 
 #endif //SOLUTIONUSEROBJECT_H

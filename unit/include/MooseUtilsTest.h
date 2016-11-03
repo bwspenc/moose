@@ -12,11 +12,11 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-#ifndef USERFUNCTIONTEST_H
-#define USERFUNCTIONTEST_H
+#ifndef MOOSEUTILSTEST_H
+#define MOOSEUTILSTEST_H
 
 //CPPUnit includes
-#include "cppunit/extensions/HelperMacros.h"
+#include "GuardedHelperMacros.h"
 
 // Forward declarations
 class MooseMesh;
@@ -39,4 +39,4 @@ public:
   void underscoreToCamelCase();
 };
 
-#endif  // USERFUNCTIONTEST_H
+#endif //MOOSEUTILSTEST_H

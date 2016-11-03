@@ -19,17 +19,16 @@ InputParameters validParams<SplitCHCRes>();
 class SplitCHCRes : public SplitCHBase
 {
 public:
-  SplitCHCRes(const std::string & name, InputParameters parameters);
+  SplitCHCRes(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  std::string _kappa_name;
   const MaterialProperty<Real> & _kappa;
   unsigned int _w_var;
-  VariableValue & _w;
+  const VariableValue & _w;
 };
 
 #endif //SPLITCHCRES_H

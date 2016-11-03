@@ -18,8 +18,7 @@ InputParameters validParams<PFMobility>();
 class PFMobility : public Material
 {
 public:
-  PFMobility(const std::string & name,
-             InputParameters parameters);
+  PFMobility(const InputParameters & parameters);
 
 protected:
   virtual void computeProperties();

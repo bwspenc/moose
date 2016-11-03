@@ -12,7 +12,7 @@
 // Forward Declarations
 class MultiPhaseStressMaterial;
 class RankTwoTensor;
-class ElasticityTensorR4;
+class RankFourTensor;
 
 template<>
 InputParameters validParams<MultiPhaseStressMaterial>();
@@ -24,14 +24,13 @@ InputParameters validParams<MultiPhaseStressMaterial>();
 class MultiPhaseStressMaterial : public Material
 {
 public:
-  MultiPhaseStressMaterial(const std::string & name,
-                         InputParameters parameters);
+  MultiPhaseStressMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
 
   /// switching function name list
-  std::vector<std::string> _h_list;
+  std::vector<MaterialPropertyName> _h_list;
 
   /// number of phases handled by this material
   unsigned int _n_phase;
@@ -42,12 +41,12 @@ protected:
   // phase material properties
   std::vector<std::string> _phase_base;
   std::vector<const MaterialProperty<RankTwoTensor> *> _phase_stress;
-  std::vector<const MaterialProperty<ElasticityTensorR4> *> _dphase_stress_dstrain;
+  std::vector<const MaterialProperty<RankFourTensor> *> _dphase_stress_dstrain;
 
   // global material properties
   std::string _base_name;
   MaterialProperty<RankTwoTensor> & _stress;
-  MaterialProperty<ElasticityTensorR4> & _dstress_dstrain;
+  MaterialProperty<RankFourTensor> & _dstress_dstrain;
 };
 
 #endif //MULTIPHASESTRESSMATERIAL_H

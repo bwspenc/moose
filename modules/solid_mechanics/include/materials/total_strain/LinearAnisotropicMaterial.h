@@ -22,8 +22,7 @@ InputParameters validParams<LinearAnisotropicMaterial>();
 class LinearAnisotropicMaterial : public LinearIsotropicMaterial
 {
 public:
-  LinearAnisotropicMaterial(const std::string & name,
-                            InputParameters parameters);
+  LinearAnisotropicMaterial(const InputParameters & parameters);
 
 protected:
 

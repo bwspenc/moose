@@ -31,10 +31,10 @@ class CoupleableMooseVariableDependencyIntermediateInterface :
   public MooseVariableDependencyInterface
 {
 public:
-  CoupleableMooseVariableDependencyIntermediateInterface(const InputParameters & parameters, bool nodal) :
-    Coupleable(parameters, nodal),
-    ScalarCoupleable(parameters),
-    MooseVariableInterface(parameters, nodal)
+  CoupleableMooseVariableDependencyIntermediateInterface(const MooseObject * moose_object, bool nodal) :
+    Coupleable(moose_object, nodal),
+    ScalarCoupleable(moose_object),
+    MooseVariableInterface(moose_object, nodal)
   {
     const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
     for (unsigned int i=0; i<coupled_vars.size(); i++)

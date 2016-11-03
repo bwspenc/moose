@@ -7,6 +7,7 @@
 #include "LinearElasticityApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 #include "LinearElasticityMaterial.h"
 #include "SolidMechX.h"
@@ -22,15 +23,12 @@ InputParameters validParams<LinearElasticityApp>()
   InputParameters params = validParams<MooseApp>();
   params.set<bool>("use_legacy_uo_initialization") = false;
   params.set<bool>("use_legacy_uo_aux_computation") = false;
-
   return params;
 }
 
-LinearElasticityApp::LinearElasticityApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+LinearElasticityApp::LinearElasticityApp(const InputParameters & parameters) :
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
   LinearElasticityApp::registerObjects(_factory);
 

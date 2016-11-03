@@ -12,11 +12,20 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "DisplacedProblem.h"
 #include "Problem.h"
 #include "SubProblem.h"
 #include "UpdateDisplacedMeshThread.h"
+#include "ResetDisplacedMeshThread.h"
 #include "MooseApp.h"
+#include "MooseMesh.h"
+#include "Assembly.h"
+#include "FEProblem.h"
+#include "NonlinearSystem.h"
+
+// libMesh includes
+#include "libmesh/numeric_vector.h"
 
 template<>
 InputParameters validParams<DisplacedProblem>()
@@ -26,13 +35,13 @@ InputParameters validParams<DisplacedProblem>()
   return params;
 }
 
-DisplacedProblem::DisplacedProblem(FEProblem & mproblem, MooseMesh & displaced_mesh, InputParameters params) :
-    SubProblem(mproblem.name() + "_disp", params),
-    _mproblem(mproblem),
-    _mesh(displaced_mesh),
-    _eq(displaced_mesh),
+DisplacedProblem::DisplacedProblem(const InputParameters & parameters) :
+    SubProblem(parameters),
+    _mproblem(*getParam<FEProblem *>("_fe_problem")),
+    _mesh(*getParam<MooseMesh *>("mesh")),
+    _eq(_mesh),
     _ref_mesh(_mproblem.mesh()),
-    _displacements(params.get<std::vector<std::string> >("displacements")),
+    _displacements(getParam<std::vector<std::string> >("displacements")),
     _displaced_nl(*this, _mproblem.getNonlinearSystem(), _mproblem.getNonlinearSystem().name() + "_displaced", Moose::VAR_NONLINEAR),
     _displaced_aux(*this, _mproblem.getAuxiliarySystem(), _mproblem.getAuxiliarySystem().name() + "_displaced", Moose::VAR_AUXILIARY),
     _geometric_search_data(_mproblem, _mesh)
@@ -47,6 +56,24 @@ DisplacedProblem::~DisplacedProblem()
 {
   for (unsigned int i = 0; i < libMesh::n_threads(); ++i)
     delete _assembly[i];
+}
+
+bool
+DisplacedProblem::isTransient() const
+{
+  return _mproblem.isTransient();
+}
+
+Moose::CoordinateSystemType
+DisplacedProblem::getCoordSystem(SubdomainID sid)
+{
+  return _mproblem.getCoordSystem(sid);
+}
+
+std::set<dof_id_type> &
+DisplacedProblem::ghostedElems()
+{
+  return _mproblem.ghostedElems();
 }
 
 void
@@ -77,13 +104,13 @@ DisplacedProblem::init()
   _displaced_nl.init();
   _displaced_aux.init();
 
-  Moose::setup_perf_log.push("DisplacedProblem::init::eq.init()","Setup");
+  Moose::perf_log.push("DisplacedProblem::init::eq.init()", "Setup");
   _eq.init();
-  Moose::setup_perf_log.pop("DisplacedProblem::init::eq.init()","Setup");
+  Moose::perf_log.pop("DisplacedProblem::init::eq.init()", "Setup");
 
-  Moose::setup_perf_log.push("DisplacedProblem::init::meshChanged()","Setup");
+  Moose::perf_log.push("DisplacedProblem::init::meshChanged()", "Setup");
   _mesh.meshChanged();
-  Moose::setup_perf_log.pop("DisplacedProblem::init::meshChanged()","Setup");
+  Moose::perf_log.pop("DisplacedProblem::init::meshChanged()", "Setup");
 }
 
 void
@@ -92,16 +119,69 @@ DisplacedProblem::initAdaptivity()
 }
 
 void
+DisplacedProblem::saveOldSolutions()
+{
+  _displaced_nl.saveOldSolutions();
+  _displaced_aux.saveOldSolutions();
+}
+
+void
+DisplacedProblem::restoreOldSolutions()
+{
+  _displaced_nl.restoreOldSolutions();
+  _displaced_aux.restoreOldSolutions();
+}
+
+void
+DisplacedProblem::syncSolutions()
+{
+  (*_displaced_nl.sys().solution) = *_mproblem.getNonlinearSystem().currentSolution();
+  (*_displaced_aux.sys().solution) = *_mproblem.getAuxiliarySystem().currentSolution();
+  _displaced_nl.update();
+  _displaced_aux.update();
+}
+
+void
 DisplacedProblem::syncSolutions(const NumericVector<Number> & soln, const NumericVector<Number> & aux_soln)
 {
   (*_displaced_nl.sys().solution) = soln;
   (*_displaced_aux.sys().solution) = aux_soln;
+  _displaced_nl.update();
+  _displaced_aux.update();
+}
+
+void
+DisplacedProblem::updateMesh()
+{
+  Moose::perf_log.push("updateDisplacedMesh()", "Execution");
+
+  unsigned int n_threads = libMesh::n_threads();
+
+  syncSolutions();
+
+  for (unsigned int i = 0; i < n_threads; ++i)
+    _assembly[i]->invalidateCache();
+
+  _nl_solution = _mproblem.getNonlinearSystem().currentSolution();
+  _aux_solution = _mproblem.getAuxiliarySystem().currentSolution();
+
+  UpdateDisplacedMeshThread udmt(_mproblem, *this);
+
+  Threads::parallel_reduce(*_mesh.getActiveSemiLocalNodeRange(), udmt);
+
+  // Update the geometric searches that depend on the displaced mesh
+  _geometric_search_data.update();
+
+  // Since the Mesh changed, update the PointLocator object used by DiracKernels.
+  _dirac_kernel_info.updatePointLocator(_mesh);
+
+  Moose::perf_log.pop("updateDisplacedMesh()", "Execution");
 }
 
 void
 DisplacedProblem::updateMesh(const NumericVector<Number> & soln, const NumericVector<Number> & aux_soln)
 {
-  Moose::perf_log.push("updateDisplacedMesh()","Solve");
+  Moose::perf_log.push("updateDisplacedMesh()", "Execution");
 
   unsigned int n_threads = libMesh::n_threads();
 
@@ -113,16 +193,17 @@ DisplacedProblem::updateMesh(const NumericVector<Number> & soln, const NumericVe
   _nl_solution = &soln;
   _aux_solution = &aux_soln;
 
-  Threads::parallel_for (*_mesh.getActiveSemiLocalNodeRange(), UpdateDisplacedMeshThread(*this));
+  UpdateDisplacedMeshThread udmt(_mproblem, *this);
+
+  Threads::parallel_reduce(*_mesh.getActiveSemiLocalNodeRange(), udmt);
 
   // Update the geometric searches that depend on the displaced mesh
-  // if (_displaced_nl.currentlyComputingJacobian())
   _geometric_search_data.update();
 
   // Since the Mesh changed, update the PointLocator object used by DiracKernels.
   _dirac_kernel_info.updatePointLocator(_mesh);
 
-  Moose::perf_log.pop("updateDisplacedMesh()","Solve");
+  Moose::perf_log.pop("updateDisplacedMesh()", "Execution");
 }
 
 bool
@@ -204,6 +285,12 @@ DisplacedProblem::prepare(const Elem * elem, THREAD_ID tid)
 }
 
 void
+DisplacedProblem::prepareNonlocal(THREAD_ID tid)
+{
+  _assembly[tid]->prepareNonlocal();
+}
+
+void
 DisplacedProblem::prepareFace(const Elem * /*elem*/, THREAD_ID tid)
 {
   _displaced_nl.prepareFace(tid, true);
@@ -221,6 +308,12 @@ DisplacedProblem::prepare(const Elem * elem, unsigned int ivar, unsigned int jva
 }
 
 void
+DisplacedProblem::prepareBlockNonlocal(unsigned int ivar, unsigned int jvar, const std::vector<dof_id_type> & idof_indices, const std::vector<dof_id_type> & jdof_indices, THREAD_ID tid)
+{
+  _assembly[tid]->prepareBlockNonlocal(ivar, jvar, idof_indices, jdof_indices);
+}
+
+void
 DisplacedProblem::prepareAssembly(THREAD_ID tid)
 {
   _assembly[tid]->prepare();
@@ -235,22 +328,23 @@ DisplacedProblem::prepareAssemblyNeighbor(THREAD_ID tid)
 bool
 DisplacedProblem::reinitDirac(const Elem * elem, THREAD_ID tid)
 {
-  std::vector<Point> & points = _dirac_kernel_info.getPoints()[elem];
+  std::vector<Point> & points = _dirac_kernel_info.getPoints()[elem].first;
 
-  bool have_points = points.size();
+  unsigned int n_points = points.size();
 
-  if (have_points)
+  if (n_points)
   {
     _assembly[tid]->reinitAtPhysical(elem, points);
 
     _displaced_nl.prepare(tid);
     _displaced_aux.prepare(tid);
-    _assembly[tid]->prepare();
 
     reinitElem(elem, tid);
   }
 
-  return have_points;
+  _assembly[tid]->prepare();
+
+  return n_points > 0;
 }
 
 
@@ -309,6 +403,13 @@ DisplacedProblem::reinitNodes(const std::vector<dof_id_type> & nodes, THREAD_ID 
 }
 
 void
+DisplacedProblem::reinitNodesNeighbor(const std::vector<dof_id_type> & nodes, THREAD_ID tid)
+{
+  _displaced_nl.reinitNodesNeighbor(nodes, tid);
+  _displaced_aux.reinitNodesNeighbor(nodes, tid);
+}
+
+void
 DisplacedProblem::reinitNeighbor(const Elem * elem, unsigned int side, THREAD_ID tid)
 {
   const Elem * neighbor = elem->neighbor(side);
@@ -342,9 +443,25 @@ DisplacedProblem::reinitNeighborPhys(const Elem * neighbor, unsigned int neighbo
   prepareAssemblyNeighbor(tid);
 
   // Compute values at the points
-//  unsigned int bnd_id = 0;
+  _displaced_nl.reinitNeighborFace(neighbor, neighbor_side, 0, tid);
+  _displaced_aux.reinitNeighborFace(neighbor, neighbor_side, 0, tid);
+}
+
+void
+DisplacedProblem::reinitNeighborPhys(const Elem * neighbor, const std::vector<Point> & physical_points, THREAD_ID tid)
+{
+  // Reinit shape functions
+  _assembly[tid]->reinitNeighborAtPhysical(neighbor, physical_points);
+
+  // Set the neighbor dof indices
+  _displaced_nl.prepareNeighbor(tid);
+  _displaced_aux.prepareNeighbor(tid);
+
+  prepareAssemblyNeighbor(tid);
+
+  // Compute values at the points
   _displaced_nl.reinitNeighbor(neighbor, tid);
-  _displaced_aux.reinitNeighbor(neighbor,tid);
+  _displaced_aux.reinitNeighbor(neighbor, tid);
 }
 
 void
@@ -360,6 +477,12 @@ DisplacedProblem::reinitScalars(THREAD_ID tid)
 {
   _displaced_nl.reinitScalars(tid);
   _displaced_aux.reinitScalars(tid);
+}
+
+void
+DisplacedProblem::reinitOffDiagScalars(THREAD_ID tid)
+{
+  _assembly[tid]->prepareOffDiagScalar();
 }
 
 void
@@ -433,6 +556,13 @@ DisplacedProblem::addJacobian(SparseMatrix<Number> & jacobian, THREAD_ID tid)
 }
 
 void
+DisplacedProblem::addJacobianNonlocal(SparseMatrix<Number> & jacobian, THREAD_ID tid)
+{
+  _assembly[tid]->addJacobianNonlocal(jacobian);
+}
+
+
+void
 DisplacedProblem::addJacobianNeighbor(SparseMatrix<Number> & jacobian, THREAD_ID tid)
 {
   _assembly[tid]->addJacobianNeighbor(jacobian);
@@ -442,6 +572,12 @@ void
 DisplacedProblem::cacheJacobian(THREAD_ID tid)
 {
   _assembly[tid]->cacheJacobian();
+}
+
+void
+DisplacedProblem::cacheJacobianNonlocal(THREAD_ID tid)
+{
+  _assembly[tid]->cacheJacobianNonlocal();
 }
 
 void
@@ -460,6 +596,12 @@ void
 DisplacedProblem::addJacobianBlock(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, std::vector<dof_id_type> & dof_indices, THREAD_ID tid)
 {
   _assembly[tid]->addJacobianBlock(jacobian, ivar, jvar, dof_map, dof_indices);
+}
+
+void
+DisplacedProblem::addJacobianBlockNonlocal(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, const std::vector<dof_id_type> & idof_indices, const std::vector<dof_id_type> & jdof_indices, THREAD_ID tid)
+{
+  _assembly[tid]->addJacobianBlockNonlocal(jacobian, ivar, jvar, dof_map, idof_indices, jdof_indices);
 }
 
 void
@@ -561,22 +703,6 @@ DisplacedProblem::onTimestepEnd()
 }
 
 void
-DisplacedProblem::registerRestartableData(std::string name, RestartableDataValue * data, THREAD_ID tid)
-{
-  name += "/displaced";
-
-  _mproblem.registerRestartableData(name, data, tid);
-}
-
-void
-DisplacedProblem::registerRecoverableData(std::string name)
-{
-  name += "/displaced";
-
-  _mproblem.registerRecoverableData(name);
-}
-
-void
 DisplacedProblem::undisplaceMesh()
 {
   // If undisplaceMesh() is called during initial adaptivity, it is
@@ -588,6 +714,11 @@ DisplacedProblem::undisplaceMesh()
   // require this.  We are using the GRAIN_SIZE=1 from MooseMesh.C,
   // not sure how this value was decided upon.
   //
+  // (DRG: The grainsize parameter is ultimately passed to TBB to help
+  // it choose how to split up the range.  A grainsize of 1 says "split
+  // it as much as you want".  Years ago I experimentally found that it
+  // didn't matter much and that using 1 was fine.)
+  //
   // Note: we don't have to invalidate/update as much stuff as
   // DisplacedProblem::updateMesh() does, since this will be handled
   // by a later call to updateMesh().
@@ -595,6 +726,8 @@ DisplacedProblem::undisplaceMesh()
                        _mesh.getMesh().nodes_end(),
                        /*grainsize=*/1);
 
+  ResetDisplacedMeshThread rdmt(_mproblem, *this);
+
   // Undisplace the mesh using threads.
-  Threads::parallel_for (node_range, UpdateDisplacedMeshThread(*this));
+  Threads::parallel_reduce (node_range, rdmt);
 }

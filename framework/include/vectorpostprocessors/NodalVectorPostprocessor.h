@@ -15,12 +15,11 @@
 #ifndef NODALVECTORPOSTPROCESSOR_H
 #define NODALVECTORPOSTPROCESSOR_H
 
-#include "VectorPostprocessor.h"
+// MOOSE includes
 #include "NodalUserObject.h"
+#include "VectorPostprocessor.h"
 
-class MooseVariable;
-
-//Forward Declarations
+// Forward Declarations
 class NodalVectorPostprocessor;
 
 template<>
@@ -31,12 +30,12 @@ class NodalVectorPostprocessor :
   public VectorPostprocessor
 {
 public:
-  NodalVectorPostprocessor(const std::string & name, InputParameters parameters);
+  NodalVectorPostprocessor(const InputParameters & parameters);
 
   /**
    * Finalize.  This is called _after_ execute() and _after_ threadJoin()!  This is probably where you want to do MPI communication!
    */
-  virtual void finalize(){}
+  virtual void finalize() override {}
 };
 
 #endif

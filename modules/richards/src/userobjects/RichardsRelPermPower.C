@@ -20,8 +20,8 @@ InputParameters validParams<RichardsRelPermPower>()
   return params;
 }
 
-RichardsRelPermPower::RichardsRelPermPower(const std::string & name, InputParameters parameters) :
-    RichardsRelPerm(name, parameters),
+RichardsRelPermPower::RichardsRelPermPower(const InputParameters & parameters) :
+    RichardsRelPerm(parameters),
     _simm(getParam<Real>("simm")),
     _n(getParam<Real>("n"))
 {
@@ -75,4 +75,5 @@ RichardsRelPermPower::d2relperm(Real seff) const
   Real krelpp = (_n + 1)*_n*(_n - 1)*std::pow(s_internal, _n - 2) - _n*(_n + 1)*_n*std::pow(s_internal, _n - 1);
   return krelpp/std::pow(1.0 - _simm, 2);
 }
+
 

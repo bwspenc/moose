@@ -28,11 +28,10 @@ InputParameters validParams<ConstantScalarAux>();
 class ConstantScalarAux : public AuxScalarKernel
 {
 public:
-  ConstantScalarAux(const std::string & name, InputParameters parameters);
-  virtual ~ConstantScalarAux();
+  ConstantScalarAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   const Real & _value;
 };

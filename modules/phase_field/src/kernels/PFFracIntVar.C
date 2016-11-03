@@ -15,9 +15,8 @@ InputParameters validParams<PFFracIntVar>()
   return params;
 }
 
-PFFracIntVar::PFFracIntVar(const std::string & name,
-                           InputParameters parameters):
-  KernelValue(name, parameters)
+PFFracIntVar::PFFracIntVar(const InputParameters & parameters):
+  KernelValue(parameters)
 {
 }
 
@@ -34,3 +33,4 @@ PFFracIntVar::precomputeQpJacobian()
   Real val=1.0;
   return val * _phi[_j][_qp];
 }
+

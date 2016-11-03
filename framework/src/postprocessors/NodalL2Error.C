@@ -24,13 +24,9 @@ InputParameters validParams<NodalL2Error>()
   return params;
 }
 
-NodalL2Error::NodalL2Error(const std::string & name, InputParameters parameters) :
-    NodalVariablePostprocessor(name, parameters),
+NodalL2Error::NodalL2Error(const InputParameters & parameters) :
+    NodalVariablePostprocessor(parameters),
     _func(getFunction("function"))
-{
-}
-
-NodalL2Error::~NodalL2Error()
 {
 }
 

@@ -18,7 +18,7 @@
 template<>
 InputParameters validParams<VectorOfPostprocessors>()
 {
-  InputParameters params = validParams<VectorPostprocessor>();
+  InputParameters params = validParams<GeneralVectorPostprocessor>();
 
   params.addRequiredParam<std::vector<PostprocessorName> >("postprocessors", "The postprocessors whose values are to be reported");
   params.addClassDescription("Outputs the values of an arbitrary user-specified set of postprocessors as a vector in the order specified by the user");
@@ -26,17 +26,17 @@ InputParameters validParams<VectorOfPostprocessors>()
   return params;
 }
 
-VectorOfPostprocessors::VectorOfPostprocessors(const std::string & name, InputParameters parameters) :
-    GeneralVectorPostprocessor(name, parameters),
-    _pp_vec(declareVector(name))
+VectorOfPostprocessors::VectorOfPostprocessors(const InputParameters & parameters) :
+    GeneralVectorPostprocessor(parameters),
+    _pp_vec(declareVector(MooseUtils::shortName(parameters.get<std::string>("_object_name"))))
 {
   std::vector<PostprocessorName> pps_names(getParam<std::vector<PostprocessorName> >("postprocessors"));
   _pp_vec.resize(pps_names.size());
-  for (unsigned int i=0; i<pps_names.size(); ++i)
+  for (const auto & pps_name : pps_names)
   {
-    if (!hasPostprocessorByName(pps_names[i]))
-      mooseError("In VectorOfPostprocessors, postprocessor with name: "<<pps_names[i]<<" does not exist");
-    _postprocessor_values.push_back(&getPostprocessorValueByName(pps_names[i]));
+    if (!hasPostprocessorByName(pps_name))
+      mooseError("In VectorOfPostprocessors, postprocessor with name: " << pps_name << " does not exist");
+    _postprocessor_values.push_back(&getPostprocessorValueByName(pps_name));
   }
 }
 
@@ -49,6 +49,6 @@ VectorOfPostprocessors::initialize()
 void
 VectorOfPostprocessors::execute()
 {
-  for (unsigned int i=0; i<_postprocessor_values.size(); ++i)
-    _pp_vec.push_back(*_postprocessor_values[i]);
+  for (const auto & ppv : _postprocessor_values)
+    _pp_vec.push_back(*ppv);
 }

@@ -20,10 +20,17 @@ InputParameters validParams<FunctionParserUtils>()
   InputParameters params = emptyInputParameters();
 
 #ifdef LIBMESH_HAVE_FPARSER_JIT
-  params.addParam<bool>("enable_jit", true, "enable just-in-time compilation of function expressions for faster evaluation");
+  params.addParam<bool>("enable_jit", true, "Enable just-in-time compilation of function expressions for faster evaluation");
+  params.addParamNamesToGroup("enable_jit", "Advanced");
 #endif
-  params.addParam<bool>( "disable_fpoptimizer", false, "Disable the function parser algebraic optimizer");
-  params.addParam<bool>( "fail_on_evalerror", false, "Fail fatally if a function evaluation returns an error code (otherwise just pass on NaN)");
+  params.addParam<bool>("enable_ad_cache", true, "Enable cacheing of function derivatives for faster startup time");
+  params.addParam<bool>("enable_auto_optimize", true, "Enable automatic immediate optimization of derivatives");
+  params.addParam<bool>("disable_fpoptimizer", false, "Disable the function parser algebraic optimizer");
+  params.addParam<bool>("fail_on_evalerror", false, "Fail fatally if a function evaluation returns an error code (otherwise just pass on NaN)");
+  params.addParamNamesToGroup("enable_ad_cache", "Advanced");
+  params.addParamNamesToGroup("enable_auto_optimize", "Advanced");
+  params.addParamNamesToGroup("disable_fpoptimizer", "Advanced");
+  params.addParamNamesToGroup("fail_on_evalerror", "Advanced");
 
   return params;
 }
@@ -37,19 +44,26 @@ const char * FunctionParserUtils::_eval_error_msg[] = {
   "Maximum recursion level reached"
 };
 
-FunctionParserUtils::FunctionParserUtils(const std::string & /* name */,
-                                         InputParameters parameters) :
+FunctionParserUtils::FunctionParserUtils(const InputParameters & parameters) :
     _enable_jit(parameters.isParamValid("enable_jit") &&
                 parameters.get<bool>("enable_jit")),
+    _enable_ad_cache(parameters.get<bool>("enable_ad_cache")),
     _disable_fpoptimizer(parameters.get<bool>("disable_fpoptimizer")),
+    _enable_auto_optimize(parameters.get<bool>("enable_auto_optimize") && !_disable_fpoptimizer),
     _fail_on_evalerror(parameters.get<bool>("fail_on_evalerror")),
-    _nan(std::numeric_limits<Real>::quiet_NaN()),
-    _func_params()
+    _nan(std::numeric_limits<Real>::quiet_NaN())
 {
 }
 
+void
+FunctionParserUtils::setParserFeatureFlags(ADFunctionPtr & parser)
+{
+  parser->SetADFlags(ADFunction::ADCacheDerivatives, _enable_ad_cache);
+  parser->SetADFlags(ADFunction::ADAutoOptimize, _enable_auto_optimize);
+}
+
 Real
-FunctionParserUtils::evaluate(ADFunction * parser)
+FunctionParserUtils::evaluate(ADFunctionPtr & parser)
 {
   // null pointer is a shortcut for vanishing derivatives, see functionsOptimize()
   if (parser == NULL) return 0.0;
@@ -73,13 +87,10 @@ FunctionParserUtils::evaluate(ADFunction * parser)
 }
 
 void
-FunctionParserUtils::addFParserConstants(ADFunction * parser,
+FunctionParserUtils::addFParserConstants(ADFunctionPtr & parser,
                                          const std::vector<std::string> & constant_names,
                                          const std::vector<std::string> & constant_expressions)
 {
-  // temporary FParser object to evaluate constant_expressions
-  ADFunction *expression;
-
   // check constant vectors
   unsigned int nconst = constant_expressions.size();
   if (nconst != constant_expressions.size())
@@ -90,7 +101,10 @@ FunctionParserUtils::addFParserConstants(ADFunction * parser,
 
   for (unsigned int i = 0; i < nconst; ++i)
   {
-    expression = new ADFunction();
+    ADFunctionPtr expression = ADFunctionPtr(new ADFunction());
+
+    // set FParser internal feature flags
+    setParserFeatureFlags(expression);
 
     // add previously evaluated constants
     for (unsigned int j = 0; j < i; ++j)
@@ -105,7 +119,5 @@ FunctionParserUtils::addFParserConstants(ADFunction * parser,
 
     if (!parser->AddConstant(constant_names[i], constant_values[i]))
       mooseError("Invalid constant name in parsed function object");
-
-    delete expression;
   }
 }

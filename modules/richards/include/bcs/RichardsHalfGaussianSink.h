@@ -29,7 +29,7 @@ InputParameters validParams<RichardsHalfGaussianSink>();
 class RichardsHalfGaussianSink : public IntegratedBC
 {
 public:
-  RichardsHalfGaussianSink(const std::string & name, InputParameters parameters);
+  RichardsHalfGaussianSink(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

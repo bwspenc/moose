@@ -14,6 +14,7 @@
 
 #include "MooseError.h"
 #include "SolutionAux.h"
+#include "SolutionUserObject.h"
 
 template<>
 InputParameters validParams<SolutionAux>()
@@ -28,8 +29,8 @@ InputParameters validParams<SolutionAux>()
   return params;
 }
 
-SolutionAux::SolutionAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+SolutionAux::SolutionAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _solution_object(getUserObject<SolutionUserObject>("solution")),
     _direct(getParam<bool>("direct")),
     _scale_factor(getParam<Real>("scale_factor")),
@@ -61,10 +62,6 @@ SolutionAux::initialSetup()
   //Determine if 'from_variable' is elemental, if so then use direct extraction
   if (!_solution_object.isVariableNodal(_var_name))
     _direct = true;
-}
-
-SolutionAux::~SolutionAux()
-{
 }
 
 Real

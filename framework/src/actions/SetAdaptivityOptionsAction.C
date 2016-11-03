@@ -30,11 +30,12 @@ InputParameters validParams<SetAdaptivityOptionsAction>()
   params.addParam<Real>("start_time", -std::numeric_limits<Real>::max(), "The time that adaptivity will be active after.");
   params.addParam<Real>("stop_time", std::numeric_limits<Real>::max(), "The time after which adaptivity will no longer be active.");
   params.addParam<unsigned int>("cycles_per_step", 1, "The number of adaptive steps to use when on each timestep during a Transient simulation.");
+  params.addParam<bool>("recompute_markers_during_cycles", false, "Recompute markers during adaptivity cycles");
   return params;
 }
 
-SetAdaptivityOptionsAction::SetAdaptivityOptionsAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+SetAdaptivityOptionsAction::SetAdaptivityOptionsAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -56,4 +57,7 @@ SetAdaptivityOptionsAction::act()
   adapt.setUseNewSystem();
 
   adapt.setTimeActive(getParam<Real>("start_time"), getParam<Real>("stop_time"));
+
+  adapt.setRecomputeMarkersFlag(getParam<bool>("recompute_markers_during_cycles"));
 }
+

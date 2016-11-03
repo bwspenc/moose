@@ -12,10 +12,13 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "ColumnMajorMatrix.h"
-#include "MooseException.h"
 
+// libMesh includes
 #include "libmesh/petsc_macro.h"
+
+// PETSc includes
 #include <petscsys.h>
 #include <petscblaslapack.h>
 
@@ -266,5 +269,5 @@ ColumnMajorMatrix::inverse(ColumnMajorMatrix & invA) const
 #endif
 
   if (return_value)
-    throw MooseException("Error in LAPACK matrix-inverse calculation");
+    mooseException("Error in LAPACK matrix-inverse calculation");
 }

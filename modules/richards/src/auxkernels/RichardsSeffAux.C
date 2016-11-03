@@ -20,8 +20,8 @@ InputParameters validParams<RichardsSeffAux>()
   return params;
 }
 
-RichardsSeffAux::RichardsSeffAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+RichardsSeffAux::RichardsSeffAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _seff_UO(getUserObject<RichardsSeff>("seff_UO"))
 {
   int n = coupledComponents("pressure_vars");
@@ -37,3 +37,4 @@ RichardsSeffAux::computeValue()
 {
   return _seff_UO.seff(_pressure_vals, _qp);
 }
+

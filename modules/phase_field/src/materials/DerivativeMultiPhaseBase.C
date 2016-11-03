@@ -15,8 +15,9 @@ InputParameters validParams<DerivativeMultiPhaseBase>()
   params.addRequiredParam<std::vector<MaterialPropertyName> >("fi_names", "List of free energies for the n phases");
   params.addParam<std::vector<MaterialPropertyName> >("hi_names", "Switching Function Materials that provide h(eta_i)");
 
-  // All arguments to the phase free energies
+  // All arguments of the phase free energies
   params.addCoupledVar("args", "Arguments of the fi free energies - use vector coupling");
+  params.addCoupledVar("displacement_gradients", "Vector of displacement gradient variables (see Modules/PhaseField/DisplacementGradients action)");
 
   // Barrier
   params.addParam<MaterialPropertyName>("g", "g", "Barrier Function Material that provides g(eta_i)");
@@ -25,9 +26,8 @@ InputParameters validParams<DerivativeMultiPhaseBase>()
   return params;
 }
 
-DerivativeMultiPhaseBase::DerivativeMultiPhaseBase(const std::string & name,
-                                                       InputParameters parameters) :
-    DerivativeFunctionMaterialBase(name, parameters),
+DerivativeMultiPhaseBase::DerivativeMultiPhaseBase(const InputParameters & parameters) :
+    DerivativeFunctionMaterialBase(parameters),
     _eta_index(_nargs, -1),
     _num_etas(coupledComponents("etas")),
     _eta_names(_num_etas),
@@ -41,8 +41,7 @@ DerivativeMultiPhaseBase::DerivativeMultiPhaseBase(const std::string & name,
     _hi_names(getParam<std::vector<MaterialPropertyName> >("hi_names")),
     _num_hi(_hi_names.size()),
     _hi(_num_hi),
-    _g_name(getParam<MaterialPropertyName>("g")),
-    _g(getMaterialPropertyByName<Real>(_g_name)),
+    _g(getMaterialProperty<Real>("g")),
     _dg(_num_etas),
     _d2g(_num_etas),
     _d3g(_num_etas),
@@ -50,7 +49,7 @@ DerivativeMultiPhaseBase::DerivativeMultiPhaseBase(const std::string & name,
 {
   // check passed in parameter vectors
   if (_num_fi != _num_hi)
-    mooseError("Need to pass in as many hi_names as fi_names in DerivativeMultiPhaseBase " << name);
+    mooseError("Need to pass in as many hi_names as fi_names in DerivativeMultiPhaseBase " << name());
 
   // get order parameter names and libmesh variable names, set barrier function derivatives
   for (unsigned int i = 0; i < _num_etas; ++i)
@@ -60,24 +59,23 @@ DerivativeMultiPhaseBase::DerivativeMultiPhaseBase(const std::string & name,
 
     // for each coupled variable we need to know if it was coupled through "etas"
     // and - if so - which coupled component of "etas" it comes from
-    if (_eta_vars[i] < _number_of_nl_variables)
-      _eta_index[argIndex(_eta_vars[i])] = i;
+    _eta_index[argIndex(_eta_vars[i])] = i;
 
     // barrier function derivatives
-    _dg[i] = &getMaterialPropertyDerivative<Real>(_g_name, _eta_names[i]);
+    _dg[i] = &getMaterialPropertyDerivative<Real>("g", _eta_names[i]);
     _d2g[i].resize(_num_etas);
     if (_third_derivatives)
       _d3g[i].resize(_num_etas);
 
     for (unsigned int j = 0; j < _num_etas; ++j)
     {
-      _d2g[i][j] = &getMaterialPropertyDerivative<Real>(_g_name, _eta_names[i], _eta_names[j]);
+      _d2g[i][j] = &getMaterialPropertyDerivative<Real>("g", _eta_names[i], _eta_names[j]);
 
       if (_third_derivatives)
       {
         _d3g[i][j].resize(_num_etas);
         for (unsigned int k = 0; k < _num_etas; ++k)
-          _d3g[i][j][k] = &getMaterialPropertyDerivative<Real>(_g_name, _eta_names[i], _eta_names[j], _eta_names[k]);
+          _d3g[i][j][k] = &getMaterialPropertyDerivative<Real>("g", _eta_names[i], _eta_names[j], _eta_names[k]);
       }
     }
   }
@@ -115,6 +113,13 @@ DerivativeMultiPhaseBase::DerivativeMultiPhaseBase(const std::string & name,
       }
     }
   }
+}
+
+void
+DerivativeMultiPhaseBase::initialSetup()
+{
+  for (unsigned int n = 0; n < _num_fi; ++n)
+    validateCoupling<Real>(_fi_names[n]);
 }
 
 Real

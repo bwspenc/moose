@@ -35,10 +35,10 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  SinNeumannBC(const std::string & name, InputParameters parameters);
+  SinNeumannBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
 private:
   Real _initial;

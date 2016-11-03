@@ -23,7 +23,7 @@ InputParameters validParams<MultiBarrierFunctionMaterial>();
 class MultiBarrierFunctionMaterial : public DerivativeMaterialInterface<Material>
 {
 public:
-  MultiBarrierFunctionMaterial(const std::string & name, InputParameters parameters);
+  MultiBarrierFunctionMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
@@ -31,14 +31,17 @@ protected:
   /// name of the function of eta (used to generate the material property names)
   std::string _function_name;
 
-  /// Polynomial order of the switching function \f$ h(\eta) \f$
+  /// Polynomial order of the barrier function \f$ g(\eta) \f$
   MooseEnum _g_order;
+
+  /// zero out g contribution in the eta interval [0:1]
+  bool _well_only;
 
   /// order parameters
   unsigned int _num_eta;
-  std::vector<VariableValue *> _eta;
+  std::vector<const VariableValue *> _eta;
 
-  /// Switching functions and their drivatives
+  /// Barrier functions and their drivatives
   MaterialProperty<Real> & _prop_g;
   std::vector<MaterialProperty<Real> *> _prop_dg, _prop_d2g;
 };

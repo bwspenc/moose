@@ -23,14 +23,10 @@ InputParameters validParams<DifferencePostprocessor>()
   return params;
 }
 
-DifferencePostprocessor::DifferencePostprocessor(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+DifferencePostprocessor::DifferencePostprocessor(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _value1(getPostprocessorValue("value1")),
     _value2(getPostprocessorValue("value2"))
-{
-}
-
-DifferencePostprocessor::~DifferencePostprocessor()
 {
 }
 

@@ -12,8 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "AddBoundsVectorsAction.h"
 #include "FEProblem.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<AddBoundsVectorsAction>()
@@ -21,14 +23,15 @@ InputParameters validParams<AddBoundsVectorsAction>()
   return validParams<Action>();
 }
 
-AddBoundsVectorsAction::AddBoundsVectorsAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+AddBoundsVectorsAction::AddBoundsVectorsAction(InputParameters params) :
+    Action(params)
 {
 }
 
 void
 AddBoundsVectorsAction::act()
 {
-  _problem->getNonlinearSystem().addVector("lower_bound", false, GHOSTED, false);
-  _problem->getNonlinearSystem().addVector("upper_bound", false, GHOSTED, false);
+  _problem->getNonlinearSystem().addVector("lower_bound", false, GHOSTED);
+  _problem->getNonlinearSystem().addVector("upper_bound", false, GHOSTED);
 }
+

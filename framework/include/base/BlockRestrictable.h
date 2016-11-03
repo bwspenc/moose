@@ -17,12 +17,14 @@
 
 // MOOSE includes
 #include "InputParameters.h"
-#include "MooseTypes.h"
-#include "FEProblem.h"
+#include "ParallelUniqueId.h"
 #include "MaterialData.h"
+#include "MooseObject.h"
 
 // Forward declarations
 class BlockRestrictable;
+class FEProblem;
+class MooseMesh;
 
 template<>
 InputParameters validParams<BlockRestrictable>();
@@ -63,7 +65,7 @@ public:
   /**
    * Class constructor
    * Populates the 'block' input parameters, see the general class documentation for details.
-   * @param params The input parameters (see the detailed help for additional information)
+   * @param parameters The input parameters (see the detailed help for additional information)
    */
   BlockRestrictable(const InputParameters & parameters);
 
@@ -75,6 +77,12 @@ public:
    * @param boundary_ids The boundary ids that the object is restricted to
    */
   BlockRestrictable(const InputParameters & parameters, const std::set<BoundaryID> & boundary_ids);
+
+  /**
+   * Destructor: does nothing but needs to be marked as virtual since
+   * this class defines virtual functions.
+   */
+  virtual ~BlockRestrictable() {}
 
   /**
    * Return the block names for this object
@@ -94,9 +102,10 @@ public:
 
   /**
    * Return the block subdomain ids for this object
+   * @param mesh_ids When true, this will return all mesh ids rather than ANY_BLOCK_ID (@see MooseObjectWarehouse)
    * @return a set of SudomainIDs that are valid for this object
    */
-  const std::set<SubdomainID> & blockIDs() const;
+  const virtual std::set<SubdomainID> & blockIDs() const;
 
   /**
    * Test if the supplied block name is valid for this object
@@ -166,21 +175,32 @@ public:
 
   /**
    * Return all of the SubdomainIDs for the mesh
-   * @return A set of all subdomians for the entire domain
+   * @return A set of all subdomians for the entire mesh
    */
-  const std::set<SubdomainID> & meshBlockIDs();
+  const std::set<SubdomainID> & meshBlockIDs() const;
+
+  /**
+   * Returns true if this object has been restricted to a boundary
+   * @see MooseObject
+   */
+  virtual bool blockRestricted();
 
 protected:
 
   /// Pointer to the MaterialData class for this object
-  MaterialData * _blk_material_data;
+  MooseSharedPointer<MaterialData> _blk_material_data;
 
   /**
    * A helper method to allow the Material object to specialize the behavior
-   * of hasBlockMaterialProperty. It also avoid circular #include problems.
+   * of hasBlockMaterialProperty. It also avoid circular \#include problems.
    * @see hasBlockMaterialProperty
    */
   virtual bool hasBlockMaterialPropertyHelper(const std::string & prop_name);
+
+  /**
+   * An initialization routine needed for dual constructors
+   */
+  void initializeBlockRestrictable(const InputParameters & parameters);
 
 private:
 
@@ -189,6 +209,8 @@ private:
 
   /// Vector the block names supplied by the user via the input file
   std::vector<SubdomainName> _blocks;
+
+  bool _initialized;
 
   /// Flag for allowing dual restriction
   const bool _blk_dual_restrictable;
@@ -207,11 +229,6 @@ private:
 
   /// Thread id for this object
   THREAD_ID _blk_tid;
-
-  /**
-   * An initialization routine needed for dual constructors
-   */
-  void initializeBlockRestrictable(const InputParameters & parameters);
 
   /**
    * A helper function for extracting the subdomain IDs for a variable

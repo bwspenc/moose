@@ -5,10 +5,9 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-
 #include "RichardsMultiphaseProblem.h"
-
-//#include "NonlinearSystem.h"
+#include "NonlinearSystem.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<RichardsMultiphaseProblem>()
@@ -20,8 +19,8 @@ InputParameters validParams<RichardsMultiphaseProblem>()
 }
 
 
-RichardsMultiphaseProblem::RichardsMultiphaseProblem(const std::string & name, InputParameters params) :
-    FEProblem(name, params),
+RichardsMultiphaseProblem::RichardsMultiphaseProblem(const InputParameters & params) :
+    FEProblem(params),
     // in the following have to get the names of the variables, and then find their numbers in initialSetup,
     // as their numbers won't be defined at the moment of instantiation of this class
     _bounded_var_name(params.get<NonlinearVariableName>("bounded_var")),
@@ -45,9 +44,9 @@ RichardsMultiphaseProblem::initialSetup()
   if (!bounded.isNodal() || !lower.isNodal())
     mooseError("Both the bounded and lower variables must be nodal variables in RichardsMultiphaseProblem");
   if (bounded.feType().family != lower.feType().family)
-    mooseError("Both the bounded and lower variables must belong to the same element family (eg LAGRANGE) in RichardsMultiphaseProblem");
+    mooseError("Both the bounded and lower variables must belong to the same element family, eg LAGRANGE, in RichardsMultiphaseProblem");
   if (bounded.feType().order != lower.feType().order)
-    mooseError("Both the bounded and lower variables must have the same order (eg FIRST) in RichardsMultiphaseProblem");
+    mooseError("Both the bounded and lower variables must have the same order, eg FIRST, in RichardsMultiphaseProblem");
 
   // extract the required info
   _bounded_var_num = bounded.number();
@@ -116,8 +115,3 @@ RichardsMultiphaseProblem::updateSolution(NumericVector<Number>& vec_solution, N
   return updatedSolution;
 
 }
-
-
-
-
-

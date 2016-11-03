@@ -14,9 +14,6 @@
 
 #include "LayeredSideFluxAverage.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
 template<>
 InputParameters validParams<LayeredSideFluxAverage>()
 {
@@ -25,8 +22,8 @@ InputParameters validParams<LayeredSideFluxAverage>()
   return params;
 }
 
-LayeredSideFluxAverage::LayeredSideFluxAverage(const std::string & name, InputParameters parameters) :
-    LayeredSideAverage(name, parameters),
+LayeredSideFluxAverage::LayeredSideFluxAverage(const InputParameters & parameters) :
+    LayeredSideAverage(parameters),
     _diffusivity(parameters.get<std::string>("diffusivity")),
     _diffusion_coef(getMaterialProperty<Real>(_diffusivity))
 {
@@ -37,3 +34,4 @@ LayeredSideFluxAverage::computeQpIntegral()
 {
   return -_diffusion_coef[_qp]*_grad_u[_qp]*_normals[_qp];
 }
+

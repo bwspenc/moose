@@ -15,29 +15,30 @@
 #ifndef SAMPLERBASE_H
 #define SAMPLERBASE_H
 
-#include "NodalVariableVectorPostprocessor.h"
+// MOOSE includes
+#include "InputParameters.h"
 
-//Forward Declarations
+// Forward Declarations
 class SamplerBase;
+class VectorPostprocessor;
 
 template<>
 InputParameters validParams<SamplerBase>();
 
 /**
- * Base class for VectorPostprocessors that need to do "sampling" of values in the domain.
+ * Base class for VectorPostprocessors that need to do "sampling" of
+ * values in the domain.
  */
 class SamplerBase
 {
 public:
   /**
-   * @param name The name of the object
    * @param parameters The parameters for the object
    * @param vpp A pointer to the child object
    * @param comm The communicator of the child
    */
-  SamplerBase(const std::string & name, InputParameters parameters, VectorPostprocessor * vpp, const libMesh::Parallel::Communicator & comm);
-
-  virtual ~SamplerBase() {}
+  SamplerBase(const InputParameters & parameters, VectorPostprocessor * vpp, const libMesh::Parallel::Communicator & comm);
+  virtual ~SamplerBase() = default;
 
 protected:
 
@@ -47,7 +48,7 @@ protected:
    *
    * @param variable_names The names of the variables.  Note: The order of the variables sets the order of the values for addSample()
    */
-  void setupVariables(std::vector<std::string> variable_names);
+  void setupVariables(const std::vector<std::string> & variable_names);
 
   /**
    * Call this with the value of every variable at each point you want to sample at.
@@ -81,7 +82,7 @@ protected:
   virtual void threadJoin(const SamplerBase & y);
 
   /// The child params
-  InputParameters _sampler_params;
+  const InputParameters & _sampler_params;
 
   /// The child VectorPostprocessor
   VectorPostprocessor * _vpp;

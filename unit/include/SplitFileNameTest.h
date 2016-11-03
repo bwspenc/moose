@@ -16,7 +16,7 @@
 #define SPLITFILENAMETEST_H
 
 //CPPUnit includes
-#include "cppunit/extensions/HelperMacros.h"
+#include "GuardedHelperMacros.h"
 
 class SplitFileNameTest : public CppUnit::TestFixture
 {

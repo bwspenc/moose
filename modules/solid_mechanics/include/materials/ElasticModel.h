@@ -12,8 +12,7 @@
 class ElasticModel : public ConstitutiveModel
 {
 public:
-  ElasticModel( const std::string & name,
-                InputParameters parameters );
+  ElasticModel( const InputParameters & parameters);
   virtual ~ElasticModel();
 
 protected:

@@ -39,16 +39,29 @@ InputParameters validParams<Action>();
 class Action : public ConsoleStreamInterface
 {
 public:
-  Action(const std::string & name, InputParameters params);
-  virtual ~Action() {}                  // empty virtual destructor for proper memory release
+  Action(InputParameters parameters);
+
+  virtual ~Action() {}
 
   virtual void act() = 0;
 
+  /**
+   * The name of the action
+   */
   const std::string & name() const { return _name; }
+
+  ///@{
+  /**
+   * Deprecated name methods, use name()
+   */
+  std::string getBaseName() const;
+  std::string getShortName() const;
+  ///@}
 
   const std::string & type() const { return _action_type; }
 
   InputParameters & parameters() { return _pars; }
+  const InputParameters & parameters() const { return _pars; }
 
   const std::string & specificTaskName() const { return _specific_task_name; }
 
@@ -61,44 +74,24 @@ public:
    * @return The value of the parameter
    */
   template <typename T>
-  const T & getParam(const std::string & name);
-
-  template <typename T>
   const T & getParam(const std::string & name) const;
   ///@}
 
   inline bool isParamValid(const std::string &name) const { return _pars.isParamValid(name); }
 
-  inline InputParameters & getParams() { return _pars; }
-
-  /**
-   * Returns the short name which is the final string after the last delimiter for the
-   * current ParserBlock
-   */
-  std::string getShortName() const;
-
-  /**
-   * Returns the base name which is the string before the last delimiter for the
-   * current ParserBlock
-   * Note:
-   *  1) If there are multiple slashes, like ./foo/bar/baz, this will return
-   *     ./foo/bar while getShortName() will return baz.
-   *  2) If there are no slashes, this will return an empty string and
-   *     getShortName() will return the action name.
-   */
-  std::string getBaseName() const;
-
   void appendTask(const std::string & task) { _all_tasks.insert(task); }
 
+
 protected:
-  /// The name of the action
-  std::string _name;
 
   /// Input parameters for the action
   InputParameters _pars;
 
   // The registered syntax for this block if any
   std::string _registered_identifier;
+
+  /// The name of the action
+  std::string _name;
 
   // The type name of this Action instance
   std::string _action_type;
@@ -135,20 +128,14 @@ protected:
 
   MooseSharedPointer<MooseMesh> & _mesh;
   MooseSharedPointer<MooseMesh> & _displaced_mesh;
-  /// Convenience reference to a problem this action works on
 
-public:
+  /// Convenience reference to a problem this action works on
   MooseSharedPointer<FEProblem> & _problem;
+
   /// Convenience reference to an executioner
   MooseSharedPointer<Executioner> & _executioner;
-};
 
-template <typename T>
-const T &
-Action::getParam(const std::string & name)
-{
-  return InputParameters::getParamHelper(name, _pars, static_cast<T *>(0));
-}
+};
 
 template <typename T>
 const T &

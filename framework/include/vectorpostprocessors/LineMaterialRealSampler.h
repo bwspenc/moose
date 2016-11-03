@@ -15,9 +15,10 @@
 #ifndef LINEMATERIALREALSAMPLER_H
 #define LINEMATERIALREALSAMPLER_H
 
+// MOOSE includes
 #include "LineMaterialSamplerBase.h"
 
-//Forward Declarations
+// Forward Declarations
 class LineMaterialRealSampler;
 
 template<>
@@ -34,12 +35,9 @@ public:
   /**
    * Class constructor
    * Sets up variables for output based on the properties to be output
-   * @param name The name of the class
    * @param parameters The input parameters
    */
-  LineMaterialRealSampler(const std::string & name, InputParameters parameters);
-
-  virtual ~LineMaterialRealSampler() {}
+  LineMaterialRealSampler(const InputParameters & parameters);
 
   /**
    * Reduce the material property to a scalar for output
@@ -48,7 +46,7 @@ public:
    * @param curr_point The point corresponding to this material property
    * @return A scalar value from this material property to be output
    */
-  virtual Real getScalarFromProperty(const Real & property, const Point * /*curr_point*/);
+  virtual Real getScalarFromProperty(const Real & property, const Point & curr_point) override;
 };
 
 #endif

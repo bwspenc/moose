@@ -30,7 +30,7 @@ InputParameters validParams<WrongJacobianDiffusion>();
 class WrongJacobianDiffusion : public Kernel
 {
 public:
-  WrongJacobianDiffusion(const std::string & name, InputParameters parameters);
+  WrongJacobianDiffusion(const InputParameters & parameters);
 
 protected:
   /**
@@ -42,6 +42,11 @@ protected:
    * Compute the correct diffusion on-diagonal Jacobian with an arbitrary prefactor applied
    */
   virtual Real computeQpJacobian();
+
+  /**
+   * Set a constant off-diagonal Jacobian
+   */
+  virtual Real computeQpOffDiagJacobian(unsigned int);
 
 private:
   /// prefactor of the Residual

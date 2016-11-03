@@ -14,7 +14,7 @@
 class NodalAreaVarAction: public Action
 {
 public:
-  NodalAreaVarAction(const std::string & name, InputParameters params);
+  NodalAreaVarAction(const InputParameters & params);
 
   virtual void act();
 

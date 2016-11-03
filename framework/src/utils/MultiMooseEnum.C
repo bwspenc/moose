@@ -56,10 +56,6 @@ MultiMooseEnum::MultiMooseEnum(const MooseEnumBase & other_enum) :
 {
 }
 
-MultiMooseEnum::~MultiMooseEnum()
-{
-}
-
 bool
 MultiMooseEnum::operator==(const MultiMooseEnum & value) const
 {
@@ -68,8 +64,8 @@ MultiMooseEnum::operator==(const MultiMooseEnum & value) const
     return false;
 
   // Return false if this enum does not contain an item from the other
-  for (MooseEnumIterator it = value.begin(); it != value.end(); ++it)
-    if (!contains(*it))
+  for (const auto & me : value)
+    if (!contains(me))
       return false;
 
   // If you get here, they must be the same
@@ -108,8 +104,8 @@ MultiMooseEnum::contains(const MultiMooseEnum & value) const
 {
   std::set<int> lookup_set(_current_ids.begin(), _current_ids.end());
 
-  for (std::vector<int>::const_iterator it = value._current_ids.begin(); it != value._current_ids.end(); ++it)
-    if (lookup_set.find(*it) == lookup_set.end())
+  for (const auto & id : value._current_ids)
+    if (lookup_set.find(id) == lookup_set.end())
       return false;
 
   return true;
@@ -178,7 +174,7 @@ MultiMooseEnum::push_back(const std::set<std::string> & names)
 const std::string &
 MultiMooseEnum::operator[](unsigned int i) const
 {
-  mooseAssert(i < _current_names.size(), "Access out of bounds in MultiMooseEnum (i: " << i << " size: " << _current_names.size() << ")");
+  mooseAssert(i < _current_names_preserved.size(), "Access out of bounds in MultiMooseEnum (i: " << i << " size: " << _current_names_preserved.size() << ")");
 
   return _current_names_preserved[i];
 }
@@ -186,7 +182,7 @@ MultiMooseEnum::operator[](unsigned int i) const
 unsigned int
 MultiMooseEnum::get(unsigned int i) const
 {
-  mooseAssert( i < _current_ids.size(), "Access out of bounds in MultiMooseEnum (i: " << i << " size: " << _current_ids.size() << ")");
+  mooseAssert(i < _current_ids.size(), "Access out of bounds in MultiMooseEnum (i: " << i << " size: " << _current_ids.size() << ")");
 
   return _current_ids[i];
 }
@@ -204,12 +200,14 @@ MultiMooseEnum::assign(InputIterator first, InputIterator last, bool append)
     std::string upper(*it);
     std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
 
+    checkDeprecatedBase(upper);
+
     _current_names.insert(upper);
 
     if (std::find(_names.begin(), _names.end(), upper) == _names.end())
     {
       if (_out_of_range_index == 0)     // Are out of range values allowed?
-        mooseError(std::string("Invalid option \"") + upper + "\" in MultiMooseEnum.  Valid options (not case-sensitive) are \"" + _raw_names + "\".");
+        mooseError("Invalid option \"" << upper << "\" in MultiMooseEnum.  Valid options (not case-sensitive) are \"" << _raw_names << "\".");
       else
       {
         // Allow values assigned outside of the enumeration range
@@ -259,6 +257,7 @@ MultiMooseEnum::clear()
 unsigned int
 MultiMooseEnum::size() const
 {
+  mooseAssert(_current_ids.size() == _current_names_preserved.size(), "Internal inconsistency between id and name vectors in MultiMooseEnum");
   return _current_ids.size();
 }
 
@@ -267,6 +266,13 @@ MultiMooseEnum::unique_items_size() const
 {
   std::set<int> unique_ids(_current_ids.begin(), _current_ids.end());
   return unique_ids.size();
+}
+
+void
+MultiMooseEnum::checkDeprecated() const
+{
+  for (const auto & name : _current_names)
+    checkDeprecatedBase(name);
 }
 
 std::ostream &

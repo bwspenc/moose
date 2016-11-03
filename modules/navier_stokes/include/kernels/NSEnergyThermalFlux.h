@@ -16,7 +16,6 @@ class NSEnergyThermalFlux;
 template<>
 InputParameters validParams<NSEnergyThermalFlux>();
 
-
 /**
  * This class is responsible for computing residuals and Jacobian
  * terms for the k * grad(T) * grad(phi) term in the Navier-Stokes
@@ -25,8 +24,7 @@ InputParameters validParams<NSEnergyThermalFlux>();
 class NSEnergyThermalFlux : public NSKernel
 {
 public:
-
-  NSEnergyThermalFlux(const std::string & name, InputParameters parameters);
+  NSEnergyThermalFlux(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
@@ -34,7 +32,7 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   // Gradients
-  VariableGradient& _grad_temp;
+  const VariableGradient & _grad_temp;
 
   // Material properties
   const MaterialProperty<Real> &_thermal_conductivity;
@@ -48,7 +46,6 @@ protected:
   friend class NSTemperatureDerivs;
 
 private:
-
   // Computes the Jacobian value (on or off-diagonal) for
   // var_number, which has been mapped to
   // 0 = rho
@@ -56,13 +53,12 @@ private:
   // 2 = rho*v
   // 3 = rho*w
   // 4 = rho*E
-  Real compute_jacobian_value(unsigned var_number);
+  Real computeJacobianHelper_value(unsigned var_number);
 
   // Single vector to refer to all gradients.  We have to store
   // pointers since you can't have a vector<Foo&>.  Initialized in
   // the ctor.
-  std::vector<VariableGradient*> _gradU;
+  std::vector<const VariableGradient *> _gradU;
 };
 
-
-#endif // ENERGYTHERMALFLUX_H
+#endif // NSENERGYTHERMALFLUX_H

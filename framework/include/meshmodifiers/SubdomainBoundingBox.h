@@ -36,23 +36,13 @@ public:
 
   /**
    * Class constructor
-   * @param name The name of the SubdomainBoundingBox
    * @param parameters The input parameters
    */
-  SubdomainBoundingBox(const std::string & name, InputParameters parameters);
+  SubdomainBoundingBox(const InputParameters & parameters);
 
-  /**
-   * Class destructor
-   */
-  virtual ~SubdomainBoundingBox();
-
-  /**
-   * Perform the actual subdomain modification
-   */
-  virtual void modify();
+  virtual void modify() override;
 
 private:
-
   /// ID location (inside of outside of box)
   MooseEnum _location;
 
@@ -61,7 +51,6 @@ private:
 
   /// Bounding box for testing element centroids against
   MeshTools::BoundingBox _bounding_box;
-
 };
 
 #endif //SUBDOMAINBOUDINGBOX_H

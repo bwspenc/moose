@@ -16,27 +16,26 @@
 #define MOOSEVARIABLESCALAR_H
 
 #include "MooseVariableBase.h"
-#include "MooseArray.h"
 #include "ParallelUniqueId.h"
-#include "MooseVariable.h"
 
-// libMesh
-#include "libmesh/dof_map.h"
-
+// libMesh forward declarations
+namespace libMesh
+{
+template <typename T> class NumericVector;
+}
 
 /**
- * Class for scalar variables (they are different)
- *
+ * Class for scalar variables (they are different).
  */
 class MooseVariableScalar : public MooseVariableBase
 {
 public:
-  MooseVariableScalar(unsigned int var_num, SystemBase & sys, Assembly & assembly, Moose::VarKindType var_kind);
+  MooseVariableScalar(unsigned int var_num, const FEType & fe_type, SystemBase & sys, Assembly & assembly, Moose::VarKindType var_kind);
   virtual ~MooseVariableScalar();
 
   void reinit();
 
-  virtual bool isNodal() const;
+  virtual bool isNodal() const override;
 
   //
   VariableValue & sln() { return _u; }
@@ -59,7 +58,6 @@ public:
   void insert(NumericVector<Number> & soln);
 
 protected:
-  bool _has_value;
   /// The value of scalar variable
   VariableValue _u;
   /// The old value of scalar variable

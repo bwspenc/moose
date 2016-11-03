@@ -18,7 +18,7 @@
   [./solution_uo]
     type = SolutionUserObject
     mesh = cube_with_u_equals_x.e
-    timestep = 1
+    timestep = LATEST
     system_variables = u
     rotation0_vector = '0 0 1'
     rotation0_angle = 45
@@ -69,7 +69,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = solution_function_rot1
   exodus = true
-  print_perf_log = true
 []

@@ -16,27 +16,34 @@
 #include "SubProblem.h"
 #include "SystemBase.h"
 #include "MooseVariable.h"
+#include "Assembly.h"
 
+// libMesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<IntegratedBC>()
 {
   InputParameters params = validParams<BoundaryCondition>();
   params += validParams<RandomInterface>();
+  params += validParams<MaterialPropertyInterface>();
 
-  params.addParam<std::vector<AuxVariableName> >("save_in", "The name of auxiliary variables to save this Kernel's residual contributions to.  Everything about that variable must match everything about this variable (the type, what blocks it's on, etc.)");
-  params.addParam<std::vector<AuxVariableName> >("diag_save_in", "The name of auxiliary variables to save this Kernel's diagonal jacobian contributions to.  Everything about that variable must match everything about this variable (the type, what blocks it's on, etc.)");
+  params.addParam<std::vector<AuxVariableName> >("save_in", "The name of auxiliary variables to save this BC's residual contributions to.  Everything about that variable must match everything about this variable (the type, what blocks it's on, etc.)");
+  params.addParam<std::vector<AuxVariableName> >("diag_save_in", "The name of auxiliary variables to save this BC's diagonal jacobian contributions to.  Everything about that variable must match everything about this variable (the type, what blocks it's on, etc.)");
 
   params.addParamNamesToGroup("diag_save_in save_in", "Advanced");
+
+  // Integrated BCs always rely on Boundary MaterialData
+  params.set<Moose::MaterialDataType>("_material_data_type") = Moose::BOUNDARY_MATERIAL_DATA;
 
   return params;
 }
 
-IntegratedBC::IntegratedBC(const std::string & name, InputParameters parameters) :
-    BoundaryCondition(name, parameters),
+IntegratedBC::IntegratedBC(const InputParameters & parameters) :
+    BoundaryCondition(parameters, false), // False is because this is NOT nodal
     RandomInterface(parameters, _fe_problem, _tid, false),
-    CoupleableMooseVariableDependencyIntermediateInterface(parameters, false),
-    MaterialPropertyInterface(parameters),
+    CoupleableMooseVariableDependencyIntermediateInterface(this, false),
+    MaterialPropertyInterface(this),
     _current_elem(_assembly.elem()),
     _current_elem_volume(_assembly.elemVolume()),
     _current_side(_assembly.side()),
@@ -70,7 +77,7 @@ IntegratedBC::IntegratedBC(const std::string & name, InputParameters parameters)
     MooseVariable * var = &_subproblem.getVariable(_tid, _save_in_strings[i]);
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + _name + ". When saving residual values in an Auxiliary variable the AuxVariable must be the same type as the nonlinear variable the object is acting on.");
+      mooseError("Error in " + name() + ". When saving residual values in an Auxiliary variable the AuxVariable must be the same type as the nonlinear variable the object is acting on.");
 
     _save_in[i] = var;
     var->sys().addVariableToZeroOnResidual(_save_in_strings[i]);
@@ -84,7 +91,7 @@ IntegratedBC::IntegratedBC(const std::string & name, InputParameters parameters)
     MooseVariable * var = &_subproblem.getVariable(_tid, _diag_save_in_strings[i]);
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + _name + ". When saving diagonal Jacobian values in an Auxiliary variable the AuxVariable must be the same type as the nonlinear variable the object is acting on.");
+      mooseError("Error in " + name() + ". When saving diagonal Jacobian values in an Auxiliary variable the AuxVariable must be the same type as the nonlinear variable the object is acting on.");
 
     _diag_save_in[i] = var;
     var->sys().addVariableToZeroOnJacobian(_diag_save_in_strings[i]);
@@ -149,8 +156,6 @@ IntegratedBC::computeJacobian()
 void
 IntegratedBC::computeJacobianBlock(unsigned int jvar)
 {
-//  Moose::perf_log.push("computeJacobianBlock()","IntegratedBC");
-
   DenseMatrix<Number> & ke = _assembly.jacobianBlock(_var.number(), jvar);
 
   for (_qp=0; _qp<_qrule->n_points(); _qp++)
@@ -162,8 +167,6 @@ IntegratedBC::computeJacobianBlock(unsigned int jvar)
         else
           ke(_i,_j) += _JxW[_qp]*_coord[_qp]*computeQpOffDiagJacobian(jvar);
       }
-
-//  Moose::perf_log.pop("computeJacobianBlock()","IntegratedBC");
 }
 
 void

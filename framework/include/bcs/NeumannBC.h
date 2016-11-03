@@ -34,11 +34,11 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  NeumannBC(const std::string & name, InputParameters parameters);
+  NeumannBC(const InputParameters & parameters);
 
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   /// Value of grad(u) on the boundary.
   const Real & _value;

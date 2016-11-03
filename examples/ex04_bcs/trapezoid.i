@@ -44,7 +44,7 @@
 
   # A forcing term near the periodic boundary
   [./forcing]
-    type = GaussContForcing
+    type = ExampleGaussContForcing
     variable = u
     x_center = 2
     y_center = -1
@@ -76,8 +76,6 @@
 []
 
 [Outputs]
-  file_base = out_trapezoid
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

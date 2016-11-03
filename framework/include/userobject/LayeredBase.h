@@ -15,25 +15,26 @@
 #ifndef LAYEREDBASE_H
 #define LAYEREDBASE_H
 
+// MOOSE includes
 #include "InputParameters.h"
-#include "UserObject.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
-//Forward Declarations
+// Forward Declarations
 class LayeredBase;
+class UserObject;
+class SubProblem;
 
 template<>
 InputParameters validParams<LayeredBase>();
 
 /**
- * This UserObject computes volume integrals of a variable storing partial sums for the specified number of intervals in a direction (x,y,z).c
+ * This UserObject computes volume integrals of a variable storing
+ * partial sums for the specified number of intervals in a direction
+ * (x,y,z).
  */
 class LayeredBase
 {
 public:
-  LayeredBase(const std::string & name, InputParameters parameters);
+  LayeredBase(const InputParameters & parameters);
 
   /**
    * Given a Point return the integral value associated with the layer that point falls in.
@@ -61,7 +62,6 @@ public:
   virtual void threadJoin(const UserObject & y);
 
 protected:
-
   /**
    * Set the value for a particular layer
    * @param layer The layer you are setting the value for
@@ -78,7 +78,7 @@ protected:
   std::string _layered_base_name;
 
   /// Params for this object
-  InputParameters _layered_base_params;
+  const InputParameters & _layered_base_params;
 
   /// The MooseEnum direction the layers are going in
   MooseEnum _direction_enum;
@@ -103,6 +103,7 @@ protected:
 
   Real _direction_min;
   Real _direction_max;
+
 private:
   /// Value of the integral for each layer
   std::vector<Real> _layer_values;
@@ -112,6 +113,9 @@ private:
 
   /// Subproblem for the child object
   SubProblem & _layered_base_subproblem;
+
+  /// Whether the values are cumulative over the layers
+  bool _cumulative;
 };
 
 #endif

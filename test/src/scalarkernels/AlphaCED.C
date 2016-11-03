@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "AlphaCED.h"
+#include "Assembly.h"
 
 template<>
 InputParameters validParams<AlphaCED>()
@@ -23,8 +24,8 @@ InputParameters validParams<AlphaCED>()
   return params;
 }
 
-AlphaCED::AlphaCED(const std::string & name, InputParameters parameters) :
-    ScalarKernel(name, parameters),
+AlphaCED::AlphaCED(const InputParameters & parameters) :
+    ScalarKernel(parameters),
     _value(getParam<Real>("value"))
 {
 }

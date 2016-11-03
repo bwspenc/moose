@@ -12,10 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "VerifyElementUniqueID.h"
 #include "SubProblem.h"
-
-#include <algorithm>
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<VerifyElementUniqueID>()
@@ -24,8 +24,8 @@ InputParameters validParams<VerifyElementUniqueID>()
   return params;
 }
 
-VerifyElementUniqueID::VerifyElementUniqueID(const std::string & name, InputParameters parameters) :
-    ElementUserObject(name, parameters)
+VerifyElementUniqueID::VerifyElementUniqueID(const InputParameters & parameters) :
+    ElementUserObject(parameters)
 {}
 
 // This object can't test every possible scenario.  For instance, it can't detect recycled ids
@@ -59,7 +59,7 @@ void
 VerifyElementUniqueID::finalize()
 {
   // On Parallel Mesh we have to look at all the ids over all the processors
-  if (_subproblem.mesh().isParallelMesh())
+  if (_subproblem.mesh().isDistributedMesh())
     _communicator.allgather(_all_ids);
 
   std::sort(_all_ids.begin(), _all_ids.end());
@@ -67,3 +67,4 @@ VerifyElementUniqueID::finalize()
   if (it_end != _all_ids.end())
     mooseError("Duplicate unique_ids found!");
 }
+

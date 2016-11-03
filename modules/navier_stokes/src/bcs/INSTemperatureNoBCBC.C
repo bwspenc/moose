@@ -19,8 +19,8 @@ InputParameters validParams<INSTemperatureNoBCBC>()
 
 
 
-INSTemperatureNoBCBC::INSTemperatureNoBCBC(const std::string & name, InputParameters parameters) :
-  IntegratedBC(name, parameters),
+INSTemperatureNoBCBC::INSTemperatureNoBCBC(const InputParameters & parameters) :
+  IntegratedBC(parameters),
   // Required parameters
   _k(getParam<Real>("k"))
 {
@@ -50,3 +50,4 @@ Real INSTemperatureNoBCBC::computeQpOffDiagJacobian(unsigned /*jvar*/)
   // off-diagonal derivatives are all zero.
   return 0.;
 }
+

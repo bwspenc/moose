@@ -16,9 +16,8 @@ InputParameters validParams<ElasticModel>()
   return params;
 }
 
-ElasticModel::ElasticModel( const std::string & name,
-                            InputParameters parameters )
-  :ConstitutiveModel( name, parameters )
+ElasticModel::ElasticModel( const InputParameters & parameters)
+  :ConstitutiveModel(parameters)
 {
 }
 
@@ -41,3 +40,4 @@ ElasticModel::computeStress( const Elem & /*current_elem*/,
   stress_new = elasticity_tensor * strain_increment;
   stress_new += stress_old;
 }
+

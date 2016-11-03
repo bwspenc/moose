@@ -12,8 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "AddElementalFieldAction.h"
 #include "FEProblem.h"
+#include "MooseMesh.h"
 
 // libmesh includes
 #include "libmesh/fe.h"
@@ -27,8 +29,8 @@ InputParameters validParams<AddElementalFieldAction>()
   return params;
 }
 
-AddElementalFieldAction::AddElementalFieldAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+AddElementalFieldAction::AddElementalFieldAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -37,15 +39,15 @@ AddElementalFieldAction::act()
 {
   std::set<SubdomainID> blocks;
   std::vector<SubdomainName> block_param = getParam<std::vector<SubdomainName> >("block");
-  for (std::vector<SubdomainName>::iterator it = block_param.begin(); it != block_param.end(); ++it)
+  for (const auto & subdomain_name : block_param)
   {
-    SubdomainID blk_id = _problem->mesh().getSubdomainID(*it);
+    SubdomainID blk_id = _problem->mesh().getSubdomainID(subdomain_name);
     blocks.insert(blk_id);
   }
 
   FEType fe_type(CONSTANT, MONOMIAL);
 
-  std::string variable = getShortName();
+  std::string variable = name();
 
   if (blocks.empty())
     _problem->addAuxVariable(variable, fe_type);

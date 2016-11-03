@@ -17,9 +17,7 @@
 
 #include "ElementW1pError.h"
 
-class Function;
-
-//Forward Declarations
+// Forward Declarations
 class ElementH1Error;
 
 template<>
@@ -36,7 +34,7 @@ class ElementH1Error :
   public ElementW1pError
 {
 public:
-  ElementH1Error(const std::string & name, InputParameters parameters);
+  ElementH1Error(const InputParameters & parameters);
 };
 
 #endif //ELEMENTH1ERROR_H

@@ -42,7 +42,7 @@
     type = FeatureFloodCountAux
     variable = bubble_map0
     execute_on = timestep_end
-    bubble_object = bubbles
+    flood_counter = bubbles
     map_index = 0
   [../]
 
@@ -50,7 +50,7 @@
     type = FeatureFloodCountAux
     variable = bubble_map1
     execute_on = timestep_end
-    bubble_object = bubbles
+    flood_counter = bubbles
     map_index = 1
   [../]
 []
@@ -101,6 +101,8 @@
     variable = 'u v'
     threshold = 0.3
     execute_on = timestep_end
+    outputs = none
+    flood_entity_type = NODAL
   [../]
 []
 
@@ -109,10 +111,6 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

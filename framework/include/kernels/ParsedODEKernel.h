@@ -17,7 +17,6 @@
 
 #include "ODEKernel.h"
 #include "FunctionParserUtils.h"
-#include "libmesh/fparser_ad.hh"
 
 //Forward Declarations
 class ParsedODEKernel;
@@ -33,15 +32,14 @@ class ParsedODEKernel :
   public FunctionParserUtils
 {
 public:
-  ParsedODEKernel(const std::string & name, InputParameters parameters);
-  virtual ~ParsedODEKernel();
+  ParsedODEKernel(const InputParameters & parameters);
 
 protected:
   void updateParams();
 
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpResidual() override;
+  virtual Real computeQpJacobian() override;
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   /// function expression
   std::string _function;
@@ -52,11 +50,11 @@ protected:
   std::vector<std::string> _arg_names;
 
   /// function parser object for the resudual and on-diagonal Jacobian
-  ADFunction * _func_F;
-  ADFunction * _func_dFdu;
+  ADFunctionPtr _func_F;
+  ADFunctionPtr _func_dFdu;
 
   /// function parser objects for the Jacobian
-  std::vector<ADFunction *> _func_dFdarg;
+  std::vector<ADFunctionPtr> _func_dFdarg;
 
   /// number of non-linear variables in the problem
   const unsigned int _number_of_nl_variables;

@@ -1,8 +1,8 @@
 [Mesh]
-  # This test uses SolutionUserObject which doesn't work with ParallelMesh.
+  # This test uses SolutionUserObject which doesn't work with DistributedMesh.
   type = FileMesh
   file = cubesource.e
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -68,7 +68,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   checkpoint = true
-  print_perf_log = true
 []

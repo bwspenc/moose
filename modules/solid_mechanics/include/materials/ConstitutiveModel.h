@@ -18,8 +18,7 @@
 class ConstitutiveModel : public Material
 {
 public:
-  ConstitutiveModel( const std::string & name,
-                     InputParameters parameters );
+  ConstitutiveModel( const InputParameters & parameters);
 
   virtual ~ConstitutiveModel() {}
 
@@ -49,8 +48,8 @@ public:
 protected:
 
   const bool _has_temp;
-  VariableValue & _temperature;
-  VariableValue & _temperature_old;
+  const VariableValue & _temperature;
+  const VariableValue & _temperature_old;
   const Real _alpha;
   Function * _alpha_function;
   bool _has_stress_free_temp;
@@ -58,10 +57,14 @@ protected:
   bool _mean_alpha_function;
   Real _ref_temp;
 
+  ///@{ Restartable data to check for the zeroth and first time steps
+  bool & _step_zero_cm;
+  bool & _step_one_cm;
+  ///@}
+
 private:
   using Material::computeProperties;
   using Material::_qp;
-
 };
 
 template<>

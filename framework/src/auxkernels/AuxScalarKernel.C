@@ -30,20 +30,21 @@ InputParameters validParams<AuxScalarKernel>()
   params.addParam<bool>("use_displaced_mesh", false, "Whether or not this object should use the displaced mesh for computation.  Note that in the case this is true but no displacements are provided in the Mesh block the undisplaced mesh will still be used.");
   params.addParamNamesToGroup("use_displaced_mesh", "Advanced");
 
+  params.declareControllable("enable"); // allows Control to enable/disable this type of object
   params.registerBase("AuxScalarKernel");
 
   return params;
 }
 
-AuxScalarKernel::AuxScalarKernel(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
-    ScalarCoupleable(parameters),
-    SetupInterface(parameters),
-    FunctionInterface(parameters),
-    UserObjectInterface(parameters),
-    PostprocessorInterface(parameters),
+AuxScalarKernel::AuxScalarKernel(const InputParameters & parameters) :
+    MooseObject(parameters),
+    ScalarCoupleable(this),
+    SetupInterface(this),
+    FunctionInterface(this),
+    UserObjectInterface(this),
+    PostprocessorInterface(this),
     DependencyResolverInterface(),
-    TransientInterface(parameters, "scalar_aux_kernels"),
+    TransientInterface(this),
     ZeroInterface(parameters),
     MeshChangedInterface(parameters),
     _subproblem(*parameters.get<SubProblem *>("_subproblem")),
@@ -58,8 +59,8 @@ AuxScalarKernel::AuxScalarKernel(const std::string & name, InputParameters param
   _supplied_vars.insert(parameters.get<AuxVariableName>("variable"));
 
   const std::vector<MooseVariableScalar *> & coupled_vars = getCoupledMooseScalarVars();
-  for (std::vector<MooseVariableScalar *>::const_iterator it = coupled_vars.begin(); it != coupled_vars.end(); ++it)
-    _depend_vars.insert((*it)->name());
+  for (const auto & var : coupled_vars)
+    _depend_vars.insert(var->name());
 }
 
 AuxScalarKernel::~AuxScalarKernel()

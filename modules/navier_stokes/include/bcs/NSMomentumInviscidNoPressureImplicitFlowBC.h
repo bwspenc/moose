@@ -25,12 +25,9 @@ InputParameters validParams<NSMomentumInviscidNoPressureImplicitFlowBC>();
 class NSMomentumInviscidNoPressureImplicitFlowBC : public NSMomentumInviscidBC
 {
 public:
-  NSMomentumInviscidNoPressureImplicitFlowBC(const std::string & name, InputParameters parameters);
-
-  virtual ~NSMomentumInviscidNoPressureImplicitFlowBC(){}
+  NSMomentumInviscidNoPressureImplicitFlowBC(const InputParameters & parameters);
 
 protected:
-
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned jvar);

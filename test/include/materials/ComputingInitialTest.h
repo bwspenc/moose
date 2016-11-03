@@ -16,7 +16,6 @@
 
 #include "Material.h"
 
-
 //Forward Declarations
 class ComputingInitialTest;
 
@@ -29,8 +28,7 @@ InputParameters validParams<ComputingInitialTest>();
 class ComputingInitialTest : public Material
 {
 public:
-  ComputingInitialTest(const std::string & name,
-                InputParameters parameters);
+  ComputingInitialTest(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();

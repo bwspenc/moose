@@ -19,7 +19,7 @@
 #include "Material.h"
 #include "ConsoleUtils.h"
 
-// libMesh includesx
+// libMesh includes
 #include "libmesh/transient_system.h"
 
 template<>
@@ -28,19 +28,15 @@ InputParameters validParams<MaterialPropertyDebugOutput>()
   InputParameters params = validParams<BasicOutput<Output> >();
 
   // This object only outputs data once, in the constructor, so disable fine control
-  params.suppressParameter<MultiMooseEnum>("output_on");
+  params.suppressParameter<MultiMooseEnum>("execute_on");
 
   return params;
 }
 
-MaterialPropertyDebugOutput::MaterialPropertyDebugOutput(const std::string & name, InputParameters & parameters) :
-    BasicOutput<Output>(name, parameters)
+MaterialPropertyDebugOutput::MaterialPropertyDebugOutput(const InputParameters & parameters) :
+    BasicOutput<Output>(parameters)
 {
   printMaterialMap();
-}
-
-MaterialPropertyDebugOutput::~MaterialPropertyDebugOutput()
-{
 }
 
 void
@@ -51,36 +47,51 @@ MaterialPropertyDebugOutput::output(const ExecFlagType & /*type*/)
 void
 MaterialPropertyDebugOutput::printMaterialMap() const
 {
-
-  // Get a reference to the material warehouse
-  MaterialWarehouse & material_warehouse = _problem_ptr->getMaterialWarehouse(0);
-
   // Build output streams for block materials and block face materials
-  std::stringstream active_block, active_face, active_neighbor;
-  std::set<SubdomainID> blocks = material_warehouse.blocks();
-  for (std::set<SubdomainID>::const_iterator it = blocks.begin(); it != blocks.end(); ++it)
+  std::stringstream active_block, active_face, active_neighbor, active_boundary;
+
+  // Reference to the Material warehouse
+  const MaterialWarehouse & warehouse = _problem_ptr->getMaterialWarehouse();
+
+
+  // Active materials on block
   {
-    // Active materials on blocks
-    active_block << "    Block ID " << *it << ":\n";
-    printMaterialProperties(active_block, material_warehouse.getMaterials(*it));
-
-    // Active face materials on blocks
-    active_face << "    Block ID " << *it << ":\n";
-    printMaterialProperties(active_face, material_warehouse.getFaceMaterials(*it));
-
-    // Active face materials on blocks
-    active_neighbor << "    Block ID " << *it << ":\n";
-    printMaterialProperties(active_neighbor, material_warehouse.getNeighborMaterials(*it));
+    const std::map<SubdomainID, std::vector<MooseSharedPointer<Material> > > & objects = warehouse.getBlockObjects();
+    for (const auto & it : objects)
+    {
+      active_block << "    Block ID " << it.first << ":\n";
+      printMaterialProperties(active_block, it.second);
+    }
   }
 
-  // Build output stream for side set materials
-  std::stringstream active_boundary;
-  std::set<BoundaryID> boundaries = material_warehouse.boundaries();
-  for (std::set<BoundaryID>::const_iterator it = boundaries.begin(); it != boundaries.end(); ++it)
+  // Active face materials on blocks
   {
-    // Active materials on blocks
-    active_boundary << "    Boundary ID " << *it << ":\n";
-    printMaterialProperties(active_boundary, material_warehouse.getBoundaryMaterials(*it));
+    const std::map<SubdomainID, std::vector<MooseSharedPointer<Material> > > & objects = warehouse[Moose::FACE_MATERIAL_DATA].getBlockObjects();
+    for (const auto & it : objects)
+    {
+      active_face << "    Block ID " << it.first << ":\n";
+      printMaterialProperties(active_face, it.second);
+    }
+  }
+
+  // Active neighbor materials on blocks
+  {
+    const std::map<SubdomainID, std::vector<MooseSharedPointer<Material> > > & objects = warehouse[Moose::NEIGHBOR_MATERIAL_DATA].getBlockObjects();
+    for (const auto & it : objects)
+    {
+      active_neighbor << "    Block ID " << it.first << ":\n";
+      printMaterialProperties(active_neighbor, it.second);
+    }
+  }
+
+  // Active boundary materials
+  {
+    const std::map<BoundaryID, std::vector<MooseSharedPointer<Material> > > & objects = warehouse.getBoundaryObjects();
+    for (const auto & it : objects)
+    {
+      active_boundary << "    Boundary ID " << it.first << ":\n";
+      printMaterialProperties(active_boundary, it.second);
+    }
   }
 
   // Write the stored strings to the ConsoleUtils output objects
@@ -99,24 +110,24 @@ MaterialPropertyDebugOutput::printMaterialMap() const
 }
 
 void
-MaterialPropertyDebugOutput::printMaterialProperties(std::stringstream & output, const std::vector<Material * > & materials) const
+MaterialPropertyDebugOutput::printMaterialProperties(std::stringstream & output, const std::vector<MooseSharedPointer<Material> > & materials) const
 {
   // Loop through all material objects
-  for (std::vector<Material *>::const_iterator jt = materials.begin(); jt != materials.end(); ++jt)
+  for (const auto & mat : materials)
   {
     // Get a list of properties for the current material
-    const std::set<std::string> & props = (*jt)->getSuppliedItems();
+    const std::set<std::string> & props = mat->getSuppliedItems();
 
     // Adds the material name to the output stream
-    output << std::left << std::setw(ConsoleUtils::console_field_width) << "      Material Name: " << (*jt)->name() << '\n';
+    output << std::left << std::setw(ConsoleUtils::console_field_width) << "      Material Name: " << mat->name() << '\n';
 
     // Build stream for properties using the ConsoleUtils helper functions to wrap the names if there are too many for one line
     std::streampos begin_string_pos = output.tellp();
     std::streampos curr_string_pos = begin_string_pos;
     output << std::left << std::setw(ConsoleUtils::console_field_width) << "      Property Names: ";
-    for (std::set<std::string>::const_iterator prop_it = props.begin(); prop_it != props.end(); ++prop_it)
+    for (const auto & prop : props)
     {
-      output << "\"" << (*prop_it) << "\" ";
+      output << "\"" << prop << "\" ";
       curr_string_pos = output.tellp();
       ConsoleUtils::insertNewline(output, begin_string_pos, curr_string_pos);
     }

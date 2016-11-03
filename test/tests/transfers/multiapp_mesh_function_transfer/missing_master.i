@@ -3,9 +3,6 @@
   dim = 2
   nx = 10
   ny = 10
-  # The MultiAppMeshFunctionTransfer doesn't work with ParallelMesh.
-  # See tosub_master.i and #2145 for more information.
-  distribution = serial
 []
 
 [Variables]
@@ -48,10 +45,7 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
 
 [MultiApps]

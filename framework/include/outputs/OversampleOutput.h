@@ -18,14 +18,17 @@
 // MOOSE includes
 #include "FileOutput.h"
 
-// libMesh
-#include "libmesh/equation_systems.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/mesh_function.h"
-
 // Forward declerations
 class OversampleOutput;
+class MooseMesh;
+
+// libMesh forward declarations
+namespace libMesh
+{
+template <typename T> class NumericVector;
+class MeshFunction;
+}
+
 
 template<>
 InputParameters validParams<OversampleOutput>();
@@ -57,7 +60,7 @@ public:
    * required for oversampling.
    * @see initOversample()
    */
-  OversampleOutput(const std::string & name, InputParameters & parameters);
+  OversampleOutput(const InputParameters & parameters);
 
   /**
    * Class destructor
@@ -70,7 +73,7 @@ public:
   /**
    * Executes when the mesh alterted and sets a flag used by oversampling
    */
-  virtual void meshChanged();
+  virtual void meshChanged() override;
 
 protected:
 
@@ -129,7 +132,7 @@ private:
   /* Each of the MeshFunctions keeps a reference to this vector, the vector is updated for the current system
    * and variable before the MeshFunction is applied. This allows for the same MeshFunction object to be
    * re-used, unless the mesh has changed due to adaptivity */
-  UniquePtr<NumericVector<Number> > _serialized_solution;
+  std::unique_ptr<NumericVector<Number> > _serialized_solution;
 };
 
 #endif // OVERSAMPLEOUTPUT_H

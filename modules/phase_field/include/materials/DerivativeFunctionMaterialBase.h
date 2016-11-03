@@ -42,7 +42,7 @@ InputParameters validParams<DerivativeFunctionMaterialBase>();
 class DerivativeFunctionMaterialBase : public FunctionMaterialBase
 {
 public:
-  DerivativeFunctionMaterialBase(const std::string & name, InputParameters parameters);
+  DerivativeFunctionMaterialBase(const InputParameters & parameters);
 
 protected:
   virtual void computeProperties();
@@ -65,7 +65,7 @@ protected:
    *
    * @param arg The index of the function argument the derivative is taken of
    */
-  virtual Real computeDF(unsigned int) { return 0.0; }
+  virtual Real computeDF(unsigned int arg ) { libmesh_ignore(arg); return 0.0; }
 
   /**
    * Override this method to calculate the second derivatives.
@@ -75,12 +75,12 @@ protected:
    * @param arg1 The variable the first derivative is taken of
    * @param arg2 The variable the second derivative is taken of
    */
-  virtual Real computeD2F(unsigned int, unsigned int) { return 0.0; }
+  virtual Real computeD2F(unsigned int arg1, unsigned int arg2) { libmesh_ignore(arg1); libmesh_ignore(arg2); return 0.0; }
 
   /**
    * Override this method to calculate the third derivatives.
    *
-   * @Note The implementation of this method is optional. It is only evaluated when
+   * @note The implementation of this method is optional. It is only evaluated when
    *       the 'third_derivatives' parameter is set to true.
    */
   virtual Real computeD3F(unsigned int, unsigned int, unsigned int) { return 0.0; }

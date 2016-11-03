@@ -4,12 +4,8 @@
 []
 
 [GlobalParams]
-  disp_z = disp_z
-  disp_y = disp_y
-  disp_x = disp_x
-  wc_z = wc_z
-  wc_y = wc_y
-  wc_x = wc_x
+  displacements = 'disp_x disp_y disp_z'
+  Cosserat_rotations = 'wc_x wc_y wc_z'
 []
 
 [Variables]
@@ -32,44 +28,41 @@
   [./cx_elastic]
     type = CosseratStressDivergenceTensors
     variable = disp_x
+    displacements = 'disp_x disp_y disp_z'
     component = 0
   [../]
   [./cy_elastic]
     type = CosseratStressDivergenceTensors
     variable = disp_y
+    displacements = 'disp_x disp_y disp_z'
     component = 1
   [../]
   [./cz_elastic]
     type = CosseratStressDivergenceTensors
     variable = disp_z
+    displacements = 'disp_x disp_y disp_z'
     component = 2
   [../]
   [./x_couple]
     type = StressDivergenceTensors
     variable = wc_x
-    disp_z = wc_z
-    disp_y = wc_y
-    disp_x = wc_x
+    displacements = 'wc_x wc_y wc_z'
     component = 0
-    base_name = coupled
+    base_name = couple
   [../]
   [./y_couple]
     type = StressDivergenceTensors
     variable = wc_y
-    disp_z = wc_z
-    disp_y = wc_y
-    disp_x = wc_x
+    displacements = 'wc_x wc_y wc_z'
     component = 1
-    base_name = coupled
+    base_name = couple
   [../]
   [./z_couple]
     type = StressDivergenceTensors
     variable = wc_z
-    disp_z = wc_z
-    disp_y = wc_y
-    disp_x = wc_x
+    displacements = 'wc_x wc_y wc_z'
     component = 2
-    base_name = coupled
+    base_name = couple
   [../]
   [./x_moment]
     type = MomentBalancing
@@ -90,13 +83,18 @@
 
 
 [Materials]
-  [./cosserat]
-    type = CosseratLinearElasticMaterial
-    block = 0
+  [./elasticity_tensor]
+    type = ComputeCosseratElasticityTensor
     B_ijkl = '1.3 0.98 1.4'
     fill_method_bending = 'general_isotropic'
-    C_ijkl = '1 1.2 1.333 0.988 1 1.1 1.2 1.3 1.4 1 1.2 1.333 0.988 1 1.1 1.2 1.3 1.4 1.2 1 0.6'
+    E_ijkl = '1 1.2 1.333 0.988 1 1.1 1.2 1.3 1.4 1 1.2 1.333 0.988 1 1.1 1.2 1.3 1.4 1.2 1 0.6'
     fill_method = 'symmetric21'
+  [../]
+  [./strain]
+    type = ComputeCosseratSmallStrain
+  [../]
+  [./stress]
+    type = ComputeCosseratLinearElasticStress
   [../]
 []
 
@@ -104,7 +102,6 @@
   [./andy]
     type = SMP
     full = true
-    #petsc_options = '-snes_test_display'
     petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it -snes_type'
     petsc_options_value = 'bcgs bjacobi 1E-15 1E-10 10000 test'
   [../]

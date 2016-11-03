@@ -32,15 +32,15 @@ InputParameters validParams<SideAverageValue>();
 class SideAverageValue : public SideIntegralVariablePostprocessor
 {
 public:
-  SideAverageValue(const std::string & name, InputParameters parameters);
-  virtual ~SideAverageValue(){}
+  SideAverageValue(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual Real getValue() override;
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
+  virtual Real volume();
   Real _volume;
 };
 

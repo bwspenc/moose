@@ -12,11 +12,13 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "PenetrationAux.h"
-
 #include "DisplacedProblem.h"
 #include "MooseEnum.h"
+#include "MooseMesh.h"
 
+// libMesh includes
 #include "libmesh/string_to_enum.h"
 
 const Real PenetrationAux::NotPenetrated = -999999;
@@ -49,11 +51,11 @@ InputParameters validParams<PenetrationAux>()
   return params;
 }
 
-PenetrationAux::PenetrationAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+PenetrationAux::PenetrationAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
 
     // Here we cast the value of the MOOSE enum to an integer to the class-based enum.
-    _quantity(PenetrationAux::PA_ENUM(int(getParam<MooseEnum>("quantity")))),
+    _quantity(getParam<MooseEnum>("quantity").getEnum<PenetrationAux::PA_ENUM>()),
     _penetration_locator(_nodal
       ? getPenetrationLocator(
           parameters.get<BoundaryName>("paired_boundary"),
@@ -72,10 +74,6 @@ PenetrationAux::PenetrationAux(const std::string & name, InputParameters paramet
 
   if (parameters.isParamValid("normal_smoothing_method"))
     _penetration_locator.setNormalSmoothingMethod(parameters.get<std::string>("normal_smoothing_method"));
-}
-
-PenetrationAux::~PenetrationAux()
-{
 }
 
 Real
@@ -112,11 +110,11 @@ PenetrationAux::computeValue()
       case PA_CLOSEST_POINT_Z:
         retVal = pinfo->_closest_point(2); break;
       case PA_ELEM_ID:
-        retVal = (Real) (pinfo->_elem->id()+1); break;
+        retVal = static_cast<Real>(pinfo->_elem->id()+1); break;
       case PA_SIDE:
-        retVal = (Real) (pinfo->_side_num); break;
+        retVal = static_cast<Real>(pinfo->_side_num); break;
       case PA_INCREMENTAL_SLIP_MAG:
-        retVal = pinfo->isCaptured() ? pinfo->_incremental_slip.size() : 0; break;
+        retVal = pinfo->isCaptured() ? pinfo->_incremental_slip.norm() : 0; break;
       case PA_INCREMENTAL_SLIP_X:
         retVal = pinfo->isCaptured() ? pinfo->_incremental_slip(0) : 0; break;
       case PA_INCREMENTAL_SLIP_Y:
@@ -143,7 +141,7 @@ PenetrationAux::computeValue()
       {
         RealVectorValue contact_force_normal( (pinfo->_contact_force*pinfo->_normal) * pinfo->_normal );
         RealVectorValue contact_force_tangential( pinfo->_contact_force - contact_force_normal );
-        retVal = contact_force_tangential.size();
+        retVal = contact_force_tangential.norm();
         break;
       }
       case PA_TANGENTIAL_FORCE_X:

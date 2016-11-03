@@ -28,7 +28,7 @@ class Grad2ParsedFunction :
 {
 public:
 
-  Grad2ParsedFunction(const std::string & name, InputParameters parameters);
+  Grad2ParsedFunction(const InputParameters & parameters);
 
   virtual Real value(Real t, const Point & pt);
 

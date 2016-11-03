@@ -20,8 +20,8 @@ InputParameters validParams<RichardsSat>()
   return params;
 }
 
-RichardsSat::RichardsSat(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
+RichardsSat::RichardsSat(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
     _s_res(getParam<Real>("s_res")),
     _sum_s_res(getParam<Real>("sum_s_res"))
 {
@@ -53,9 +53,4 @@ RichardsSat::dsat(Real /*seff*/) const
   return 1.0 - _sum_s_res;
 }
 
-Real
-RichardsSat::d2sat(Real /*seff*/) const
-{
-  return 0.0;
-}
 

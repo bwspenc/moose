@@ -16,7 +16,7 @@
 class PolycrystalHexGrainICAction: public Action
 {
 public:
-  PolycrystalHexGrainICAction(const std::string & name, InputParameters params);
+  PolycrystalHexGrainICAction(const InputParameters & params);
 
   virtual void act();
 

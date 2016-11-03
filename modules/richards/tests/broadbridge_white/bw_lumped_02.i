@@ -30,14 +30,14 @@
   [../]
   [./SeffBW]
     type = RichardsSeff1BWsmall
-    Sn = 0.0 # use Sn=0.1 later
+    Sn = 0.0
     Ss = 1.0
     C = 1.5
     las = 2
   [../]
   [./RelPermBW]
     type = RichardsRelPermBW
-    Sn = 0.0 # use Sn=0.1 later
+    Sn = 0.0
     Ss = 1.0
     Kn = 0
     Ks = 1
@@ -101,7 +101,7 @@
     variable = pressure
     boundary = 'right'
     pressures = '-1E10 1E10'
-    bare_fluxes = '-1.25 -1.25' # corresponds to Rstar=0.5 because i have to multiply by density*porosity
+    bare_fluxes = '-1.25 -1.25' # corresponds to Rstar being 0.5 because i have to multiply by density*porosity
     use_mobility = false
     use_relperm = false
   [../]
@@ -150,8 +150,6 @@
 [Outputs]
   file_base = bw_lumped_02
   interval = 10000
-  output_initial = true
-  output_final = true
+  execute_on = 'timestep_end final'
   exodus = true
-  print_perf_log = true
 []

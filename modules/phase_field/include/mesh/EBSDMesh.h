@@ -20,7 +20,7 @@ InputParameters validParams<EBSDMesh>();
 class EBSDMesh : public GeneratedMesh
 {
 public:
-  EBSDMesh(const std::string & name, InputParameters parameters);
+  EBSDMesh(const InputParameters & parameters);
   virtual ~EBSDMesh();
 
   virtual void buildMesh();

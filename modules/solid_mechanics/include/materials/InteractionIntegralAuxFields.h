@@ -28,7 +28,7 @@ void addInteractionIntegralAuxFieldsParams(InputParameters & params);
 class InteractionIntegralAuxFields : public Material
 {
 public:
-  InteractionIntegralAuxFields(const std::string & name, InputParameters parameters);
+  InteractionIntegralAuxFields(const InputParameters & parameters);
 
   static std::vector<MooseEnum> getSIFModesVec(unsigned int n);
   static MooseEnum getSIFModesEnum();

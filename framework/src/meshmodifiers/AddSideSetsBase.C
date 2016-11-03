@@ -15,6 +15,7 @@
 #include "AddSideSetsBase.h"
 #include "Parser.h"
 #include "InputParameters.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/mesh_generation.h"
@@ -33,57 +34,47 @@ InputParameters validParams<AddSideSetsBase>()
   return params;
 }
 
-AddSideSetsBase::AddSideSetsBase(const std::string & name, InputParameters parameters):
-    MeshModifier(name, parameters),
+AddSideSetsBase::AddSideSetsBase(const InputParameters & parameters) :
+    MeshModifier(parameters),
     _variance(getParam<Real>("variance")),
-    _fixed_normal(getParam<bool>("fixed_normal")),
-    _fe_face(NULL),
-    _qface(NULL)
+    _fixed_normal(getParam<bool>("fixed_normal"))
 {
 }
 
 AddSideSetsBase::~AddSideSetsBase()
 {
-  delete _qface;
-  delete _fe_face;
-
-  _qface = NULL;
-  _fe_face = NULL;
 }
 
 void
 AddSideSetsBase::setup()
 {
-  mooseAssert(_mesh_ptr != NULL, "Mesh pointer is NULL");
-  mooseAssert(_fe_face == NULL, "FE Face has already been initialized");
+  mooseAssert(_mesh_ptr, "Mesh pointer is NULL");
+  mooseAssert(_fe_face == nullptr, "FE Face has already been initialized");
 
   unsigned int dim = _mesh_ptr->dimension();
 
   // Setup the FE Object so we can calculate normals
   FEType fe_type(Utility::string_to_enum<Order>("CONSTANT"), Utility::string_to_enum<FEFamily>("MONOMIAL"));
-  _fe_face = (FEBase::build(dim, fe_type)).release();
-  _qface = new QGauss(dim-1, FIRST);
-  _fe_face->attach_quadrature_rule(_qface);
+  _fe_face = FEBase::build(dim, fe_type);
+  _qface = libmesh_make_unique<QGauss>(dim-1, FIRST);
+  _fe_face->attach_quadrature_rule(_qface.get());
 }
 
 void
 AddSideSetsBase::finalize()
 {
-  delete _qface;
-  delete _fe_face;
-
-  _qface = NULL;
-  _fe_face = NULL;
+  _qface.reset();
+  _fe_face.reset();
 }
 
 void
 AddSideSetsBase::flood(const Elem *elem, Point normal, BoundaryID side_id)
 {
-  if (elem == NULL || (_visited[side_id].find(elem) != _visited[side_id].end()))
+  if (elem == nullptr || (_visited[side_id].find(elem) != _visited[side_id].end()))
     return;
 
   _visited[side_id].insert(elem);
-  for (unsigned int side=0; side < elem->n_sides(); ++side)
+  for (unsigned int side = 0; side < elem->n_sides(); ++side)
   {
     if (elem->neighbor(side))
       continue;
@@ -92,10 +83,10 @@ AddSideSetsBase::flood(const Elem *elem, Point normal, BoundaryID side_id)
     const std::vector<Point> normals = _fe_face->get_normals();
 
     // We'll just use the normal of the first qp
-    if (std::abs(1.0 - normal*normals[0]) <= _variance)
+    if (std::abs(1.0 - normal * normals[0]) <= _variance)
     {
       _mesh_ptr->getMesh().get_boundary_info().add_side(elem, side, side_id);
-      for (unsigned int neighbor=0; neighbor < elem->n_sides(); ++neighbor)
+      for (unsigned int neighbor = 0; neighbor < elem->n_sides(); ++neighbor)
       {
         // Flood to the neighboring elements using the current matching side normal from this element.
         // This will allow us to tolerate small changes in the normals so we can "paint" around a curve.

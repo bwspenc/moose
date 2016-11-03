@@ -8,6 +8,7 @@
 #include "Factory.h"
 #include "Parser.h"
 #include "FEProblem.h"
+#include "Conversion.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -32,8 +33,8 @@ InputParameters validParams<Tricrystal2CircleGrainsICAction>()
   return params;
 }
 
-Tricrystal2CircleGrainsICAction::Tricrystal2CircleGrainsICAction(const std::string & name, InputParameters params) :
-    Action(name, params),
+Tricrystal2CircleGrainsICAction::Tricrystal2CircleGrainsICAction(const InputParameters & params) :
+    Action(params),
     _var_name_base(getParam<std::string>("var_name_base")),
     _op_num(getParam<unsigned int>("op_num"))
 {}
@@ -62,6 +63,6 @@ Tricrystal2CircleGrainsICAction::act()
 
 
     //Add initial condition
-    _problem->addInitialCondition("Tricrystal2CircleGrainsIC", "InitialCondition", poly_params);
+    _problem->addInitialCondition("Tricrystal2CircleGrainsIC", "Tricrystal2CircleGrainsIC_" + Moose::stringify(op), poly_params);
   }
 }

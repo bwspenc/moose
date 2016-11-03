@@ -33,8 +33,8 @@ InputParameters validParams<SetupDebugAction>()
   return params;
 }
 
-SetupDebugAction::SetupDebugAction(const std::string & name, InputParameters parameters) :
-    Action(name, parameters),
+SetupDebugAction::SetupDebugAction(InputParameters parameters) :
+    Action(parameters),
     _action_params(_action_factory.getValidParams("AddOutputAction"))
 {
   _awh.showActions(getParam<bool>("show_actions"));
@@ -42,10 +42,6 @@ SetupDebugAction::SetupDebugAction(const std::string & name, InputParameters par
 
   // Set the ActionWarehouse pointer in the parameters that will be passed to the actions created with this action
   _action_params.set<ActionWarehouse *>("awh") = &_awh;
-}
-
-SetupDebugAction::~SetupDebugAction()
-{
 }
 
 void
@@ -75,9 +71,7 @@ SetupDebugAction::createOutputAction(const std::string & type, const std::string
   _action_params.set<std::string>("type") = type;
 
   // Create the action
-  std::string long_name = "Outputs/";
-  long_name += name;
-  MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("AddOutputAction", long_name, _action_params));
+  MooseSharedPointer<MooseObjectAction> action = MooseSharedNamespace::static_pointer_cast<MooseObjectAction>(_action_factory.create("AddOutputAction", name, _action_params));
 
   // Set the object parameters
   InputParameters & object_params = action->getObjectParams();

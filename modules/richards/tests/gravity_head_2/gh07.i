@@ -168,11 +168,11 @@
   [../]
 
   [./mass_error_water]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_mass_error_w
   [../]
   [./mass_error_gas]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_mass_error_g
   [../]
 
@@ -189,7 +189,7 @@
     outputs = none
   [../]
   [./error_water]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_error_water
   [../]
 
@@ -206,7 +206,7 @@
     outputs = none
   [../]
   [./error_gas]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = fcn_error_gas
   [../]
 []
@@ -261,7 +261,6 @@
   [./andy]
     type = SMP
     full = true
-    #petsc_options = '-snes_test_display'
     petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it'
     petsc_options_value = 'bcgs bjacobi 1E-13 1E-10 10000'
   [../]
@@ -279,7 +278,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = gh07
   csv = true
-  print_perf_log = true
 []

@@ -22,9 +22,10 @@
 
 [TensorMechanics]
   [./solid]
-    disp_x = x_disp
-    disp_y = y_disp
-    disp_z = z_disp
+#    disp_x = x_disp
+#    disp_y = y_disp
+#    disp_z = z_disp
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -169,9 +170,6 @@
 
 [Outputs]
   file_base = out
-  output_initial = true
   exodus = true
   csv = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

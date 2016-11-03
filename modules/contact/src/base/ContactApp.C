@@ -7,6 +7,7 @@
 #include "ContactApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 #include "ContactAction.h"
 #include "ContactMaster.h"
@@ -27,6 +28,8 @@
 #include "NodalArea.h"
 #include "NodalAreaAction.h"
 #include "NodalAreaVarAction.h"
+#include "ContactSlipDamper.h"
+#include "ContactSplit.h"
 
 template<>
 InputParameters validParams<ContactApp>()
@@ -34,15 +37,12 @@ InputParameters validParams<ContactApp>()
   InputParameters params = validParams<MooseApp>();
   params.set<bool>("use_legacy_uo_initialization") = false;
   params.set<bool>("use_legacy_uo_aux_computation") = false;
-
   return params;
 }
 
-ContactApp::ContactApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+ContactApp::ContactApp(const InputParameters & parameters) :
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
   ContactApp::registerObjects(_factory);
 
@@ -78,6 +78,8 @@ ContactApp::registerObjects(Factory & factory)
   registerProblem(ReferenceResidualProblem);
   registerUserObject(NodalArea);
   registerAux(ContactPressureAux);
+  registerDamper(ContactSlipDamper);
+  registerSplit(ContactSplit);
 }
 
 // External entry point for dynamic syntax association

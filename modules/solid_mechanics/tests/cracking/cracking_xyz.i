@@ -117,22 +117,22 @@
 
 [AuxKernels]
   [./crack_1]
-    type = MaterialVectorAux
+    type = MaterialRealVectorValueAux
     variable = crack_1
-    vector = crack_flags
-    index = 0
+    property = crack_flags
+    component = 0
   [../]
   [./crack_2]
-    type = MaterialVectorAux
+    type = MaterialRealVectorValueAux
     variable = crack_2
-    vector = crack_flags
-    index = 1
+    property = crack_flags
+    component = 1
   [../]
   [./crack_3]
-    type = MaterialVectorAux
+    type = MaterialRealVectorValueAux
     variable = crack_3
-    vector = crack_flags
-    index = 2
+    property = crack_flags
+    component = 2
   [../]
 
   [./strain_xx]
@@ -291,31 +291,39 @@
   end_time = 3.0
 #  dt = 0.005
   dt = 0.01
+[]
 
-  [./TimePeriods]
-    [./p1]
-      start = 0.0
-      inactive_kernels = ''
-      inactive_bcs = 'move_y move_z'
-    [../]
+[Controls]
+  [./p1]
+    type = TimePeriod
+    start_time = 0.0
+    end_time = 1.0
+    disable_objects = 'move_y move_z'
+    set_outside_of_range = false
+    execute_on = 'initial timestep_begin'
+  [../]
 
-    [./p2]
-      start = 1.0
-      inactive_kernels = ''
-      inactive_bcs = 'move_z'
-    [../]
+  [./p2]
+    type = TimePeriod
+    start_time = 1.0
+    end_time = 2.0
+    disable_objects = 'move_z'
+    enable_objects = 'move_y'
+    set_outside_of_range = false
+    execute_on = 'initial timestep_begin'
+  [../]
 
-    [./p3]
-      start = 2.0
-      inactive_kernels = ''
-      inactive_bcs = ''
-    [../]
+  [./p3]
+    type = TimePeriod
+    start_time = 2.0
+    end_time = 3.0
+    enable_objects = 'move_y move_z'
+    set_outside_of_range = false
+    execute_on = 'initial timestep_begin'
+    set_sync_times = true
   [../]
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

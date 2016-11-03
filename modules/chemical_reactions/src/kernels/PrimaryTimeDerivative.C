@@ -5,31 +5,29 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 #include "PrimaryTimeDerivative.h"
-#include "Material.h"
 
 template<>
 InputParameters validParams<PrimaryTimeDerivative>()
 {
   InputParameters params = validParams<TimeDerivative>();
-  params.addParam<MaterialPropertyName>("porosity", "porosity", "The real material property (here is it a porosity) to use");
   return params;
 }
 
-PrimaryTimeDerivative::PrimaryTimeDerivative(const std::string & name, InputParameters parameters) :
-    TimeDerivative(name, parameters),
+PrimaryTimeDerivative::PrimaryTimeDerivative(const InputParameters & parameters) :
+    TimeDerivative(parameters),
     _porosity(getMaterialProperty<Real>("porosity"))
 {}
 
 Real
 PrimaryTimeDerivative::computeQpResidual()
 {
-  return _porosity[_qp]*TimeDerivative::computeQpResidual();
+  return _porosity[_qp] * TimeDerivative::computeQpResidual();
 }
 
 Real
 PrimaryTimeDerivative::computeQpJacobian()
 {
-  return _porosity[_qp]*TimeDerivative::computeQpJacobian();
+  return _porosity[_qp] * TimeDerivative::computeQpJacobian();
 }
 
 Real PrimaryTimeDerivative::computeQpOffDiagJacobian(unsigned int /*jvar*/)

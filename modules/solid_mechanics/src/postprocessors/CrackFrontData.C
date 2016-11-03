@@ -24,8 +24,8 @@ InputParameters validParams<CrackFrontData>()
   return params;
 }
 
-CrackFrontData::CrackFrontData(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+CrackFrontData::CrackFrontData(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _crack_front_definition(&getUserObject<CrackFrontDefinition>("crack_front_definition")),
     _crack_front_point_index(isParamValid("crack_front_point_index") ? getParam<unsigned int>("crack_front_point_index") : 0),
     _crack_front_node(NULL),

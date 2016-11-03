@@ -4,11 +4,12 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#include "SolidMechanicsAction.h"
 
+#include "SolidMechanicsAction.h"
 #include "Factory.h"
 #include "FEProblem.h"
 #include "Parser.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<SolidMechanicsAction>()
@@ -21,9 +22,12 @@ InputParameters validParams<SolidMechanicsAction>()
   params.addParam<NonlinearVariableName>("disp_z", "", "The z displacement");
   params.addParam<NonlinearVariableName>("disp_r", "", "The r displacement");
   params.addParam<NonlinearVariableName>("temp", "", "The temperature");
+  params.addParam<Real>("zeta", 0.0, "Stiffness dependent damping parameter for Rayleigh damping");
+  params.addParam<Real>("alpha", 0.0, "alpha parameter for HHT time integration");
   params.addParam<std::string>("appended_property_name", "", "Name appended to material properties to make them unique");
   params.set<bool>("use_displaced_mesh") = true;
   params.addParam<std::vector<SubdomainName> >("block", "The list of ids of the blocks (subdomain) that these kernels will be applied to");
+  params.addParam<bool>("volumetric_locking_correction", true, "Set to false to turn off volumetric locking correction");
 
   params.addParam<std::vector<AuxVariableName> >("save_in_disp_x", "Auxiliary variables to save the x displacement residuals.");
   params.addParam<std::vector<AuxVariableName> >("save_in_disp_y", "Auxiliary variables to save the y displacement residuals.");
@@ -36,13 +40,15 @@ InputParameters validParams<SolidMechanicsAction>()
   return params;
 }
 
-SolidMechanicsAction::SolidMechanicsAction(const std::string & name, InputParameters params) :
-  Action(name, params),
+SolidMechanicsAction::SolidMechanicsAction(const InputParameters & params) :
+  Action(params),
   _disp_x(getParam<NonlinearVariableName>("disp_x")),
   _disp_y(getParam<NonlinearVariableName>("disp_y")),
   _disp_z(getParam<NonlinearVariableName>("disp_z")),
   _disp_r(getParam<NonlinearVariableName>("disp_r")),
-  _temp(getParam<NonlinearVariableName>("temp"))
+  _temp(getParam<NonlinearVariableName>("temp")),
+  _zeta(getParam<Real>("zeta")),
+  _alpha(getParam<Real>("alpha"))
 {
 }
 
@@ -188,16 +194,12 @@ SolidMechanicsAction::act()
       vars.push_back(_temp);
     }
 
-    // Create divergence objects
-    std::string short_name(_name);
-    // Chop off "SolidMechanics/"
-    short_name.erase(0, 15);
 
     InputParameters params = _factory.getValidParams(type);
     for (unsigned j(0); j < num_coupled; ++j)
     {
       params.addCoupledVar(keys[j], "");
-      params.set<std::vector<VariableName> >(keys[j]) = std::vector<VariableName>(1, vars[j]);
+      params.set<std::vector<VariableName> >(keys[j]) = {vars[j]};
     }
 
     params.set<bool>("use_displaced_mesh") = getParam<bool>("use_displaced_mesh");
@@ -206,8 +208,7 @@ SolidMechanicsAction::act()
     for (unsigned int i(0); i < dim; ++i)
     {
       std::stringstream name;
-      name << "Kernels/";
-      name << short_name;
+      name << _name;
       name << i;
 
       params.set<unsigned int>("component") = i;
@@ -216,7 +217,9 @@ SolidMechanicsAction::act()
       params.set<std::vector<SubdomainName> >("block") = blocks;
       params.set<std::vector<AuxVariableName> >("save_in") = save_in[i];
       params.set<std::vector<AuxVariableName> >("diag_save_in") = diag_save_in[i];
-
+      params.set<Real>("zeta") = _zeta;
+      params.set<Real>("alpha") = _alpha;
+      params.set<bool>("volumetric_locking_correction") = getParam<bool>("volumetric_locking_correction");
       _problem->addKernel(type, name.str(), params);
     }
   }

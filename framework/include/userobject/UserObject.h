@@ -15,22 +15,23 @@
 #ifndef USEROBJECT_H
 #define USEROBJECT_H
 
-//MOOSE includes
+// MOOSE includes
 #include "MooseObject.h"
 #include "SetupInterface.h"
 #include "FunctionInterface.h"
-#include "ParallelUniqueId.h"
-#include "SubProblem.h"
 #include "Restartable.h"
-#include "MooseMesh.h"
 #include "MeshChangedInterface.h"
+#include "ParallelUniqueId.h"
+#include "ScalarCoupleable.h"
 
-//libMesh includes
-#include "libmesh/libmesh_common.h"
+// libMesh includes
 #include "libmesh/parallel.h"
 
+// Forward declarations
 class UserObject;
 class FEProblem;
+class SubProblem;
+class Assembly;
 
 template<>
 InputParameters validParams<UserObject>();
@@ -43,11 +44,17 @@ class UserObject :
   public SetupInterface,
   public FunctionInterface,
   public Restartable,
-  public MeshChangedInterface
+  public MeshChangedInterface,
+  public ScalarCoupleable
 {
 public:
-  UserObject(const std::string & name, InputParameters params);
+  UserObject(const InputParameters & params);
   virtual ~UserObject();
+
+  /**
+   * Execute method.
+   */
+  virtual void execute() = 0;
 
   /**
    * Called before execute() is ever called so that data can be cleared.
@@ -82,7 +89,14 @@ public:
    * If a UserObject overrides this function that UserObject can then be used in a
    * Transfer to transfer information from one domain to another.
    */
-  virtual Real spatialValue(const Point & /*p*/) const { mooseError(_name << " does not satisfy the Spatial UserObject interface!"); }
+  virtual Real spatialValue(const Point & /*p*/) const { mooseError(name() << " does not satisfy the Spatial UserObject interface!"); }
+
+  /**
+   * Must override.
+   *
+   * @param uo The UserObject to be joined into _this_ object.  Take the data from the uo object and "add" it into the data for this object.
+   */
+  virtual void threadJoin(const UserObject & uo) = 0;
 
   /**
    * Gather the parallel sum of the variable passed in. It takes care of values across all threads and CPUs (we DO hybrid parallelism!)

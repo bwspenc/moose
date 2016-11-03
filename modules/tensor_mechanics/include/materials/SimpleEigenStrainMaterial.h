@@ -20,7 +20,7 @@
 class SimpleEigenStrainMaterial : public EigenStrainBaseMaterial
 {
 public:
-  SimpleEigenStrainMaterial(const std:: string & name, InputParameters parameters);
+  SimpleEigenStrainMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeEigenStrain();

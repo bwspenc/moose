@@ -21,7 +21,7 @@ InputParameters validParams<INSDivergenceAux>();
 class INSDivergenceAux : public AuxKernel
 {
 public:
-  INSDivergenceAux(const std::string & name, InputParameters parameters);
+  INSDivergenceAux(const InputParameters & parameters);
 
   virtual ~INSDivergenceAux() {}
 
@@ -29,9 +29,9 @@ protected:
   virtual Real computeValue();
 
   // Velocity gradients
-  VariableGradient& _grad_u_vel;
-  VariableGradient& _grad_v_vel;
-  VariableGradient& _grad_w_vel;
+  const VariableGradient & _grad_u_vel;
+  const VariableGradient & _grad_v_vel;
+  const VariableGradient & _grad_w_vel;
 };
 
 #endif //VELOCITYAUX_H

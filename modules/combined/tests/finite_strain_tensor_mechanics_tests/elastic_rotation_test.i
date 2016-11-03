@@ -10,9 +10,10 @@
 #
 
 [Mesh]
-  # Comment
-  # Mesh
   file = rotation_test.e
+[]
+
+[GlobalParams]
   displacements = 'disp_x disp_y disp_z'
 []
 
@@ -99,9 +100,6 @@ active = ''
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
     use_displaced_mesh = true
   [../]
 []
@@ -205,16 +203,20 @@ active = ''
 []
 
 [Materials]
-  # Materials
-  [./test]
-    # reading C_11  C_12  C_13  C_22  C_23  C_33  C_44  C_55  C_66
-    type = FiniteStrainElasticMaterial
+  [./elasticity_tensor]
+    type = ComputeElasticityTensor
     block = 1
+    C_ijkl = '1.0e6  0.0   0.0 1.0e6  0.0  1.0e6 0.5e6 0.5e6 0.5e6'
     fill_method = symmetric9
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
-    C_ijkl = '10.0e6  0.0   0.0 10.0e6  0.0  10.0e6 5e6 5e6 5e6'
+  [../]
+  [./strain]
+    type = ComputeFiniteStrain
+    block = 1
+    displacements = 'disp_x disp_y disp_z'
+  [../]
+  [./stress]
+    type = ComputeFiniteStrainElasticStress
+    block = 1
   [../]
 []
 
@@ -256,8 +258,5 @@ active = ''
 
 [Outputs]
   file_base = elastic_rotation
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 [] # Outputs

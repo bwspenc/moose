@@ -4,9 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "WaterSteamEOSApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 template<>
 InputParameters validParams<WaterSteamEOSApp>()
@@ -14,15 +16,12 @@ InputParameters validParams<WaterSteamEOSApp>()
   InputParameters params = validParams<MooseApp>();
   params.set<bool>("use_legacy_uo_initialization") = false;
   params.set<bool>("use_legacy_uo_aux_computation") = false;
-
   return params;
 }
 
-WaterSteamEOSApp::WaterSteamEOSApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+WaterSteamEOSApp::WaterSteamEOSApp(const InputParameters & parameters) :
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
   WaterSteamEOSApp::registerObjects(_factory);
 

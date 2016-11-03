@@ -17,27 +17,27 @@
 #include "SubProblem.h"
 #include "FEProblem.h"
 
-ScalarCoupleable::ScalarCoupleable(const InputParameters & parameters) :
-    _sc_fe_problem(*parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
-    _sc_is_implicit(parameters.have_parameter<bool>("implicit") ? parameters.get<bool>("implicit") : true),
-    _coupleable_params(parameters)
+ScalarCoupleable::ScalarCoupleable(const MooseObject * moose_object) :
+    _sc_parameters(moose_object->parameters()),
+    _sc_fe_problem(*_sc_parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
+    _sc_is_implicit(_sc_parameters.have_parameter<bool>("implicit") ? _sc_parameters.get<bool>("implicit") : true),
+    _coupleable_params(_sc_parameters)
 {
-  SubProblem & problem = *parameters.get<SubProblem *>("_subproblem");
+  SubProblem & problem = *_sc_parameters.get<SubProblem *>("_subproblem");
 
-  THREAD_ID tid = parameters.have_parameter<THREAD_ID>("_tid") ? parameters.get<THREAD_ID>("_tid") : 0;
+  THREAD_ID tid = _sc_parameters.have_parameter<THREAD_ID>("_tid") ? _sc_parameters.get<THREAD_ID>("_tid") : 0;
 
   // Coupling
-  for (std::set<std::string>::const_iterator iter = parameters.coupledVarsBegin();
-       iter != parameters.coupledVarsEnd();
+  for (std::set<std::string>::const_iterator iter = _sc_parameters.coupledVarsBegin();
+       iter != _sc_parameters.coupledVarsEnd();
        ++iter)
   {
     std::string name = *iter;
-    if (parameters.getVecMooseType(*iter) != std::vector<std::string>())
+    if (_sc_parameters.getVecMooseType(*iter) != std::vector<std::string>())
     {
-      std::vector<std::string> vars = parameters.getVecMooseType(*iter);
-      for (unsigned int i = 0; i < vars.size(); i++)
+      std::vector<std::string> vars = _sc_parameters.getVecMooseType(*iter);
+      for (const auto & coupled_var_name : vars)
       {
-        std::string coupled_var_name = vars[i];
         if (problem.hasScalarVariable(coupled_var_name))
         {
           MooseVariableScalar * scalar_var = &problem.getScalarVariable(tid, coupled_var_name);
@@ -55,10 +55,10 @@ ScalarCoupleable::ScalarCoupleable(const InputParameters & parameters) :
 
 ScalarCoupleable::~ScalarCoupleable()
 {
-  for (std::map<std::string, VariableValue *>::iterator it = _default_value.begin(); it != _default_value.end(); ++it)
+  for (auto & it : _default_value)
   {
-    it->second->release();
-    delete it->second;
+    it.second->release();
+    delete it.second;
   }
 }
 
@@ -75,13 +75,28 @@ ScalarCoupleable::isCoupledScalar(const std::string & var_name, unsigned int i)
   if (it != _coupled_scalar_vars.end())
     return (i < it->second.size());
   else
+  {
+    // Make sure the user originally requested this value in the InputParameter syntax
+    if (!_coupleable_params.hasCoupledValue(var_name))
+      mooseError("The coupled scalar variable \"" << var_name << "\" was never added to this objects's InputParameters, please double-check your spelling");
+
     return false;
+  }
 }
 
 unsigned int
 ScalarCoupleable::coupledScalar(const std::string & var_name, unsigned int comp)
 {
   return getScalarVar(var_name, comp)->number();
+}
+
+Order
+ScalarCoupleable::coupledScalarOrder(const std::string & var_name, unsigned int comp)
+{
+  if (!isCoupledScalar(var_name, comp))
+    return _sc_fe_problem.getMaxScalarOrder();
+
+  return getScalarVar(var_name, comp)->order();
 }
 
 VariableValue *

@@ -13,7 +13,7 @@
 class ContactPenetrationVarAction: public Action
 {
 public:
-  ContactPenetrationVarAction(const std::string & name, InputParameters params);
+  ContactPenetrationVarAction(const InputParameters & params);
 
   virtual void act();
 

@@ -54,7 +54,6 @@
 [Materials]
   [./mask]
     type = ParsedMaterial
-    block = 0
     function = if(c>0.5,0,1)
     f_name = mask
     args = c
@@ -71,9 +70,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
-

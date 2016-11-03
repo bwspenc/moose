@@ -6,7 +6,7 @@
 /****************************************************************/
 #include "ElasticEnergyMaterial.h"
 #include "RankTwoTensor.h"
-#include "ElasticityTensorR4.h"
+#include "RankFourTensor.h"
 
 template<>
 InputParameters validParams<ElasticEnergyMaterial>()
@@ -15,15 +15,15 @@ InputParameters validParams<ElasticEnergyMaterial>()
   params.addClassDescription("Free energy material for the elastic energy contributions.");
   params.addParam<std::string>("base_name", "Material property base name");
   params.addRequiredCoupledVar("args", "Arguments of F() - use vector coupling");
+  params.addCoupledVar("displacement_gradients", "Vector of displacement gradient variables (see Modules/PhaseField/DisplacementGradients action)");
   return params;
 }
 
-ElasticEnergyMaterial::ElasticEnergyMaterial(const std::string & name,
-                                             InputParameters parameters) :
-    DerivativeFunctionMaterialBase(name, parameters),
+ElasticEnergyMaterial::ElasticEnergyMaterial(const InputParameters & parameters) :
+    DerivativeFunctionMaterialBase(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : "" ),
     _stress(getMaterialPropertyByName<RankTwoTensor>(_base_name + "stress")),
-    _elasticity_tensor(getMaterialPropertyByName<ElasticityTensorR4>(_base_name + "elasticity_tensor")),
+    _elasticity_tensor(getMaterialPropertyByName<RankFourTensor>(_base_name + "elasticity_tensor")),
     _strain(getMaterialPropertyByName<RankTwoTensor>(_base_name + "elastic_strain"))
 {
   _dstrain.resize(_nargs);
@@ -34,16 +34,16 @@ ElasticEnergyMaterial::ElasticEnergyMaterial(const std::string & name,
   // fetch stress and elasticity tensor derivatives (in simple eigenstrain models this is is only w.r.t. 'c')
   for (unsigned int i = 0; i < _nargs; ++i)
   {
-    _dstrain[i]            = &getMaterialPropertyDerivative<RankTwoTensor>(_base_name + "elastic_strain", _arg_names[i]);
-    _delasticity_tensor[i] = &getMaterialPropertyDerivative<ElasticityTensorR4>(_base_name + "elasticity_tensor", _arg_names[i]);
+    _dstrain[i]            = &getMaterialPropertyDerivativeByName<RankTwoTensor>(_base_name + "elastic_strain", _arg_names[i]);
+    _delasticity_tensor[i] = &getMaterialPropertyDerivativeByName<RankFourTensor>(_base_name + "elasticity_tensor", _arg_names[i]);
 
     _d2strain[i].resize(_nargs);
     _d2elasticity_tensor[i].resize(_nargs);
 
     for (unsigned int j = 0; j < _nargs; ++j)
     {
-      _d2strain[i][j]            = &getMaterialPropertyDerivative<RankTwoTensor>(_base_name + "elastic_strain", _arg_names[i], _arg_names[j]);
-      _d2elasticity_tensor[i][j] = &getMaterialPropertyDerivative<ElasticityTensorR4>(_base_name + "elasticity_tensor", _arg_names[i], _arg_names[j]);
+      _d2strain[i][j]            = &getMaterialPropertyDerivativeByName<RankTwoTensor>(_base_name + "elastic_strain", _arg_names[i], _arg_names[j]);
+      _d2elasticity_tensor[i][j] = &getMaterialPropertyDerivativeByName<RankFourTensor>(_base_name + "elasticity_tensor", _arg_names[i], _arg_names[j]);
     }
   }
 }
@@ -59,15 +59,9 @@ ElasticEnergyMaterial::computeDF(unsigned int i_var)
 {
   unsigned int i = argIndex(i_var);
 
-  // product rule d/di computeF
-  return 0.5 * (
-    ( // dstress/di
-        (*_delasticity_tensor[i])[_qp] * _strain[_qp]
-      + _elasticity_tensor[_qp] * (*_dstrain[i])[_qp]
-    ).doubleContraction(_strain[_qp])
-
-    + _stress[_qp].doubleContraction((*_dstrain[i])[_qp])
-  );
+  // product rule d/di computeF (doubleContraction commutes)
+  return 0.5 * ((*_delasticity_tensor[i])[_qp] * _strain[_qp]).doubleContraction(_strain[_qp]) +
+         (_elasticity_tensor[_qp] * (*_dstrain[i])[_qp]).doubleContraction(_strain[_qp]);
 }
 
 Real
@@ -77,6 +71,7 @@ ElasticEnergyMaterial::computeD2F(unsigned int i_var, unsigned int j_var)
   unsigned int j = argIndex(j_var);
 
   // product rule d/dj computeDF
+  // TODO: simplify because doubleContraction commutes
   return 0.5 * (
     (
         (*_d2elasticity_tensor[i][j])[_qp] * _strain[_qp]

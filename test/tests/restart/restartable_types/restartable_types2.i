@@ -1,3 +1,15 @@
+###########################################################
+# This is a simple test of the restart/recover capability.
+# The test object "RestartableTypesChecker" is used
+# to reload data from a previous simulation written out
+# with the object "RestartableTypes".
+#
+# See "restartable_types.i"
+#
+# @Requirement F1.60
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -46,15 +58,15 @@
 [Executioner]
   # Preconditioned JFNK (default)
   type = Steady
-  restart_file_base = restartable_types_out_cp/0001
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
+[]
+
+[Problem]
+  restart_file_base = restartable_types_out_cp/LATEST
 []

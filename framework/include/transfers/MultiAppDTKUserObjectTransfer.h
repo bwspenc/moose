@@ -12,17 +12,25 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-#ifdef LIBMESH_HAVE_DTK
-
 #ifndef MULTIAPPDTKUSEROBJECTTRANSFER_H
 #define MULTIAPPDTKUSEROBJECTTRANSFER_H
 
+#include "libmesh/libmesh_config.h"
+
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
+
+// MOOSE includes
 #include "MultiAppTransfer.h"
 #include "MooseVariableInterface.h"
 #include "MultiAppDTKUserObjectEvaluator.h"
-#include "DTKInterpolationAdapter.h"
 
-// DTK Includes
+// libMesh includes
+#include "libmesh/dtk_adapter.h"
+
+// Ignore warnings coming from DTK/Trilinos headers
+#include "libmesh/ignore_warnings.h"
+
+// DTK includes
 #include <DTK_VolumeSourceMap.hpp>
 #include <DTK_MeshManager.hpp>
 #include <DTK_MeshContainer.hpp>
@@ -35,6 +43,8 @@
 #include <DTK_CommTools.hpp>
 #include <DTK_GeometryManager.hpp>
 #include <DTK_Box.hpp>
+
+// Trilinos includes
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ArrayRCP.hpp>
 #include <Teuchos_CommHelpers.hpp>
@@ -42,12 +52,12 @@
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_Ptr.hpp>
 
+// Restore the warnings.
+#include "libmesh/restore_warnings.h"
 
-// libMesh Includes
-#include "libmesh/dtk_solution_transfer.h"
-
-class MooseVariable;
+// Forward declarations
 class MultiAppDTKUserObjectTransfer;
+class DTKInterpolationAdapter;
 
 template<>
 InputParameters validParams<MultiAppDTKUserObjectTransfer>();
@@ -60,12 +70,11 @@ class MultiAppDTKUserObjectTransfer :
   public MooseVariableInterface
 {
 public:
-  MultiAppDTKUserObjectTransfer(const std::string & name, InputParameters parameters);
-  virtual ~MultiAppDTKUserObjectTransfer() {}
+  MultiAppDTKUserObjectTransfer(const InputParameters & parameters);
 
   typedef long unsigned int GlobalOrdinal;
 
-  virtual void execute();
+  virtual void execute() override;
 
 protected:
   std::string _user_object_name;
@@ -87,6 +96,6 @@ protected:
   Teuchos::RCP<DataTransferKit::FieldManager<DTKAdapter::FieldContainerType> > _to_values;
 };
 
-#endif /* MULTIAPPDTKUSEROBJECTTRANSFER_H */
 
-#endif //LIBMESH_HAVE_DTK
+#endif // LIBMESH_TRILINOS_HAVE_DTK
+#endif // MULTIAPPDTKUSEROBJECTTRANSFER_H

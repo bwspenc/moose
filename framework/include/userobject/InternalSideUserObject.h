@@ -18,7 +18,7 @@
 #include "UserObject.h"
 #include "BlockRestrictable.h"
 #include "NeighborCoupleable.h"
-#include "MaterialPropertyInterface.h"
+#include "TwoMaterialPropertyInterface.h"
 #include "MooseVariableDependencyInterface.h"
 #include "UserObjectInterface.h"
 #include "TransientInterface.h"
@@ -36,7 +36,7 @@ InputParameters validParams<InternalSideUserObject>();
 class InternalSideUserObject :
   public UserObject,
   public BlockRestrictable,
-  public MaterialPropertyInterface,
+  public TwoMaterialPropertyInterface,
   public NeighborCoupleable,
   public MooseVariableDependencyInterface,
   public UserObjectInterface,
@@ -45,24 +45,7 @@ class InternalSideUserObject :
   public ZeroInterface
 {
 public:
-  InternalSideUserObject(const std::string & name, InputParameters parameters);
-  virtual ~InternalSideUserObject();
-
-  /**
-   * This function will get called on each geometric object this postprocessor acts on
-   * (ie Elements, Sides or Nodes).  This will most likely get called multiple times
-   * before getValue() is called.
-   *
-   * Someone somewhere has to override this.
-   */
-  virtual void execute() = 0;
-
-  /**
-   * Must override.
-   *
-   * @param uo The UserObject to be joined into _this_ object.  Take the data from the uo object and "add" it into the data for this object.
-   */
-  virtual void threadJoin(const UserObject & uo) = 0;
+  InternalSideUserObject(const InputParameters & parameters);
 
 protected:
   MooseMesh & _mesh;

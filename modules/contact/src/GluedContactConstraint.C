@@ -12,6 +12,7 @@
 
 // libMesh includes
 #include "libmesh/string_to_enum.h"
+#include "libmesh/sparse_matrix.h"
 
 template<>
 InputParameters validParams<GluedContactConstraint>()
@@ -42,8 +43,8 @@ InputParameters validParams<GluedContactConstraint>()
   return params;
 }
 
-GluedContactConstraint::GluedContactConstraint(const std::string & name, InputParameters parameters) :
-    SparsityBasedContactConstraint(name, parameters),
+GluedContactConstraint::GluedContactConstraint(const InputParameters & parameters) :
+    SparsityBasedContactConstraint(parameters),
     _component(getParam<unsigned int>("component")),
     _model(contactModel(getParam<std::string>("model"))),
     _formulation(contactFormulation(getParam<std::string>("formulation"))),
@@ -229,3 +230,4 @@ GluedContactConstraint::computeQpOffDiagJacobian(Moose::ConstraintJacobianType t
 
   return retVal;
 }
+

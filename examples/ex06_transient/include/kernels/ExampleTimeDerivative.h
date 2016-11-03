@@ -27,13 +27,12 @@ class ExampleTimeDerivative : public TimeDerivative
 {
 public:
 
-  ExampleTimeDerivative(const std::string & name,
-                        InputParameters parameters);
+  ExampleTimeDerivative(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
-  virtual Real computeQpJacobian();
+  virtual Real computeQpJacobian() override;
 
   Real _time_coefficient;
 };

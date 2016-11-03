@@ -23,8 +23,8 @@ InputParameters validParams<SpatialUserObjectAux>()
   return params;
 }
 
-SpatialUserObjectAux::SpatialUserObjectAux(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+SpatialUserObjectAux::SpatialUserObjectAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _user_object(getUserObjectBase("user_object"))
 {
 }
@@ -37,3 +37,4 @@ SpatialUserObjectAux::computeValue()
   else
     return _user_object.spatialValue(_current_elem->centroid());
 }
+

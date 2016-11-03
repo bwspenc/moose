@@ -44,7 +44,7 @@
     mob_name = M
   [../]
   [./time]
-    type = CoupledImplicitEuler
+    type = CoupledTimeDerivative
     variable = w
     v = c
   [../]
@@ -53,7 +53,6 @@
 [Materials]
   [./Copper]
     type = PFParamsPolyFreeEnergy
-    block = 0
     c = c
     T = 1000 # K
     int_width = 30.0
@@ -66,7 +65,6 @@
   [../]
   [./free_energy]
     type = PolynomialFreeEnergy
-    block = 0
     c = c
     derivative_order = 2
   [../]
@@ -94,8 +92,5 @@
 []
 
 [Outputs]
-  output_initial = true
-  interval = 1
   exodus = true
-  print_perf_log = true
 []

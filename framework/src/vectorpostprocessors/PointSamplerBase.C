@@ -12,7 +12,9 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "PointSamplerBase.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/mesh_tools.h"
@@ -29,10 +31,10 @@ InputParameters validParams<PointSamplerBase>()
   return params;
 }
 
-PointSamplerBase::PointSamplerBase(const std::string & name, InputParameters parameters) :
-    GeneralVectorPostprocessor(name, parameters),
-    CoupleableMooseVariableDependencyIntermediateInterface(parameters, false),
-    SamplerBase(name, parameters, this, _communicator),
+PointSamplerBase::PointSamplerBase(const InputParameters & parameters) :
+    GeneralVectorPostprocessor(parameters),
+    CoupleableMooseVariableDependencyIntermediateInterface(this, false),
+    SamplerBase(parameters, this, _communicator),
     _mesh(_subproblem.mesh()),
     _point_vec(1) // Only going to evaluate one point at a time for now
 {
@@ -51,7 +53,7 @@ PointSamplerBase::initialize()
   SamplerBase::initialize();
 
   // We do this here just in case it's been destroyed and recreated becaue of mesh adaptivity.
-  _pl = _mesh.getMesh().sub_point_locator();
+  _pl = _mesh.getPointLocator();
 
   // Reset the _found_points array
   _found_points.resize(_points.size());
@@ -61,7 +63,7 @@ PointSamplerBase::initialize()
 void
 PointSamplerBase::execute()
 {
-  MeshTools::BoundingBox bbox = getInflatedProcessorBoundingBox();
+  MeshTools::BoundingBox bbox = _mesh.getInflatedProcessorBoundingBox();
 
   for (unsigned int i=0; i<_points.size(); i++)
   {
@@ -123,15 +125,6 @@ PointSamplerBase::finalize()
   SamplerBase::finalize();
 }
 
-void
-PointSamplerBase::threadJoin(const SamplerBase & y)
-{
-  const PointSamplerBase & vpp = static_cast<const PointSamplerBase &>(y);
-
-  SamplerBase::threadJoin(vpp);
-}
-
-
 const Elem *
 PointSamplerBase::getLocalElemContainingPoint(const Point & p, unsigned int /*id*/)
 {
@@ -141,21 +134,4 @@ PointSamplerBase::getLocalElemContainingPoint(const Point & p, unsigned int /*id
     return elem;
 
   return NULL;
-}
-
-MeshTools::BoundingBox
-PointSamplerBase::getInflatedProcessorBoundingBox()
-{
-  // Grab a bounding box to speed things up
-  MeshTools::BoundingBox bbox = MeshTools::processor_bounding_box(_mesh, processor_id());
-
-  // Inflate the bbox just a bit to deal with roundoff
-  // Adding 1% of the diagonal size in each direction on each end
-  Real inflation_amount = 0.01 * (bbox.max() - bbox.min()).size();
-  Point inflation(inflation_amount, inflation_amount, inflation_amount);
-
-  bbox.first -= inflation; // min
-  bbox.second += inflation; // max
-
-  return bbox;
 }

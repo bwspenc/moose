@@ -15,30 +15,60 @@
 #ifndef PETSCSUPPORT_H
 #define PETSCSUPPORT_H
 
-#include "libmesh/libmesh.h"
+#include "libmesh/libmesh.h" // Real, LIBMESH_HAVE_PETSC
 
 #ifdef LIBMESH_HAVE_PETSC
 
-// Moose includes
-#include "Problem.h"
-#include "NonlinearSystem.h"
-#include "CommandLine.h"
-#include "Console.h"
+// MOOSE includes
+#include "MultiMooseEnum.h"
+#include "InputParameters.h"
 
-// libMesh
+// libMesh includes
 #include "libmesh/petsc_nonlinear_solver.h"
+#include "libmesh/petsc_macro.h"
 
+// Forward declarations
 class FEProblem;
+class NonlinearSystem;
+class CommandLine;
 
 namespace Moose
 {
 namespace PetscSupport
 {
+
+/**
+ * A struct for storing the various types of petsc options and values
+ */
+class PetscOptions
+{
+public:
+  PetscOptions() :
+      flags("", "", true)
+  {}
+
+  /// Keys for PETSc key-value pairs
+  std::vector<std::string> inames;
+
+  /// Values for PETSc key-value pairs
+  std::vector<std::string> values;
+
+  /// Single value PETSc options (flags)
+  MultiMooseEnum flags;
+
+  /// Preconditioner description
+  std::string pc_description;
+};
+
+/**
+ * A function for setting the PETSc options in PETSc from the options supplied to MOOSE
+ */
 void petscSetOptions(FEProblem & problem);
 
+/**
+ * Sets the default options for PETSc
+ */
 void petscSetDefaults(FEProblem & problem);
-
-void petscSetupDampers(NonlinearImplicitSystem& sys);
 
 void petscSetupDM(NonlinearSystem & nl);
 
@@ -47,18 +77,41 @@ PetscErrorCode petscSetupOutput(CommandLine * cmd_line);
 /**
  * Helper function for outputing the norm values with/without color
  */
-void outputNorm(Real old_norm, Real norm, bool use_color = false);
+void outputNorm(libMesh::Real old_norm, libMesh::Real norm, bool use_color = false);
 
 /**
  * Helper function for displaying the linear residual during PETSC solve
  */
 PetscErrorCode petscLinearMonitor(KSP /*ksp*/, PetscInt its, PetscReal rnorm, void *void_ptr);
 
-/// construct a MultiMooseEnum with commonly used PETSc options
-MultiMooseEnum getCommonPetscOptions();
+/**
+ * Stores the PETSc options supplied from the InputParameters with MOOSE
+ */
+void storePetscOptions(FEProblem & fe_problem, const InputParameters & params);
 
-/// construct a MultiMooseEnum with commonly used PETSc iname options (keys in key-value pairs)
-MultiMooseEnum getCommonPetscOptionsIname();
+/**
+ * Returns the PETSc options that are common between Executioners and Preconditioners
+ * @return InputParameters object containing the PETSc related parameters
+ *
+ * The output of this function should be added to the the parameters object of the overarching class
+ * @see CreateExecutionerAction
+ */
+InputParameters getPetscValidParams();
+
+/// A helper function to produce a MultiMooseEnum with commonly used PETSc single options (flags)
+MultiMooseEnum getCommonPetscFlags();
+
+/// A helper function to produce a MultiMooseEnum with commonly used PETSc iname options (keys in key-value pairs)
+MultiMooseEnum getCommonPetscKeys();
+
+/**
+ * A wrapper function for dealing with different versions of
+ * PetscOptionsSetValue.  This is not generally called from
+ * MOOSE code, it is instead intended to be called by stuff in
+ * MOOSE::PetscSupport.
+ */
+void setSinglePetscOption(const std::string & name, const std::string & value = "");
+
 }
 }
 

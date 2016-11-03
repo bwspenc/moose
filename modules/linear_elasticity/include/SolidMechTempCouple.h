@@ -22,7 +22,7 @@ class SolidMechTempCouple : public SolidMech
 {
 public:
 
-  SolidMechTempCouple(const std::string & name, InputParameters parameters);
+  SolidMechTempCouple(const InputParameters & parameters);
 
   virtual void subdomainSetup();
 

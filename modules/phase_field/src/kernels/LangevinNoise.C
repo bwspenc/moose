@@ -16,9 +16,8 @@ InputParameters validParams<LangevinNoise>()
   params.addParam<MaterialPropertyName>("multiplier", 1.0, "Material property to multiply the random numbers with (defaults to 1.0 if omitted)");
   return params;
 }
-LangevinNoise::LangevinNoise(const std::string & name,
-                             InputParameters parameters) :
-    Kernel(name, parameters),
+LangevinNoise::LangevinNoise(const InputParameters & parameters) :
+    Kernel(parameters),
     _amplitude(getParam<Real>("amplitude")),
     _multiplier_prop(getMaterialProperty<Real>("multiplier"))
 {
@@ -36,3 +35,4 @@ LangevinNoise::computeQpResidual()
 {
   return -_test[_i][_qp] * (2.0 * MooseRandom::rand() - 1.0) * _amplitude * _multiplier_prop[_qp];
 }
+

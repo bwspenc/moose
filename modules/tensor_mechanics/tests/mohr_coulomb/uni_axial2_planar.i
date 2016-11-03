@@ -15,9 +15,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -203,6 +201,7 @@
     yield_function_tolerance = 1.0 # THIS IS HIGHER THAN THE SMOOTH CASE TO AVOID PRECISION-LOSS PROBLEMS!
     shift = 1.0
     internal_constraint_tolerance = 1E-9
+    use_custom_returnMap = false
   [../]
 []
 
@@ -214,11 +213,9 @@
     C_ijkl = '0 5E9' # young = 10Gpa, poisson = 0.0
   [../]
   [./strain]
-    type = ComputeFiniteStrain
+    type = ComputeIncrementalSmallStrain
     block = 1
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./mc]
     type = ComputeMultiPlasticityStress
@@ -229,7 +226,7 @@
     deactivation_scheme = 'safe'
     min_stepsize = 1
     max_stepsize_for_dumb = 1
-    debug_fspb = 1
+    debug_fspb = crash
   [../]
 []
 
@@ -245,7 +242,7 @@
 [Executioner]
   end_time = 0.5
   dt = 0.1
-  solve_type = PJFNK
+  solve_type = NEWTON
   type = Transient
 
   l_tol = 1E-2
@@ -262,12 +259,8 @@
 
 [Outputs]
   file_base = uni_axial2_planar
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./exodus]
     type = Exodus
-    interval = 1
     hide = 'stress_xx stress_xy stress_xz stress_yy stress_yz stress_zz yield_fcn s_xx s_xy s_xz s_yy s_yz s_zz f'
   [../]
   [./csv]

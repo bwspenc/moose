@@ -21,7 +21,7 @@ InputParameters validParams<INSExplicitTimestepSelector>();
 class INSExplicitTimestepSelector : public ElementPostprocessor
 {
 public:
-  INSExplicitTimestepSelector(const std::string & name, InputParameters parameters);
+  INSExplicitTimestepSelector(const InputParameters & parameters);
   virtual ~INSExplicitTimestepSelector();
 
   virtual void initialize();
@@ -34,7 +34,7 @@ protected:
   Real _value;
 
   /// Velocity magnitude.  Hint: Use VectorMagnitudeAux in Moose for this
-  VariableValue& _vel_mag;
+  const VariableValue & _vel_mag;
 
   /// Material properties:  the explicit time scheme limit for the viscous
   /// problem also depends on the kinematic viscosity.

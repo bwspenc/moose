@@ -1,3 +1,11 @@
+###########################################################
+# This is a simple test demonstrating the ability to create
+# a user-defined output type (ExodusII format).
+#
+# @Requirement F1.70
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -40,10 +48,9 @@
 []
 
 [Outputs]
-  [./console]
-    type = Console
-    output_on = 'initial timestep_end failed nonlinear'
-  [../]
+  execute_on = 'timestep_end'
+
+  # Demonstration of using an Exodus Outputter
   [./out]
     type = Exodus
   [../]

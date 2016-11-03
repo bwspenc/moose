@@ -17,12 +17,12 @@
 template<>
 InputParameters validParams<ODETimeDerivative>()
 {
-  InputParameters params = validParams<ODEKernel>();
+  InputParameters params = validParams<ODETimeKernel>();
   return params;
 }
 
-ODETimeDerivative::ODETimeDerivative(const std::string & name, InputParameters parameters) :
-    ODEKernel(name, parameters)
+ODETimeDerivative::ODETimeDerivative(const InputParameters & parameters) :
+    ODETimeKernel(parameters)
 {
 }
 
@@ -40,3 +40,4 @@ ODETimeDerivative::computeQpJacobian()
   else
     return 0;
 }
+

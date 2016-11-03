@@ -17,33 +17,31 @@
 
 #include "MultiAppTransfer.h"
 
-class MooseVariable;
+// Forward declarations
 class MultiAppMeshFunctionTransfer;
 
 template<>
 InputParameters validParams<MultiAppMeshFunctionTransfer>();
 
 /**
- * Samples a variable's value in the Master domain at the point where the MultiApp is.
- * Copies that value into a postprocessor in the MultiApp.
+ * Samples a variable's value in the Master domain at the point where
+ * the MultiApp is.  Copies that value into a postprocessor in the
+ * MultiApp.
  */
 class MultiAppMeshFunctionTransfer :
   public MultiAppTransfer
 {
 public:
-  MultiAppMeshFunctionTransfer(const std::string & name, InputParameters parameters);
-  virtual ~MultiAppMeshFunctionTransfer() {}
+  MultiAppMeshFunctionTransfer(const InputParameters & parameters);
 
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
-  virtual void execute();
+  virtual void execute() override;
 
 protected:
   AuxVariableName _to_var_name;
   VariableName _from_var_name;
-  bool _displaced_source_mesh;
-  bool _displaced_target_mesh;
   bool _error_on_miss;
 };
 
-#endif /* MULTIAPPVARIABLEVALUESAMPLEPOSTPROCESSORTRANSFER_H */
+#endif /* MULTIAPPMESHFUNCTIONTRANSFER_H */

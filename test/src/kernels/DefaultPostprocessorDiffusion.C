@@ -23,13 +23,13 @@ InputParameters validParams<DefaultPostprocessorDiffusion>()
 }
 
 
-DefaultPostprocessorDiffusion::DefaultPostprocessorDiffusion(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+DefaultPostprocessorDiffusion::DefaultPostprocessorDiffusion(const InputParameters & parameters) :
+    Kernel(parameters),
     _pps_value(getPostprocessorValue("pps_name"))
 {
   // Test the error message for defaultPostprocessorValue
   if (getParam<bool>("test_default_error"))
-    parameters.defaultPostprocessorValue("invalid_postprocessor_name");
+    parameters.getDefaultPostprocessorValue("invalid_postprocessor_name");
 }
 
 Real

@@ -23,7 +23,7 @@ InputParameters validParams<ImplicitNeumannBC>();
 class ImplicitNeumannBC : public IntegratedBC
 {
 public:
-  ImplicitNeumannBC(const std::string & name, InputParameters parameters);
+  ImplicitNeumannBC(const InputParameters & parameters);
 
   virtual ~ImplicitNeumannBC(){}
 

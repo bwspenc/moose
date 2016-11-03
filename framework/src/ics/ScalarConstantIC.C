@@ -22,11 +22,12 @@ InputParameters validParams<ScalarConstantIC>()
   return params;
 }
 
-ScalarConstantIC::ScalarConstantIC(const std::string & name, InputParameters parameters) :
-    ScalarInitialCondition(name, parameters),
+ScalarConstantIC::ScalarConstantIC(const InputParameters & parameters) :
+    ScalarInitialCondition(parameters),
     _value(getParam<Real>("value"))
 {
 }
+
 
 Real
 ScalarConstantIC::value()

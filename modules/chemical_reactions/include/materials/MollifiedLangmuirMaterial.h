@@ -22,8 +22,7 @@ InputParameters validParams<MollifiedLangmuirMaterial>();
 class MollifiedLangmuirMaterial : public Material
 {
 public:
-  MollifiedLangmuirMaterial(const std::string & name,
-                  InputParameters parameters);
+  MollifiedLangmuirMaterial(const InputParameters & parameters);
 
 protected:
 
@@ -34,10 +33,10 @@ protected:
 private:
 
   /// reciprocal of desorption time constant
-  VariableValue * _one_over_de_time_const;
+  const VariableValue * _one_over_de_time_const;
 
   /// reciprocal of adsorption time constant
-  VariableValue * _one_over_ad_time_const;
+  const VariableValue * _one_over_ad_time_const;
 
   /// langmuir density
   Real _langmuir_dens;
@@ -46,10 +45,10 @@ private:
   Real _langmuir_p;
 
   /// concentration of adsorbed fluid in matrix
-  VariableValue * _conc;
+  const VariableValue * _conc;
 
   /// porespace pressure (or partial pressure if multiphase flow scenario)
-  VariableValue * _pressure;
+  const VariableValue * _pressure;
 
   /**
    * mollifying parameter.  the time constants are

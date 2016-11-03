@@ -28,7 +28,7 @@
 /**
  * Typedef for function to build objects
  */
-typedef MooseApp * (*appBuildPtr)(const std::string & name, InputParameters parameters);
+typedef MooseApp * (*appBuildPtr)(InputParameters parameters);
 
 /**
  * Typedef for validParams
@@ -44,9 +44,9 @@ typedef std::map<std::string, paramsPtr>::iterator registeredMooseAppIterator;
  * Build an object of type T
  */
 template<class T>
-MooseApp * buildApp(const std::string & name, InputParameters parameters)
+MooseApp * buildApp(InputParameters parameters)
 {
-  return new T(name, parameters);
+  return new T(parameters);
 }
 
 /**
@@ -90,8 +90,8 @@ public:
   InputParameters getValidParams(const std::string & name);
 
   /**
-   * Build an object (must be registered)
-   * @param obj_name Type of the object being constructed
+   * Build an application object (must be registered)
+   * @param app_type Type of the application being constructed
    * @param name Name for the object
    * @param parameters Parameters this object should have
    * @return The created object
@@ -113,6 +113,7 @@ public:
 
 protected:
   std::map<std::string, appBuildPtr>  _name_to_build_pointer;
+
   std::map<std::string, paramsPtr> _name_to_params_pointer;
 
   static AppFactory _instance;
@@ -120,7 +121,6 @@ protected:
 private:
   // Private constructor for singleton pattern
   AppFactory() {}
-
 };
 
 #endif /* APPFACTORY_H */

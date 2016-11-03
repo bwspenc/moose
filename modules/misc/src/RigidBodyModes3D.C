@@ -5,8 +5,8 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-
 #include "RigidBodyModes3D.h"
+#include "NonlinearSystem.h"
 
 template<>
 InputParameters validParams<RigidBodyModes3D>()
@@ -39,8 +39,8 @@ InputParameters validParams<RigidBodyModes3D>()
   return params;
 }
 
-RigidBodyModes3D::RigidBodyModes3D(const std::string & name, InputParameters parameters) :
-    NodalUserObject(name, parameters),
+RigidBodyModes3D::RigidBodyModes3D(const InputParameters & parameters) :
+    NodalUserObject(parameters),
     _subspace_name(parameters.get<std::string>("subspace_name")),
     _subspace_indices(parameters.get<std::vector<unsigned int> >("subspace_indices")),
     _modes(parameters.get<std::vector<std::string> >("modes").begin(),parameters.get<std::vector<std::string> >("modes").end()),
@@ -190,3 +190,4 @@ RigidBodyModes3D::finalize()
     mode.close();
   }
 }
+

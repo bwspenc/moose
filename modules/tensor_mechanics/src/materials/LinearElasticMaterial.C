@@ -25,14 +25,15 @@ InputParameters validParams<LinearElasticMaterial>()
   return params;
 }
 
-LinearElasticMaterial::LinearElasticMaterial(const std::string & name,
-                                             InputParameters parameters) :
-    TensorMechanicsMaterial(name, parameters),
+LinearElasticMaterial::LinearElasticMaterial(const InputParameters & parameters) :
+    TensorMechanicsMaterial(parameters),
     _T(coupledValue("T")),
     _T0(getParam<Real>("T0")),
     _thermal_expansion_coeff(getParam<Real>("thermal_expansion_coeff")),
     _applied_strain_vector(getParam<std::vector<Real> >("applied_strain_vector"))
 {
+  mooseDeprecated("LinearElasticMaterial is deprecated. Refer to http://mooseframework.org/wiki/PhysicsModules/TensorMechanics/Deprecations/LinearElasticMaterial to convert this input file.");
+
   //Initialize applied strain tensor from input vector
   if (_applied_strain_vector.size() == 6)
     _applied_strain_tensor.fillFromInputVector(_applied_strain_vector);

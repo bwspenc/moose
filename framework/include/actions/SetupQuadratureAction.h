@@ -31,12 +31,11 @@ InputParameters validParams<SetupQuadratureAction>();
 class SetupQuadratureAction : public Action
 {
 public:
-  SetupQuadratureAction(const std::string & name, InputParameters parameters);
-  virtual ~SetupQuadratureAction();
+  SetupQuadratureAction(InputParameters parameters);
+
+  virtual void act() override;
 
 protected:
-  virtual void act();
-
   QuadratureType _type;
   Order _order;
   Order _element_order;

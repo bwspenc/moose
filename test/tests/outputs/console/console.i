@@ -1,3 +1,14 @@
+###########################################################
+# This test exercises console Output control. Various
+# controls are implemented using this input file including
+# turning off color, changing Postprocessor output,
+# toggling the performance logging, and verifying
+# simulation information on the console.
+#
+# @Requirement U1.40
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -84,11 +95,11 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   color = false
   [./screen]
     type = Console
     fit_mode = 100
-    output_on = 'failed nonlinear linear timestep_end'
   [../]
 []
 

@@ -19,12 +19,10 @@
 #include "UserObjectInterface.h"
 #include "PostprocessorInterface.h"
 #include "Restartable.h"
-#include "OutputWarehouse.h"
 
 // System includes
 #include <string>
 
-class MooseMesh;
 class Problem;
 class Executioner;
 
@@ -50,11 +48,9 @@ public:
   /**
    * Constructor
    *
-   * @param name The name given to the Executioner in the input file.
    * @param parameters The parameters object holding data for the class to use.
-   * @return Whether or not the solve was successful.
    */
-  Executioner(const std::string & name, InputParameters parameters);
+  Executioner(const InputParameters & parameters);
 
   virtual ~Executioner();
 
@@ -89,7 +85,16 @@ public:
    */
   virtual void postSolve();
 
-  virtual Problem & problem() = 0;
+  /**
+   * Deprecated:
+   * Return a reference to this Executioner's Problem instance
+   */
+  virtual Problem & problem();
+
+  /**
+   * Return a reference to this Executioner's FEProblem instance
+   */
+  FEProblem & feProblem();
 
   /** The name of the TimeStepper
    * This is an empty string for non-Transient executioners
@@ -103,6 +108,11 @@ public:
    */
   virtual void parentOutputPositionChanged() {}
 
+  /**
+   * Whether or not the last solve converged.
+   */
+  virtual bool lastSolveConverged();
+
 protected:
 
   /**
@@ -112,6 +122,8 @@ protected:
    * @param execute_on When to execute the postprocessor that is created
    */
   virtual void addAttributeReporter(const std::string & name, Real & attribute, const std::string execute_on = "");
+
+  FEProblem & _fe_problem;
 
   /// Initial Residual Variables
   Real _initial_residual_norm;

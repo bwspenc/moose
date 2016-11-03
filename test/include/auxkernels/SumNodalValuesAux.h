@@ -28,7 +28,7 @@ InputParameters validParams<SumNodalValuesAux>();
 class SumNodalValuesAux : public AuxNodalScalarKernel
 {
 public:
-  SumNodalValuesAux(const std::string & name, InputParameters parameters);
+  SumNodalValuesAux(const InputParameters & parameters);
   virtual ~SumNodalValuesAux();
 
   virtual void compute();
@@ -36,7 +36,7 @@ public:
 protected:
   virtual Real computeValue();
 
-  VariableValue & _sum_var;
+  const VariableValue & _sum_var;
 };
 
 #endif /* SUMNODALVALUESAUX_H_ */

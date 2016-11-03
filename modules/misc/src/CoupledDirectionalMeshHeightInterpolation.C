@@ -5,8 +5,8 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-
 #include "CoupledDirectionalMeshHeightInterpolation.h"
+#include "MooseMesh.h"
 
 // libmesh includes
 #include "libmesh/mesh_tools.h"
@@ -23,8 +23,8 @@ InputParameters validParams<CoupledDirectionalMeshHeightInterpolation>()
   return params;
 }
 
-CoupledDirectionalMeshHeightInterpolation::CoupledDirectionalMeshHeightInterpolation(const std::string & name, InputParameters parameters) :
-    AuxKernel(name, parameters),
+CoupledDirectionalMeshHeightInterpolation::CoupledDirectionalMeshHeightInterpolation(const InputParameters & parameters) :
+    AuxKernel(parameters),
     _coupled_val(coupledValue("coupled_var")),
     _direction(getParam<MooseEnum>("direction"))
 {
@@ -44,3 +44,4 @@ CoupledDirectionalMeshHeightInterpolation::computeValue()
 
   return percentage_along_direction * _coupled_val[_qp];
 }
+

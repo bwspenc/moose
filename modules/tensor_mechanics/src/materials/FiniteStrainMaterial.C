@@ -8,6 +8,9 @@
 
 #include "FiniteStrainMaterial.h"
 
+// libmesh includes
+#include "libmesh/quadrature.h"
+
 template<>
 InputParameters validParams<FiniteStrainMaterial>()
 {
@@ -16,17 +19,17 @@ InputParameters validParams<FiniteStrainMaterial>()
   return params;
 }
 
-FiniteStrainMaterial::FiniteStrainMaterial(const std::string & name,
-                                           InputParameters parameters) :
-    TensorMechanicsMaterial(name, parameters),
+FiniteStrainMaterial::FiniteStrainMaterial(const InputParameters & parameters) :
+    TensorMechanicsMaterial(parameters),
     _strain_rate(declareProperty<RankTwoTensor>("strain_rate")),
     _strain_increment(declareProperty<RankTwoTensor>("strain_increment")),
     _total_strain_old(declarePropertyOld<RankTwoTensor>("total_strain")),
     _elastic_strain_old(declarePropertyOld<RankTwoTensor>("elastic_strain")),
     _stress_old(declarePropertyOld<RankTwoTensor>("stress")),
     _rotation_increment(declareProperty<RankTwoTensor>("rotation_increment")),
-    _deformation_gradient(declareProperty<RankTwoTensor>("deformation gradient"))
+    _deformation_gradient(declareProperty<RankTwoTensor>("deformation_gradient"))
 {
+  mooseDeprecated("EigenStrainBaseMaterial is deprecated.   Please use the TensorMechanics plug-and-play system instead: http://mooseframework.org/wiki/PhysicsModules/TensorMechanics/PlugAndPlayMechanicsApproach/");
 }
 
 void

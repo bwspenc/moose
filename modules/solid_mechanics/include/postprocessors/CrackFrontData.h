@@ -25,7 +25,7 @@ InputParameters validParams<CrackFrontData>();
 class CrackFrontData : public GeneralPostprocessor
 {
 public:
-  CrackFrontData(const std::string & name, InputParameters parameters);
+  CrackFrontData(const InputParameters & parameters);
 
   virtual void initialize();
   virtual void execute() {}

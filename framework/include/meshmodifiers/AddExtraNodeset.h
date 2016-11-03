@@ -18,7 +18,6 @@
 #include "MeshModifier.h"
 
 //Forward Declaration
-class MooseMesh;
 class AddExtraNodeset;
 
 template<>
@@ -28,9 +27,10 @@ class AddExtraNodeset :
   public MeshModifier
 {
 public:
-  AddExtraNodeset(const std::string & name, InputParameters params);
+  AddExtraNodeset(const InputParameters & params);
 
-  virtual void modify();
+protected:
+  virtual void modify() override;
 };
 
 #endif // ADDEXTRANODESET_H

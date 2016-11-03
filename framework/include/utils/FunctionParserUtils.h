@@ -26,24 +26,34 @@ InputParameters validParams<FunctionParserUtils>();
 class FunctionParserUtils
 {
 public:
-  FunctionParserUtils(const std::string & name, InputParameters parameters);
+  FunctionParserUtils(const InputParameters & parameters);
+  FunctionParserUtils(const std::string & /*name*/, InputParameters parameters); // DEPRECATED CONSTRUCTOR
 
   /// Shorthand for an autodiff function parser object.
   typedef FunctionParserADBase<Real> ADFunction;
 
+  /// Shorthand for an smart pointer to an autodiff function parser object.
+  typedef MooseSharedPointer<ADFunction> ADFunctionPtr;
+
+  /// apply input paramters to internal feature flags of the parser object
+  void setParserFeatureFlags(ADFunctionPtr &);
+
 protected:
   /// Evaluate FParser object and check EvalError
-  Real evaluate(ADFunction *);
+  Real evaluate(ADFunctionPtr &);
 
   /// add constants (which can be complex expressions) to the parser object
-  void addFParserConstants(ADFunction * parser,
+  void addFParserConstants(ADFunctionPtr & parser,
                            const std::vector<std::string> & constant_names,
                            const std::vector<std::string> & constant_expressions);
 
-  /// feature flags
+  //@{ feature flags
   bool _enable_jit;
+  bool _enable_ad_cache;
   bool _disable_fpoptimizer;
+  bool _enable_auto_optimize;
   bool _fail_on_evalerror;
+  //@}
 
   /// appropriate not a number value to return
   const Real _nan;

@@ -24,8 +24,7 @@ InputParameters validParams<ParsedMaterial>();
 class ParsedMaterial : public ParsedMaterialHelper, public ParsedMaterialBase
 {
 public:
-  ParsedMaterial(const std::string & name,
-                 InputParameters parameters);
+  ParsedMaterial(const InputParameters & parameters);
 };
 
 #endif //PARSEDMATERIAL_H

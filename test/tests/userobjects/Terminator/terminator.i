@@ -1,3 +1,13 @@
+###########################################################
+# This is a test of the UserObject System. The
+# Terminator UserObject executes independently after
+# each solve and can terminate the solve early due to
+# user-defined criteria. (Type: GeneralUserObject)
+#
+# @Requirement F6.40
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -65,8 +75,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

@@ -15,16 +15,11 @@
 #ifndef GENERALPOSTPROCESSOR_H
 #define GENERALPOSTPROCESSOR_H
 
+// MOOSE includes
 #include "Postprocessor.h"
 #include "GeneralUserObject.h"
-#include "TransientInterface.h"
-#include "FunctionInterface.h"
-#include "UserObjectInterface.h"
-#include "PostprocessorInterface.h"
-#include "Problem.h"
 
-
-//Forward Declarations
+// Forward Declarations
 class GeneralPostprocessor;
 
 template<>
@@ -40,14 +35,13 @@ class GeneralPostprocessor :
   public Postprocessor
 {
 public:
-  GeneralPostprocessor(const std::string & name, InputParameters parameters);
-
-  virtual ~GeneralPostprocessor() {}
+  GeneralPostprocessor(const InputParameters & parameters);
 
   /**
-   * Finalize.  This is called _after_ execute() and _after_ threadJoin()!  This is probably where you want to do MPI communication!
+   * This is called _after_ execute() and _after_ threadJoin()!  This is probably where you want to do MPI communication!
+   * Finalize is not required for Postprocessor implementations since work may be done in getValue().
    */
-  virtual void finalize(){}
+  virtual void finalize() override {}
 };
 
 #endif

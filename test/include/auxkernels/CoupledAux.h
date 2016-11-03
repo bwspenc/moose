@@ -35,7 +35,7 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  CoupledAux(const std::string & name, InputParameters parameters);
+  CoupledAux(const InputParameters & parameters);
 
   virtual ~CoupledAux() {}
 
@@ -46,7 +46,7 @@ protected:
   MooseEnum _operator;                          ///< Operator being applied on this variable and coupled variable
 
   int _coupled;                                 ///< The number of the coupled variable
-  VariableValue & _coupled_val;                 ///< Coupled variable
+  const VariableValue & _coupled_val;           ///< Coupled variable
 };
 
 #endif //COUPLEDAUX_H

@@ -40,9 +40,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -246,6 +244,7 @@
     cohesion = mc_coh
     friction_angle = mc_phi
     dilation_angle = mc_psi
+    use_custom_returnMap = false
     yield_function_tolerance = 1.0E+2  # Note larger value
     shift = 1.0E+2                     # Note larger value
     internal_constraint_tolerance = 1.0E-7
@@ -270,6 +269,8 @@
     yield_function_tolerance = 1.0E+2  # Note larger value
     shift = 1.0E+2                     # Note larger value
     internal_constraint_tolerance = 1.0E-7
+    use_custom_returnMap = false
+    use_custom_cto = false
   [../]
   [./tensile_smooth]
     type = TensorMechanicsPlasticTensile
@@ -290,21 +291,12 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
   [./multi]
     type = ComputeMultiPlasticityStress
     block = 0
     ep_plastic_tolerance = 1E-5  # Note larger value, to match the larger yield_function_tolerances
-
-    #plastic_models = 'tensile_smooth mc_smooth'
-    #max_NR_iterations = 30
-    #specialIC = 'none'
-    #deactivation_scheme = 'optimized_to_dumb'
-    #min_stepsize = 1E-5
-    #max_stepsize_for_dumb = 1E-5
 
     plastic_models = 'tensile mc'
     max_NR_iterations = 5
@@ -313,7 +305,7 @@
     min_stepsize = 1
     max_stepsize_for_dumb = 1
 
-    debug_fspb = 1
+    debug_fspb = crash
     debug_jac_at_stress = '10 0 0 0 10 0 0 0 10'
     debug_jac_at_pm = '1 1 1 1'
     debug_jac_at_intnl = '1 1 1 1'
@@ -334,13 +326,5 @@
 [Outputs]
   file_base = special_rock1
   exodus = false
-  output_on = 'initial timestep_end'
-  [./console]
-    type = Console
-    perf_log = true
-  [../]
-  [./csv]
-    type = CSV
-    interval = 1
-  [../]
+  csv = true
 []

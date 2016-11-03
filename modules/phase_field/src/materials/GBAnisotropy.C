@@ -4,8 +4,12 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "GBAnisotropy.h"
-#include "AddV.h"
+#include "MooseMesh.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<GBAnisotropy>()
@@ -18,17 +22,14 @@ InputParameters validParams<GBAnisotropy>()
   params.addParam<Real>("molar_volume_value", 7.11e-6, "molar volume of material in m^3/mol, by defaults it's the value of copper");
   params.addParam<Real>("delta_sigma", 0.1, "factor determining inclination dependence of GB energy");
   params.addParam<Real>("delta_mob", 0.1, "factor determining inclination dependence of GB mobility");
-  params.addRequiredParam<std::string>("Anisotropic_GB_file_name", "Name of the file containing: 1)GB mobility prefactor; 2) GB migration activation energy; 3)GB energy");
+  params.addRequiredParam<FileName>("Anisotropic_GB_file_name", "Name of the file containing: 1)GB mobility prefactor; 2) GB migration activation energy; 3)GB energy");
   params.addRequiredParam<bool>("inclination_anisotropy", "The GB anisotropy ininclination would be considered if true");
-  params.addRequiredParam<unsigned int>("op_num", "number of grains");
-  params.addRequiredParam<std::string>("var_name_base", "base for variable names");
-  params.addCoupledVar("v", "Array of coupled variables");
+  params.addRequiredCoupledVarWithAutoBuild("v", "var_name_base", "op_num", "Array of coupled variables");
   return params;
 }
 
-GBAnisotropy::GBAnisotropy(const std::string & name,
-                           InputParameters parameters) :
-    Material(name, AddV(parameters)),
+GBAnisotropy::GBAnisotropy(const InputParameters & parameters) :
+    Material(parameters),
     _mesh_dimension(_mesh.dimension()),
     _length_scale(getParam<Real>("length_scale")),
     _time_scale(getParam<Real>("time_scale")),
@@ -36,7 +37,7 @@ GBAnisotropy::GBAnisotropy(const std::string & name,
     _M_V(getParam<Real>("molar_volume_value")),
     _delta_sigma(getParam<Real>("delta_sigma")),
     _delta_mob(getParam<Real>("delta_mob")),
-    _Anisotropic_GB_file_name(getParam<std::string>("Anisotropic_GB_file_name")),
+    _Anisotropic_GB_file_name(getParam<FileName>("Anisotropic_GB_file_name")),
     _inclination_anisotropy(getParam<bool>("inclination_anisotropy")),
     _T(coupledValue("T")),
     _kappa(declareProperty<Real>("kappa_op")),
@@ -50,30 +51,28 @@ GBAnisotropy::GBAnisotropy(const std::string & name,
     _kb(8.617343e-5), // Boltzmann constant in eV/K
     _JtoeV(6.24150974e18), // Joule to eV conversion
     _mu_qp(0.0),
-    _ncrys(coupledComponents("v"))
+    _op_num(coupledComponents("v")),
+    _vals(_op_num),
+    _grad_vals(_op_num)
 {
-  // Initialize values for crystals
-  _vals.resize(_ncrys);
-  _grad_vals.resize(_ncrys);
-
   // reshape vectors
-  _sigma.resize(_ncrys);
-  _mob.resize(_ncrys);
-  _Q.resize(_ncrys);
-  _kappa_gamma.resize(_ncrys);
-  _a_g2.resize(_ncrys);
+  _sigma.resize(_op_num);
+  _mob.resize(_op_num);
+  _Q.resize(_op_num);
+  _kappa_gamma.resize(_op_num);
+  _a_g2.resize(_op_num);
 
-  for (unsigned int crys = 0; crys < _ncrys; ++crys)
+  for (unsigned int op = 0; op < _op_num; ++op)
   {
     // Initialize variables
-    _vals[crys] = &coupledValue("v", crys);
-    _grad_vals[crys] = &coupledGradient("v", crys);
+    _vals[op] = &coupledValue("v", op);
+    _grad_vals[op] = &coupledGradient("v", op);
 
-    _sigma[crys].resize(_ncrys);
-    _mob[crys].resize(_ncrys);
-    _Q[crys].resize(_ncrys);
-    _kappa_gamma[crys].resize(_ncrys);
-    _a_g2[crys].resize(_ncrys);
+    _sigma[op].resize(_op_num);
+    _mob[op].resize(_op_num);
+    _Q[op].resize(_op_num);
+    _kappa_gamma[op].resize(_op_num);
+    _a_g2[op].resize(_op_num);
   }
 
   // Read in data from "Anisotropic_GB_file_name"
@@ -86,23 +85,23 @@ GBAnisotropy::GBAnisotropy(const std::string & name,
     inFile.ignore(255, '\n'); // ignore line
 
   Real data;
-  for (unsigned int i = 0; i < 3*_ncrys; ++i)
+  for (unsigned int i = 0; i < 3 * _op_num; ++i)
   {
     std::vector<Real> row; // create an empty row of double values
-    for (unsigned int j = 0; j < _ncrys; ++j)
+    for (unsigned int j = 0; j < _op_num; ++j)
     {
       inFile >> data;
       row.push_back(data);
     }
 
-    if (i < _ncrys)
+    if (i < _op_num)
       _sigma[i] = row; // unit: J/m^2
 
-    else if (i < 2*_ncrys)
-      _mob[i-_ncrys] = row; // unit: m^4/(J*s)
+    else if (i < 2 * _op_num)
+      _mob[i-_op_num] = row; // unit: m^4/(J*s)
 
     else
-      _Q[i-2*_ncrys] = row; // unit: eV
+      _Q[i - 2 * _op_num] = row; // unit: eV
   }
 
   inFile.close();
@@ -120,8 +119,8 @@ GBAnisotropy::GBAnisotropy(const std::string & name,
   Real sigma_big = 0.0;
   Real sigma_small = 0.0;
 
-  for (unsigned int m = 0; m < _ncrys-1; ++m)
-    for (unsigned int n = m + 1; n < _ncrys; ++n)
+  for (unsigned int m = 0; m < _op_num - 1; ++m)
+    for (unsigned int n = m + 1; n < _op_num; ++n)
     {
       // Convert units of mobility and energy
       _sigma[m][n] *= _JtoeV * (_length_scale*_length_scale); // eV/nm^2
@@ -144,8 +143,8 @@ GBAnisotropy::GBAnisotropy(const std::string & name,
   sigma_init = (sigma_big + sigma_small) / 2.0;
   _mu_qp = 6.0 * sigma_init / _wGB;
 
-  for (unsigned int m = 0; m < _ncrys - 1; ++m)
-    for (unsigned int n = m + 1; n < _ncrys; ++n) // m<n
+  for (unsigned int m = 0; m < _op_num - 1; ++m)
+    for (unsigned int n = m + 1; n < _op_num; ++n) // m<n
     {
 
       a_star = a_0;
@@ -187,9 +186,9 @@ GBAnisotropy::computeProperties()
     Real f_mob = 1.0;
     Real gamma_value = 0.0;
 
-    for (unsigned int m = 0; m < _ncrys - 1; ++m)
+    for (unsigned int m = 0; m < _op_num - 1; ++m)
     {
-      for (unsigned int n = m + 1; n < _ncrys; ++n) // m<n
+      for (unsigned int n = m + 1; n < _op_num; ++n) // m<n
       {
         MOB[m][n] *= std::exp(-_Q[m][n] / (_kb * _T[_qp])); // Arrhenius relation
 
@@ -200,7 +199,7 @@ GBAnisotropy::computeProperties()
           if (_mesh_dimension == 3)
             mooseError("This material doesn't support inclination dependence for 3D for now!");
 
-          Real phi_ave = libMesh::pi * n / (2.0 * _ncrys);
+          Real phi_ave = libMesh::pi * n / (2.0 * _op_num);
           Real sin_phi = std::sin(2.0 * phi_ave);
           Real cos_phi = std::cos(2.0 * phi_ave);
 

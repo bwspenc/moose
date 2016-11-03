@@ -16,7 +16,6 @@
 #define AUXSCALARKERNEL_H
 
 #include "MooseObject.h"
-#include "Coupleable.h"
 #include "ScalarCoupleable.h"
 #include "SetupInterface.h"
 #include "FunctionInterface.h"
@@ -24,21 +23,14 @@
 #include "PostprocessorInterface.h"
 #include "DependencyResolverInterface.h"
 #include "TransientInterface.h"
-#include "Assembly.h"
 #include "MooseVariableScalar.h"
-#include "SubProblem.h"
 #include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
 
-// libMesh
-#include "libmesh/fe.h"
-#include "libmesh/quadrature.h"
-
+// Forward declarations
 class MooseMesh;
-class Problem;
 class SubProblem;
-
-
+class Assembly;
 class AuxScalarKernel;
 
 template<>
@@ -60,7 +52,7 @@ class AuxScalarKernel :
   public MeshChangedInterface
 {
 public:
-  AuxScalarKernel(const std::string & name, InputParameters parameters);
+  AuxScalarKernel(const InputParameters & parameters);
 
   virtual ~AuxScalarKernel();
 
@@ -76,9 +68,9 @@ public:
 
   SubProblem & subProblem() { return _subproblem; }
 
-  virtual const std::set<std::string> & getRequestedItems();
+  virtual const std::set<std::string> & getRequestedItems() override;
 
-  virtual const std::set<std::string> & getSuppliedItems();
+  virtual const std::set<std::string> & getSuppliedItems() override;
 
   /**
    * Use this to enable/disable the constraint
@@ -95,7 +87,6 @@ protected:
   Assembly & _assembly;
   MooseVariableScalar & _var;
   MooseMesh & _mesh;
-//  unsigned int _dim;
 
   unsigned int _i;
 

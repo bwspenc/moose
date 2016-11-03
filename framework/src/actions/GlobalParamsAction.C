@@ -25,8 +25,8 @@ InputParameters validParams<GlobalParamsAction>()
   return params;
 }
 
-GlobalParamsAction::GlobalParamsAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+GlobalParamsAction::GlobalParamsAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -40,3 +40,4 @@ GlobalParamsAction::remove(const std::string & name)
 {
   parameters().remove(name);
 }
+

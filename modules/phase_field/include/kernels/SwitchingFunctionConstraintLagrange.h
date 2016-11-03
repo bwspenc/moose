@@ -24,7 +24,7 @@ InputParameters validParams<SwitchingFunctionConstraintLagrange>();
 class SwitchingFunctionConstraintLagrange : public DerivativeMaterialInterface<Kernel>
 {
 public:
-  SwitchingFunctionConstraintLagrange(const std::string & name, InputParameters parameters);
+  SwitchingFunctionConstraintLagrange(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

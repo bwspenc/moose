@@ -18,10 +18,13 @@ InputParameters validParams<AddSecondarySpeciesAction>();
 class AddSecondarySpeciesAction : public Action
 {
 public:
-  AddSecondarySpeciesAction(const std::string & name, InputParameters params);
+  AddSecondarySpeciesAction(const InputParameters & params);
 
   virtual void act();
 
+private:
+  const std::vector<AuxVariableName> _vars;
+  const std::vector<std::string> _reactions;
 };
 
 #endif // ADDSECONDARYSPECIESACTION_H

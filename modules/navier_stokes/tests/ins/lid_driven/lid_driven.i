@@ -26,13 +26,6 @@
   elem_type = QUAD9
 []
 
-[MeshModifiers]
-  [./corner_node]
-    type = AddExtraNodeset
-    new_boundary = 99
-    nodes = '0'
-  [../]
-[]
 
 [Variables]
   # x-velocity
@@ -128,6 +121,11 @@
     component = 1
   [../]
 
+  [./penalty]
+    type = INSCompressibilityPenalty
+    variable = p
+    penalty  = 1e-5
+  [../]
 
 
  # temperature
@@ -170,13 +168,6 @@
     # boundary = '0 1 2 3'
     boundary = 'bottom right top left'
     value = 0.0
-  [../]
-
-  [./pressure_pin]
-    type = DirichletBC
-    variable = p
-    boundary = '99'
-    value = 0
   [../]
 
  [./T_hot]
@@ -245,9 +236,5 @@
 
 [Outputs]
   file_base = lid_driven_out
-  interval = 1
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

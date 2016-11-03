@@ -36,7 +36,7 @@ public:
    * @param name
    * @param InputParameters
    */
-  OutputObjectTest(const std::string & name, InputParameters parameters);
+  OutputObjectTest(const InputParameters & parameters);
 
   /**
    * Class destructor

@@ -29,10 +29,20 @@
     order = FIRST
     family = LAGRANGE
   [../]
+[]
 
+[AuxVariables]
   [./diffusivity]
-    order = FIRST
-    family = LAGRANGE
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./out_diffusivity]
+    type = MaterialRealAux
+    variable = diffusivity
+    property = diffusivity
   [../]
 []
 
@@ -52,12 +62,6 @@
     type = UserForcingFunction
     variable = u
     function = forcing_fn
-  [../]
-
-  [./out_diffusivity]
-    type = RealPropertyOutput
-    variable = diffusivity
-    prop_name = diffusivity
   [../]
 []
 
@@ -80,10 +84,7 @@
 
 [Executioner]
   type = Transient
-
-  # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
   dt = 0.2
   start_time = 0
   num_steps = 5
@@ -91,8 +92,10 @@
 
 [Outputs]
   file_base = out_xda_restart_part1
-  output_initial = true
-  exodus = true
   checkpoint = true
-  print_perf_log = true
+  [./out]
+    type = Exodus
+    elemental_as_nodal = true
+    execute_elemental_on = none
+  [../]
 []

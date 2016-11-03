@@ -24,14 +24,22 @@ InputParameters validParams<ExplicitEuler>()
   return params;
 }
 
-ExplicitEuler::ExplicitEuler(const std::string & name, InputParameters parameters) :
-    TimeIntegrator(name, parameters)
+ExplicitEuler::ExplicitEuler(const InputParameters & parameters) :
+    TimeIntegrator(parameters)
 {
-  _fe_problem.setConstJacobian(true);
 }
 
 ExplicitEuler::~ExplicitEuler()
 {
+}
+
+void
+ExplicitEuler::preSolve()
+{
+  if (_dt == _dt_old)
+    _fe_problem.setConstJacobian(true);
+  else
+    _fe_problem.setConstJacobian(false);
 }
 
 void
@@ -52,4 +60,3 @@ ExplicitEuler::postStep(NumericVector<Number> & residual)
   residual += _Re_non_time;
   residual.close();
 }
-

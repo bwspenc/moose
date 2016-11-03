@@ -18,7 +18,7 @@ namespace SolidMechanics
 class Linear : public Element
 {
 public:
-  Linear(SolidModel & solid_model, const std::string & name, InputParameters parameters);
+  Linear(SolidModel & solid_model, const std::string & name, const InputParameters & parameters);
   virtual ~Linear();
 
 protected:
@@ -30,10 +30,10 @@ protected:
 
   const bool _large_strain;
 
-  VariableGradient & _grad_disp_x;
-  VariableGradient & _grad_disp_y;
-  VariableGradient & _grad_disp_z;
-
+  const VariableGradient & _grad_disp_x;
+  const VariableGradient & _grad_disp_y;
+  const VariableGradient & _grad_disp_z;
+  const bool _volumetric_locking_correction;
 };
 
 }

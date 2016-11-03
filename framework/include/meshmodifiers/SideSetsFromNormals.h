@@ -16,7 +16,6 @@
 #define SIDESETSFROMNORMALS_H
 
 #include "AddSideSetsBase.h"
-#include "libmesh/fe.h"
 
 class SideSetsFromNormals;
 
@@ -27,18 +26,14 @@ class SideSetsFromNormals :
   public AddSideSetsBase
 {
 public:
-  SideSetsFromNormals(const std::string & name, InputParameters parameters);
-
-  virtual ~SideSetsFromNormals();
-
-  virtual void modify();
+  SideSetsFromNormals(const InputParameters & parameters);
 
 protected:
+  virtual void modify() override;
 
   std::vector<BoundaryName> _boundary_names;
 
   std::vector<Point> _normals;
-
 };
 
 #endif /* SIDESETSFROMNORMALS_H */

@@ -12,8 +12,7 @@
 class Elastic : public SolidModel
 {
 public:
-  Elastic( const std::string & name,
-           InputParameters parameters );
+  Elastic( const InputParameters & parameters);
   virtual ~Elastic();
 
 protected:

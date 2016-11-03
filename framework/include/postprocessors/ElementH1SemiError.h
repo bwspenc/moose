@@ -34,12 +34,12 @@ class ElementH1SemiError :
   public ElementIntegralVariablePostprocessor
 {
 public:
-  ElementH1SemiError(const std::string & name, InputParameters parameters);
+  ElementH1SemiError(const InputParameters & parameters);
 
-  virtual Real getValue();
+  virtual Real getValue() override;
 
 protected:
-  virtual Real computeQpIntegral();
+  virtual Real computeQpIntegral() override;
   Function & _func;
 };
 

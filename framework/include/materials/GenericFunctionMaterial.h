@@ -35,10 +35,11 @@ InputParameters validParams<GenericFunctionMaterial>();
 class GenericFunctionMaterial : public Material
 {
 public:
-  GenericFunctionMaterial(const std::string & name, InputParameters parameters);
+  GenericFunctionMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpProperties();
+  virtual void initQpStatefulProperties() override;
+  virtual void computeQpProperties() override;
 
   std::vector<std::string> _prop_names;
   std::vector<FunctionName> _prop_values;
@@ -46,7 +47,19 @@ protected:
   unsigned int _num_props;
 
   std::vector<MaterialProperty<Real> *> _properties;
+  std::vector<MaterialProperty<Real> *> _properties_old;
+  std::vector<MaterialProperty<Real> *> _properties_older;
   std::vector<Function *> _functions;
+
+private:
+
+  /**
+   * A helper method for evaluating the functions
+   */
+  void computeQpFunctions();
+
+  /// Flag for calling declareProperyOld/Older
+  bool _enable_stateful;
 };
 
 #endif //GENERICFUNCTIONMATERIAL_H

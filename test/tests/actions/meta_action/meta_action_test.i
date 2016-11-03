@@ -1,3 +1,12 @@
+###########################################################
+# This is a test of the Action System. An Action is created
+# to build other objects pro grammatically. Two blocks in
+# the input file have been commented out to demonstrate
+# usage.
+#
+# @Requirement F1.50
+###########################################################
+
 [Mesh]
   file = square.e
   uniform_refine = 4
@@ -12,6 +21,24 @@
 [ConvectionDiffusion]
     variables = 'convected diffused'
 []
+
+#[Variables]
+#  [./convected]
+#  [../]
+#  [./diffused]
+#  [../]
+#[]
+#
+#[Kernels]
+#  [./diff_v]
+#    type = Diffusion
+#    variable = convected
+#  [../]
+#  [./diff_u]
+#    type = Diffusion
+#    variable = diffused
+#  [../]
+#[]
 
 [BCs]
   active = 'left_convected right_convected left_diffused right_diffused'
@@ -51,6 +78,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   file_base = out
 []

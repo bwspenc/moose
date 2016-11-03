@@ -9,7 +9,6 @@
 
 #include "NSIntegratedBC.h"
 
-
 // Forward Declarations
 class NSMassBC;
 
@@ -32,33 +31,22 @@ InputParameters validParams<NSMassBC>();
 class NSMassBC : public NSIntegratedBC
 {
 public:
-
-  NSMassBC(const std::string & name, InputParameters parameters);
-
-  virtual ~NSMassBC(){}
+  NSMassBC(const InputParameters & parameters);
 
 protected:
-
-  /**
-   * Must be implemented in derived classes.
-   */
-//  virtual Real computeQpResidual();
-//  virtual Real computeQpJacobian();
-//  virtual Real computeQpOffDiagJacobian(unsigned jvar);
-
   /**
    * Compute the residual contribution for a given value of
    * rho*(u.n).  This value may come from the current nonlinear
    * solution or be specified, depending on the derived class.
    */
-  Real qp_residual(Real rhoun);
+  Real qpResidualHelper(Real rhoun);
 
   /**
    * Compute the Jacobian contribution due to variable
    * number 'var_number'.  Note: if this is a specified
    * normal flow boundary, the Jacobian will be zero.
    */
-  Real qp_jacobian(unsigned var_number);
+  Real qpJacobianHelper(unsigned var_number);
 };
 
 #endif // MASSBC_H

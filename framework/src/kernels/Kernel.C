@@ -21,6 +21,7 @@
 
 // libmesh includes
 #include "libmesh/threads.h"
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<Kernel>()
@@ -30,16 +31,12 @@ InputParameters validParams<Kernel>()
   return params;
 }
 
-Kernel::Kernel(const std::string & name, InputParameters parameters) :
-    KernelBase(name, parameters),
+Kernel::Kernel(const InputParameters & parameters) :
+    KernelBase(parameters),
     _u(_is_implicit ? _var.sln() : _var.slnOld()),
     _grad_u(_is_implicit ? _var.gradSln() : _var.gradSlnOld()),
     _u_dot(_var.uDot()),
     _du_dot_du(_var.duDotDu())
-{
-}
-
-Kernel::~Kernel()
 {
 }
 
@@ -60,8 +57,8 @@ Kernel::computeResidual()
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i<_save_in.size(); i++)
-      _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
+    for (const auto & var : _save_in)
+      var->sys().solution().add_vector(_local_re, var->dofIndices());
   }
 }
 
@@ -87,8 +84,8 @@ Kernel::computeJacobian()
       diag(i) = _local_ke(i,i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i<_diag_save_in.size(); i++)
-      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+    for (const auto & var : _diag_save_in)
+      var->sys().solution().add_vector(diag, var->dofIndices());
   }
 }
 
@@ -104,9 +101,7 @@ Kernel::computeOffDiagJacobian(unsigned int jvar)
     for (_i = 0; _i < _test.size(); _i++)
       for (_j = 0; _j < _phi.size(); _j++)
         for (_qp = 0; _qp < _qrule->n_points(); _qp++)
-        {
           ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpOffDiagJacobian(jvar);
-        }
   }
 }
 

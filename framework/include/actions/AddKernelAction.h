@@ -26,9 +26,9 @@ InputParameters validParams<AddKernelAction>();
 class AddKernelAction : public MooseObjectAction
 {
 public:
-  AddKernelAction(const std::string & name, InputParameters params);
+  AddKernelAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // ADDKERNELACTION_H

@@ -127,11 +127,9 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
-  [./console]
-    type = Console
+  [./displaced]
+    type = Exodus
     use_displaced = true
   [../]
 []

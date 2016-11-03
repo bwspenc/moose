@@ -15,28 +15,22 @@
 #ifndef COMPUTEREBOUNDARYINITIALCONDITIONTHREAD_H
 #define COMPUTEREBOUNDARYINITIALCONDITIONTHREAD_H
 
-#include "Moose.h"
-#include "ParallelUniqueId.h"
-#include "MooseMesh.h"
-// libmesh
-#include "libmesh/elem_range.h"
-#include "libmesh/numeric_vector.h"
+#include "ThreadedNodeLoop.h"
 
+// Forward declarations
 class FEProblem;
 
-class ComputeBoundaryInitialConditionThread
+class ComputeBoundaryInitialConditionThread : public ThreadedNodeLoop<ConstBndNodeRange, ConstBndNodeRange::const_iterator>
 {
 public:
   ComputeBoundaryInitialConditionThread(FEProblem & fe_problem);
+
   // Splitting Constructor
   ComputeBoundaryInitialConditionThread(ComputeBoundaryInitialConditionThread & x, Threads::split split);
 
-  void operator() (const ConstBndNodeRange & range);
-  void join(const ComputeBoundaryInitialConditionThread & /*y*/);
+  void onNode(ConstBndNodeRange::const_iterator & nd);
 
-protected:
-  FEProblem & _fe_problem;
-  THREAD_ID _tid;
+  void join(const ComputeBoundaryInitialConditionThread & /*y*/);
 };
 
 #endif //COMPUTEBOUNDARYINITIALCONDITIONTHREAD_H

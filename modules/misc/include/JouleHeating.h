@@ -22,12 +22,12 @@ class JouleHeating : public Kernel
 {
 public:
 
-  JouleHeating(const std::string & name, InputParameters parameters);
+  JouleHeating(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
 
-  VariableGradient& _grad_potential;
+  const VariableGradient & _grad_potential;
   const MaterialProperty<Real> & _thermal_conductivity;
 };
 

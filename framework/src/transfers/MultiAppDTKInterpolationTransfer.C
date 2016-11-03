@@ -14,13 +14,14 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
+// MOOSE includes
 #include "MultiAppDTKInterpolationTransfer.h"
-
-// Moose
 #include "MooseTypes.h"
 #include "FEProblem.h"
+#include "MultiApp.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<MultiAppDTKInterpolationTransfer>()
@@ -31,8 +32,8 @@ InputParameters validParams<MultiAppDTKInterpolationTransfer>()
   return params;
 }
 
-MultiAppDTKInterpolationTransfer::MultiAppDTKInterpolationTransfer(const std::string & name, InputParameters parameters) :
-    MultiAppTransfer(name, parameters),
+MultiAppDTKInterpolationTransfer::MultiAppDTKInterpolationTransfer(const InputParameters & parameters) :
+    MultiAppTransfer(parameters),
     _from_var_name(getParam<VariableName>("source_variable")),
     _to_var_name(getParam<AuxVariableName>("variable"))
 {
@@ -50,11 +51,11 @@ MultiAppDTKInterpolationTransfer::execute()
     {
       case TO_MULTIAPP:
       {
-        System * from_sys = find_sys(_multi_app->problem()->es(), _from_var_name);
+        System * from_sys = find_sys(_multi_app->problem().es(), _from_var_name);
         System * to_sys = NULL;
 
         if (_multi_app->hasLocalApp(i))
-          to_sys = find_sys(_multi_app->appProblem(i)->es(), _to_var_name);
+          to_sys = find_sys(_multi_app->appProblem(i).es(), _to_var_name);
 
         _helper.transferWithOffset(0, i, &from_sys->variable(from_sys->variable_number(_from_var_name)),
                                    to_sys ? &to_sys->variable(to_sys->variable_number(_to_var_name)) : NULL,
@@ -66,10 +67,10 @@ MultiAppDTKInterpolationTransfer::execute()
       case FROM_MULTIAPP:
       {
         System * from_sys = NULL;
-        System * to_sys = find_sys(_multi_app->problem()->es(), _to_var_name);
+        System * to_sys = find_sys(_multi_app->problem().es(), _to_var_name);
 
         if (_multi_app->hasLocalApp(i))
-          from_sys = find_sys(_multi_app->appProblem(i)->es(), _from_var_name);
+          from_sys = find_sys(_multi_app->appProblem(i).es(), _from_var_name);
 
         _helper.transferWithOffset(i, 0, from_sys ? &from_sys->variable(from_sys->variable_number(_from_var_name)) : NULL,
                                    &to_sys->variable(to_sys->variable_number(_to_var_name)),
@@ -78,12 +79,12 @@ MultiAppDTKInterpolationTransfer::execute()
         break;
       }
 
-      _multi_app->problem()->es().update();
+      _multi_app->problem().es().update();
 
       if (_multi_app->hasLocalApp(i))
-        _multi_app->appProblem(i)->es().update();
+        _multi_app->appProblem(i).es().update();
     }
   }
 }
 
-#endif //LIBMESH_HAVE_DTK
+#endif //LIBMESH_TRILINOS_HAVE_DTK

@@ -18,9 +18,8 @@ InputParameters validParams<BarrierFunctionMaterial>()
   return params;
 }
 
-BarrierFunctionMaterial::BarrierFunctionMaterial(const std::string & name,
-                                                 InputParameters parameters) :
-    OrderParameterFunctionMaterial(name, parameters),
+BarrierFunctionMaterial::BarrierFunctionMaterial(const InputParameters & parameters) :
+    OrderParameterFunctionMaterial(parameters),
     _g_order(getParam<MooseEnum>("g_order")),
     _well_only(getParam<bool>("well_only"))
 {
@@ -56,3 +55,4 @@ BarrierFunctionMaterial::computeQpProperties()
       mooseError("Internal error");
   }
 }
+

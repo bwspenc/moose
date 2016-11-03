@@ -25,7 +25,7 @@ InputParameters validParams<RichardsSeffAux>();
 class RichardsSeffAux: public AuxKernel
 {
 public:
-  RichardsSeffAux(const std::string & name, InputParameters parameters);
+  RichardsSeffAux(const InputParameters & parameters);
 
 protected:
   virtual Real computeValue();
@@ -42,7 +42,7 @@ protected:
    * where N is the number of arguments that the _seff_UO requires)
    * Eg, for twophase simulations N=2
    */
-  std::vector<VariableValue *> _pressure_vals;
+  std::vector<const VariableValue *> _pressure_vals;
 };
 
 #endif // RICHARDSSEFFAUX_H

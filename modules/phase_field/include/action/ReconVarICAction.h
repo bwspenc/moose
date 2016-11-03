@@ -20,7 +20,7 @@ InputParameters validParams<ReconVarICAction>();
 class ReconVarICAction: public Action
 {
 public:
-  ReconVarICAction(const std::string & name, InputParameters params);
+  ReconVarICAction(const InputParameters & params);
 
   virtual void act();
 

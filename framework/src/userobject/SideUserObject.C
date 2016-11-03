@@ -15,24 +15,26 @@
 #include "SideUserObject.h"
 #include "SubProblem.h"
 #include "MooseTypes.h"
+#include "Assembly.h"
 
 template<>
 InputParameters validParams<SideUserObject>()
 {
   InputParameters params = validParams<UserObject>();
-  params += validParams<BoundaryRestrictable>();
+  params += validParams<BoundaryRestrictableRequired>();
+  params += validParams<MaterialPropertyInterface>();
   return params;
 }
 
-SideUserObject::SideUserObject(const std::string & name, InputParameters parameters) :
-    UserObject(name, parameters),
-    BoundaryRestrictable(parameters),
-    MaterialPropertyInterface(parameters, boundaryIDs()),
-    Coupleable(parameters, false),
+SideUserObject::SideUserObject(const InputParameters & parameters) :
+    UserObject(parameters),
+    BoundaryRestrictableRequired(parameters, false), // false for applying to sidesets
+    MaterialPropertyInterface(this, boundaryIDs()),
+    Coupleable(this, false),
     MooseVariableDependencyInterface(),
-    UserObjectInterface(parameters),
-    TransientInterface(parameters, "side_user_objects"),
-    PostprocessorInterface(parameters),
+    UserObjectInterface(this),
+    TransientInterface(this),
+    PostprocessorInterface(this),
     ZeroInterface(parameters),
     _mesh(_subproblem.mesh()),
     _q_point(_assembly.qPointsFace()),
@@ -47,6 +49,6 @@ SideUserObject::SideUserObject(const std::string & name, InputParameters paramet
 {
   // Keep track of which variables are coupled so we know what we depend on
   const std::vector<MooseVariable *> & coupled_vars = getCoupledMooseVars();
-  for (unsigned int i=0; i<coupled_vars.size(); i++)
-    addMooseVariableDependency(coupled_vars[i]);
+  for (const auto & var : coupled_vars)
+    addMooseVariableDependency(var);
 }

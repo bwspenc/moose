@@ -23,15 +23,17 @@ InputParameters validParams<TensorMechanicsHardeningModel>();
 class TensorMechanicsHardeningModel : public GeneralUserObject
 {
  public:
-  TensorMechanicsHardeningModel(const std::string & name, InputParameters parameters);
+  TensorMechanicsHardeningModel(const InputParameters & parameters);
 
   void initialize();
   void execute();
   void finalize();
 
-  virtual Real value(const Real & intnl) const;
+  virtual Real value(Real intnl) const;
 
-  virtual Real derivative(const Real & intnl) const;
+  virtual Real derivative(Real intnl) const;
+
+  virtual std::string modelName() const = 0;
 
 };
 

@@ -17,9 +17,6 @@
 
 #include "MooseMesh.h"
 
-#include "libmesh/libmesh.h"
-#include "libmesh/vector_value.h"
-
 class TiledMesh;
 
 template<>
@@ -28,12 +25,12 @@ InputParameters validParams<TiledMesh>();
 class TiledMesh : public MooseMesh
 {
 public:
-  TiledMesh(const std::string & name, InputParameters parameters);
+  TiledMesh(const InputParameters & parameters);
   TiledMesh(const TiledMesh & other_mesh);
 
-  virtual MooseMesh & clone() const;
+  virtual MooseMesh & clone() const override;
 
-  virtual void buildMesh();
+  virtual void buildMesh() override;
 
 protected:
   const Real _x_width;

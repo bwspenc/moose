@@ -31,10 +31,9 @@
 
 [Kernels]
   [./local_energy]
-    type = CHParsed
+    type = CahnHilliard
     variable = c
     f_name = F
-    args = c
   [../]
   [./gradient_energy]
     type = CHInterface
@@ -51,7 +50,6 @@
 [Materials]
   [./Copper]
     type = PFParamsPolyFreeEnergy
-    block = 0
     c = c
     T = 1000 # K
     int_width = 30.0
@@ -64,7 +62,6 @@
   [../]
   [./free_energy]
     type = PolynomialFreeEnergy
-    block = 0
     c = c
     derivative_order = 2
   [../]
@@ -88,7 +85,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

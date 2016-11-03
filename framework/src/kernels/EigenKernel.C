@@ -13,10 +13,14 @@
 /****************************************************************/
 
 #include "EigenKernel.h"
-#include "EigenSystem.h"
+#include "MooseEigenSystem.h"
 #include "MooseApp.h"
 #include "Executioner.h"
 #include "EigenExecutionerBase.h"
+#include "Assembly.h"
+
+// libMesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<EigenKernel>()
@@ -28,18 +32,13 @@ InputParameters validParams<EigenKernel>()
   return params;
 }
 
-EigenKernel::EigenKernel(const std::string & name, InputParameters parameters) :
-    KernelBase(name, parameters),
+EigenKernel::EigenKernel(const InputParameters & parameters) :
+    KernelBase(parameters),
     _u(_is_implicit ? _var.sln() : _var.slnOld()),
     _grad_u(_is_implicit ? _var.gradSln() : _var.gradSlnOld()),
     _eigen(getParam<bool>("eigen")),
-    _eigen_sys(dynamic_cast<EigenSystem *>(&_fe_problem.getNonlinearSystem())),
+    _eigen_sys(dynamic_cast<MooseEigenSystem *>(&_fe_problem.getNonlinearSystem())),
     _eigenvalue(NULL)
-{
-}
-
-void
-EigenKernel::initialSetup()
 {
   // The name to the postprocessor storing the eigenvalue
   std::string eigen_pp_name;
@@ -60,7 +59,7 @@ EigenKernel::initialSetup()
   // If the postprocessor name was not provided and an EigenExecutionerBase is not being used,
   // use the default value from the "eigen_postprocessor" parameter
   if (eigen_pp_name.empty())
-    _eigenvalue = &parameters().defaultPostprocessorValue("eigen_postprocessor");
+    _eigenvalue = &getDefaultPostprocessorValue("eigen_postprocessor");
 
   // If the name does exist, then use the postprocessor value
   else
@@ -68,7 +67,13 @@ EigenKernel::initialSetup()
     if (_is_implicit)
       _eigenvalue = &getPostprocessorValueByName(eigen_pp_name);
     else
-      _eigenvalue = &getPostprocessorValueOldByName(eigen_pp_name);
+    {
+      EigenExecutionerBase * exec = dynamic_cast<EigenExecutionerBase *>(_app.getExecutioner());
+      if (exec)
+        _eigenvalue = &exec->eigenvalueOld();
+      else
+        _eigenvalue = &getPostprocessorValueOldByName(eigen_pp_name);
+    }
   }
 }
 
@@ -90,8 +95,8 @@ EigenKernel::computeResidual()
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i=0; i<_save_in.size(); i++)
-      _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
+    for (const auto & var : _save_in)
+      var->sys().solution().add_vector(_local_re, var->dofIndices());
   }
 }
 
@@ -133,9 +138,9 @@ EigenKernel::computeQpJacobian()
 }
 
 bool
-EigenKernel::isActive()
+EigenKernel::enabled()
 {
-  bool flag = TransientInterface::isActive();
+  bool flag = MooseObject::enabled();
   if (_eigen)
   {
     if (_is_implicit)

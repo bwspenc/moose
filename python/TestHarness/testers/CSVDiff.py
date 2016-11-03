@@ -1,5 +1,6 @@
 from RunApp import RunApp
 from CSVDiffer import CSVDiffer
+import os
 
 class CSVDiff(RunApp):
 
@@ -19,11 +20,7 @@ class CSVDiff(RunApp):
 
   def prepare(self):
     if self.specs['delete_output_before_running'] == True:
-      for file in self.specs['csvdiff']:
-        try:
-          os.remove(os.path.join(self.specs['test_dir'], file))
-        except:
-          pass
+      self.deleteFilesAndFolders(self.specs['test_dir'], self.specs['csvdiff'])
 
   def processResults(self, moose_dir, retcode, options, output):
     (reason, output) = RunApp.processResults(self, moose_dir, retcode, options, output)

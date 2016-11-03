@@ -15,10 +15,10 @@
 #ifndef SIDEFLUXINTEGRAL_H
 #define SIDEFLUXINTEGRAL_H
 
+// MOOSE includes
 #include "SideIntegralVariablePostprocessor.h"
-#include "MaterialPropertyInterface.h"
 
-//Forward Declarations
+// Forward Declarations
 class SideFluxIntegral;
 
 template<>
@@ -30,10 +30,10 @@ InputParameters validParams<SideFluxIntegral>();
 class SideFluxIntegral : public SideIntegralVariablePostprocessor
 {
 public:
-  SideFluxIntegral(const std::string & name, InputParameters parameters);
+  SideFluxIntegral(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpIntegral();
+  virtual Real computeQpIntegral() override;
 
   std::string _diffusivity;
   const MaterialProperty<Real> & _diffusion_coef;

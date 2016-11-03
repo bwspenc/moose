@@ -52,7 +52,7 @@
     variable = gr0
   [../]
   [./gr0bulk]
-    type = ACParsed
+    type = AllenCahn
     variable = gr0
     f_name = F
     args = gr1
@@ -67,7 +67,7 @@
     variable = gr1
   [../]
   [./gr1bulk]
-    type = ACParsed
+    type = AllenCahn
     variable = gr1
     f_name = F
     args = gr0
@@ -103,7 +103,6 @@
 [Materials]
   [./Copper]
     type = GBEvolution
-    block = 0
     T = 500 # K
     wGB = 60 # nm
     GBmob0 = 2.5e-6 # m^4/(Js) from Schoenfelder 1997
@@ -112,7 +111,6 @@
   [../]
   [./free_energy]
     type = DerivativeParsedMaterial
-    block = 0
     args = 'gr0 gr1'
     material_property_names = 'mu gamma_asymm'
     function = 'mu*( gr0^4/4.0 - gr0^2/2.0 + gr1^4/4.0 - gr1^2/2.0 + gamma_asymm*gr0^2*gr1^2) + 1.0/4.0'
@@ -157,12 +155,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   csv = true
   exodus = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []
-

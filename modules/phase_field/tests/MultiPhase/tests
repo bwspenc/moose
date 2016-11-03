@@ -9,11 +9,27 @@
     input = 'orderparameterfunctionmaterial.i'
     exodiff = 'orderparameterfunctionmaterial_out.e'
   [../]
+  [./thirdphasesuppressionmaterial]
+    type = 'Exodiff'
+    input = 'thirdphasesuppressionmaterial.i'
+    exodiff = 'thirdphasesuppressionmaterial_out.e'
+  [../]
   [./multibarrierfunction]
     type = 'Exodiff'
     input = 'multibarrierfunction.i'
     exodiff = 'multibarrierfunction_out.e'
   [../]
+  [./crosstermbarrierfunction]
+    type = 'Exodiff'
+    input = 'crosstermbarrierfunction.i'
+    exodiff = 'crosstermbarrierfunction_out.e'
+  [../]
+  [./asymmetriccrosstermbarrierfunction]
+    type = 'Exodiff'
+    input = 'asymmetriccrosstermbarrierfunction.i'
+    exodiff = 'asymmetriccrosstermbarrierfunction_out.e'
+  [../]
+
   [./lagrangemult]
     type = 'Exodiff'
     input = 'lagrangemult.i'
@@ -38,5 +54,10 @@
     type = 'Exodiff'
     input = 'acmultiinterface_aux.i'
     exodiff = 'acmultiinterface_aux_out.e'
+  [../]
+  [./switchingfunction3phasematerial]
+    type = 'Exodiff'
+    input = 'switchingfunction3phasematerial.i'
+    exodiff = 'switchingfunction3phasematerial_out.e'
   [../]
 []

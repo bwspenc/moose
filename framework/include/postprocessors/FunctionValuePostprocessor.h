@@ -30,16 +30,16 @@ InputParameters validParams<FunctionValuePostprocessor>();
 class FunctionValuePostprocessor : public GeneralPostprocessor
 {
 public:
-  FunctionValuePostprocessor(const std::string & name, InputParameters parameters);
-  virtual ~FunctionValuePostprocessor();
+  FunctionValuePostprocessor(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual PostprocessorValue getValue();
-  virtual void threadJoin(const UserObject & uo);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual PostprocessorValue getValue() override;
 
 protected:
   Function & _function;
+  const Point & _point;
+  const Real _scale_factor;
 };
 
 #endif /* FUNCTIONVALUEPOSTPROCESSOR_H */

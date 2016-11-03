@@ -74,10 +74,17 @@ MaterialData::swap(const Elem & elem, unsigned int side/* = 0*/)
 }
 
 void
-MaterialData::reinit(std::vector<Material *> & mats)
+MaterialData::reinit(const std::vector<MooseSharedPointer<Material> > & mats)
 {
-  for (std::vector<Material *>::iterator it = mats.begin(); it != mats.end(); ++it)
-    (*it)->computeProperties();
+  for (const auto & mat : mats)
+    mat->computeProperties();
+}
+
+void
+MaterialData::reset(const std::vector<MooseSharedPointer<Material> > & mats)
+{
+  for (const auto & mat : mats)
+    mat->resetProperties();
 }
 
 void

@@ -1,8 +1,9 @@
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = -1  # Negative value for nx
+  nx = 10
   ny = 10
+  bias_x = 0.1
 []
 
 [Variables]
@@ -44,8 +45,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

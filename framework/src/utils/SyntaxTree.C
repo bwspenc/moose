@@ -82,16 +82,14 @@ SyntaxTree::TreeNode::TreeNode(const std::string &name, SyntaxTree &syntax_tree,
 
 SyntaxTree::TreeNode::~TreeNode()
 {
-  for (std::multimap<std::string, InputParameters *>::iterator it = _action_params.begin();
-       it != _action_params.end(); ++it)
-    delete it->second;
+  for (const auto & it : _action_params)
+    delete it.second;
 
-  for (std::multimap<std::string, InputParameters *>::iterator it = _moose_object_params.begin();
-       it != _moose_object_params.end(); ++it)
-    delete it->second;
+  for (const auto & it : _moose_object_params)
+    delete it.second;
 
-  for (std::map<std::string, TreeNode *>::iterator it = _children.begin(); it != _children.end(); ++it)
-    delete it->second;
+  for (const auto & it : _children)
+    delete it.second;
 }
 
 void
@@ -136,17 +134,18 @@ SyntaxTree::TreeNode::insertParams(const std::string &action, bool is_action_par
 std::string
 SyntaxTree::TreeNode::print(short depth, const std::string &search_string, bool &found)
 {
-  std::string doc;
+  std::string doc = "";
+  std::string moose_base;
   std::string long_name(getLongName());
   std::string name(_syntax_tree.isLongNames() ? long_name : _name);
   std::string out;
 
   if (depth < 0)
   {
-    for (std::map<std::string, TreeNode *>::const_iterator c_it = _children.begin(); c_it != _children.end(); ++c_it)
+    for (const auto & c_it : _children)
     {
       bool local_found = false;
-      std::string local_out (c_it->second->print(depth+1, search_string, local_found));
+      std::string local_out (c_it.second->print(depth+1, search_string, local_found));
       found |= local_found;  // Update the current frame's found variable
       if (local_found)
         out += local_out;
@@ -175,16 +174,17 @@ SyntaxTree::TreeNode::print(short depth, const std::string &search_string, bool 
       local_search_string = search_string;
 
     if (it != _moose_object_params.end())
+    {
       doc = it->second->getClassDescription();
-    else
-      doc = "";
+      if (it->second->isParamValid("_moose_base"))
+        moose_base = it->second->get<std::string>("_moose_base");
+    }
+    local_out += _syntax_tree.printBlockOpen(name, depth, doc, moose_base);
 
-    local_out += _syntax_tree.printBlockOpen(name, depth, doc);
-
-    for (std::multimap<std::string, InputParameters *>::const_iterator a_it = _action_params.begin(); a_it != _action_params.end(); ++a_it)
-      if (a_it->first != "EmptyAction")
+    for (const auto & a_it : _action_params)
+      if (a_it.first != "EmptyAction")
       {
-        local_out += _syntax_tree.printParams(name, long_name, *a_it->second, depth, local_search_string, local_found);
+        local_out += _syntax_tree.printParams(name, long_name, *(a_it.second), depth, local_search_string, local_found);
         found |= local_found;   // Update the current frame's found variable
         //DEBUG
         // Moose::out << "\n" << indent << "(" << ait->first << ")";
@@ -202,10 +202,10 @@ SyntaxTree::TreeNode::print(short depth, const std::string &search_string, bool 
 
     local_out += _syntax_tree.preTraverse(depth);
 
-    for (std::map<std::string, TreeNode *>::const_iterator c_it = _children.begin(); c_it != _children.end(); ++c_it)
+    for (const auto & c_it : _children)
     {
       bool child_found = false;
-      std::string child_out (c_it->second->print(depth+1, local_search_string, child_found));
+      std::string child_out (c_it.second->print(depth+1, local_search_string, child_found));
       found |= child_found;   // Update the current frame's found variable
 
       if (child_found)
@@ -268,11 +268,11 @@ SyntaxTree::wildCardMatch(std::string name, std::string search_string)
       return false;
   }
 
-  if (pos != std::string::npos)
+  if (pos != std::string::npos && tokens.size() > 0)
   {
     // Now see if we have a trailing wildcard
-    size_t last_token_length = tokens[tokens.size()-1].length();
-    if (search_string[search_string.length()-1] == '*' || pos == name.size() - last_token_length)
+    size_t last_token_length = tokens.back().length();
+    if (*search_string.rbegin() == '*' || pos == name.size() - last_token_length)
       return true;
     else
       return false;

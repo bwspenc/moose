@@ -20,14 +20,14 @@ InputParameters validParams<SecondDerivativeImplicitEuler>();
 class SecondDerivativeImplicitEuler : public TimeKernel
 {
 public:
-  SecondDerivativeImplicitEuler(const std::string & name, InputParameters parameters);
+  SecondDerivativeImplicitEuler(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
 
-  VariableValue & _u_old;
-  VariableValue & _u_older;
+  const VariableValue & _u_old;
+  const VariableValue & _u_older;
 };
 
 #endif //SECONDDERIVATIVEIMPLICITEULER_H

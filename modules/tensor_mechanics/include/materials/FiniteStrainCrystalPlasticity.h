@@ -7,8 +7,7 @@
 #ifndef FINITESTRAINCRYSTALPLASTICITY_H
 #define FINITESTRAINCRYSTALPLASTICITY_H
 
-#include "FiniteStrainMaterial.h"
-#include "ElementPropertyReadFile.h"
+#include "ComputeStressBase.h"
 
 /**
  * FiniteStrainCrystalPlasticity uses the multiplicative decomposition of deformation gradient
@@ -21,10 +20,10 @@ class FiniteStrainCrystalPlasticity;
 template<>
 InputParameters validParams<FiniteStrainCrystalPlasticity>();
 
-class FiniteStrainCrystalPlasticity : public FiniteStrainMaterial
+class FiniteStrainCrystalPlasticity : public ComputeStressBase
 {
 public:
-  FiniteStrainCrystalPlasticity(const std::string & name, InputParameters parameters);
+  FiniteStrainCrystalPlasticity(const InputParameters & parameters);
 
 protected:
   /**
@@ -72,10 +71,6 @@ protected:
    * This function reads slip system from file - see test.
    */
   virtual void getSlipSystems();
-  /**
-   * This function read euler angles from user object (optional) - see test.
-   */
-  virtual void getEulerAngles();
 
   /**
    * This function assign initial values of slip system resistances/internal variables
@@ -181,27 +176,22 @@ protected:
   virtual void calcJacobian( RankFourTensor & );
 
   /**
-   * This function calculates rotation tensor from Euler angles.
-   */
-  virtual void getEulerRotations();
-
-  /**
    * This function calculate the tangent moduli for preconditioner.
    * Default is the elastic stiffness matrix.
    * Exact jacobian is currently implemented.
    * tan_mod_type can be modified to exact in .i file to turn it on.
    */
-  virtual ElasticityTensorR4 calcTangentModuli();
+  virtual RankFourTensor calcTangentModuli();
 
   /**
    * This function calculate the elastic tangent moduli for preconditioner.
    */
-  virtual ElasticityTensorR4 elasticTangentModuli();
+  virtual RankFourTensor elasticTangentModuli();
 
   /**
    * This function calculate the exact tangent moduli for preconditioner.
    */
-  virtual ElasticityTensorR4 elastoPlasticTangentModuli();
+  virtual RankFourTensor elastoPlasticTangentModuli();
 
   /**
    * This function perform RU decomposition to obtain the rotation tensor.
@@ -222,7 +212,12 @@ protected:
   /**
    * This function performs the line search update
    */
-  bool line_search_update(const Real, const RankTwoTensor);
+  bool line_search_update(const Real rnorm_prev, const RankTwoTensor);
+
+  /**
+   * This function updates internal variables after each NewTon Raphson iteration (_fp_inv)
+   */
+  void internalVariableUpdateNRiteration();
 
   /// Number of slip system resistance
   const unsigned int _nss;
@@ -263,10 +258,6 @@ protected:
   ///Number of slip system flow rate parameters
   unsigned int _num_slip_sys_flowrate_props;
 
-  ///Element property read user object
-  ///Presently used to read Euler angles -  see test
-  const ElementPropertyReadFile * _read_prop_user_object;
-
   ///Type of tangent moduli calculation
   MooseEnum _tan_mod_type;
 
@@ -275,9 +266,6 @@ protected:
 
   ///Number of slip system specific properties provided in the file containing slip system normals and directions
   unsigned int _num_slip_sys_props;
-
-  ///Flag to save euler angle as Material Property
-  bool _save_euler_angle;
 
   bool _gen_rndm_stress_flag;
 
@@ -299,6 +287,15 @@ protected:
   ///Minimum line search step size
   Real _min_lsrch_step;
 
+  ///Line search bisection method tolerance
+  Real _lsrch_tol;
+
+  ///Line search bisection method maximum iteration number
+  unsigned int _lsrch_max_iter;
+
+  //Line search method
+  MooseEnum _lsrch_method;
+
   MaterialProperty<RankTwoTensor> & _fp;
   MaterialProperty<RankTwoTensor> & _fp_old;
   MaterialProperty<RankTwoTensor> & _pk2;
@@ -310,20 +307,17 @@ protected:
   MaterialProperty<Real> & _acc_slip;
   MaterialProperty<Real> & _acc_slip_old;
   MaterialProperty<RankTwoTensor> & _update_rot;
-  MaterialProperty<RankTwoTensor> & _update_rot_old;
-  MaterialProperty<RankTwoTensor> & _deformation_gradient_old;
 
-  ///Save Euler angles for output only when save_euler_angle = true in .i file
-  MaterialProperty< std::vector<Real> > * _euler_ang;
-  MaterialProperty< std::vector<Real> > * _euler_ang_old;
+  const MaterialProperty<RankTwoTensor> & _deformation_gradient;
+  const MaterialProperty<RankTwoTensor> & _deformation_gradient_old;
+  const MaterialProperty<RankFourTensor> & _elasticity_tensor;
+  const MaterialProperty<RankTwoTensor> & _crysrot;
 
-  std::vector<Real> _mo;
-  std::vector<Real> _no;
+  DenseVector<Real> _mo;
+  DenseVector<Real> _no;
 
-  std::vector<Real> _a0;
-  std::vector<Real> _xm;
-
-  RankTwoTensor _crysrot;
+  DenseVector<Real> _a0;
+  DenseVector<Real> _xm;
 
   Real _h0;
   Real _tau_sat;
@@ -331,8 +325,8 @@ protected:
   Real _r;
 
   RankTwoTensor _dfgrd_tmp;
-  RankTwoTensor _fe, _fp_old_inv, _fp_inv;
-  std::vector< Real > _slip_incr, _tau, _dslipdtau;
+  RankTwoTensor _fe, _fp_old_inv, _fp_inv, _fp_prev_inv;
+  DenseVector<Real> _slip_incr, _tau, _dslipdtau;
   std::vector<RankTwoTensor> _s0;
 
   RankTwoTensor _pk2_tmp, _pk2_tmp_old;
@@ -340,7 +334,9 @@ protected:
   std::vector<Real> _gss_tmp;
   std::vector<Real> _gss_tmp_old;
 
-  std::vector<Real> _slip_sys_props;
+  DenseVector<Real> _slip_sys_props;
+
+  DenseMatrix<Real> _dgss_dsliprate;
 
   bool _read_from_slip_sys_file;
 

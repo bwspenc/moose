@@ -11,20 +11,30 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-#ifdef LIBMESH_HAVE_DTK
 
 #ifndef MULTIAPPDTKUSEROBJECTEVALUATOR_H
 #define MULTIAPPDTKUSEROBJECTEVALUATOR_H
 
-#include "MultiApp.h"
+#include "libmesh/libmesh_config.h"
 
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
+
+// Forward declarations
+class MultiApp;
+
+// DTK includes
+#include "libmesh/ignore_warnings.h"
 #include <DTK_FieldEvaluator.hpp>
 #include <DTK_FieldContainer.hpp>
 #include <DTK_GeometryManager.hpp>
 #include <DTK_Box.hpp>
+#include "libmesh/restore_warnings.h"
 
-class MultiAppDTKUserObjectEvaluator: public DataTransferKit::FieldEvaluator<
-  long unsigned int, DataTransferKit::FieldContainer<double> >
+/**
+ * Evaluates the specified UserObject and returns the result in a DTK FieldContainer.
+ */
+class MultiAppDTKUserObjectEvaluator :
+  public DataTransferKit::FieldEvaluator<long unsigned int, DataTransferKit::FieldContainer<double> >
 {
 public:
   MultiAppDTKUserObjectEvaluator(MultiApp & multi_app, const std::string & user_object_name);
@@ -49,6 +59,5 @@ private:
 };
 
 
+#endif //LIBMESH_TRILINOS_HAVE_DTK
 #endif //MULTIAPPDTKUSEROBJECTEVALUATOR_H
-
-#endif //LIBMESH_HAVE_DTK

@@ -25,8 +25,7 @@ InputParameters validParams<BarrierFunctionMaterial>();
 class BarrierFunctionMaterial : public OrderParameterFunctionMaterial
 {
 public:
-  BarrierFunctionMaterial(const std::string & name,
-                          InputParameters parameters);
+  BarrierFunctionMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();

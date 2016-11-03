@@ -28,9 +28,10 @@ InputParameters validParams<ExplicitEuler>();
 class ExplicitEuler : public TimeIntegrator
 {
 public:
-  ExplicitEuler(const std::string & name, InputParameters parameters);
+  ExplicitEuler(const InputParameters & parameters);
   virtual ~ExplicitEuler();
 
+  virtual void preSolve();
   virtual int order() { return 1; }
   virtual void computeTimeDerivatives();
   virtual void postStep(NumericVector<Number> & residual);

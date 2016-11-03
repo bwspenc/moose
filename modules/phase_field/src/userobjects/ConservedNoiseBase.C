@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ConservedNoiseBase.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<ConservedNoiseBase>()
@@ -17,8 +21,8 @@ InputParameters validParams<ConservedNoiseBase>()
   return params;
 }
 
-ConservedNoiseBase::ConservedNoiseBase(const std::string & name, InputParameters parameters) :
-    ConservedNoiseInterface(name, parameters)
+ConservedNoiseBase::ConservedNoiseBase(const InputParameters & parameters) :
+    ConservedNoiseInterface(parameters)
 {
 }
 
@@ -51,6 +55,8 @@ ConservedNoiseBase::threadJoin(const UserObject &y)
   const ConservedNoiseBase & uo = static_cast<const ConservedNoiseBase &>(y);
 
   _random_data.insert(uo._random_data.begin(), uo._random_data.end());
+  _integral += uo._integral;
+  _volume += uo._volume;
 }
 
 void
@@ -75,3 +81,4 @@ ConservedNoiseBase::getQpValue(dof_id_type element_id, unsigned int qp) const
     return me->second[qp] - _offset;
   }
 }
+

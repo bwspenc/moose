@@ -15,20 +15,19 @@ InputParameters validParams<ComputeVariableEigenstrain>()
   return params;
 }
 
-ComputeVariableEigenstrain::ComputeVariableEigenstrain(const std::string & name,
-                                                       InputParameters parameters) :
-    ComputeEigenstrain(name, parameters),
+ComputeVariableEigenstrain::ComputeVariableEigenstrain(const InputParameters & parameters) :
+    DerivativeMaterialInterface<ComputeEigenstrain>(parameters),
     _num_args(coupledComponents("args")),
     _dprefactor(_num_args),
     _d2prefactor(_num_args),
     _delastic_strain(_num_args),
     _d2elastic_strain(_num_args)
 {
-  // fetch prerequisite derivatives and build elastic_strain derivatrives and cross-derivatives
+  // fetch prerequisite derivatives and build elastic_strain derivatives and cross-derivatives
   for (unsigned int i = 0; i < _num_args; ++i)
   {
-    const std::string & iname = getVar("args", i)->name();
-    _dprefactor[i] = &getMaterialPropertyDerivative<Real>(_prefactor_name, iname);
+    const VariableName & iname = getVar("args", i)->name();
+    _dprefactor[i] = &getMaterialPropertyDerivative<Real>("prefactor", iname);
     _delastic_strain[i] = &declarePropertyDerivative<RankTwoTensor>(_base_name + "elastic_strain", iname);
 
     _d2prefactor[i].resize(_num_args);
@@ -36,8 +35,8 @@ ComputeVariableEigenstrain::ComputeVariableEigenstrain(const std::string & name,
 
     for (unsigned int j = i; j < _num_args; ++j)
     {
-      const std::string & jname = getVar("args", j)->name();
-      _d2prefactor[i][j] = &getMaterialPropertyDerivative<Real>(_prefactor_name, iname, jname);
+      const VariableName & jname = getVar("args", j)->name();
+      _d2prefactor[i][j] = &getMaterialPropertyDerivative<Real>("prefactor", iname, jname);
       _d2elastic_strain[i][j] = &declarePropertyDerivative<RankTwoTensor>(_base_name + "elastic_strain", iname, jname);
     }
   }
@@ -51,8 +50,8 @@ ComputeVariableEigenstrain::computeQpStressFreeStrain()
   //Define derivatives of the elastic strain
   for (unsigned int i = 0; i < _num_args; ++i)
   {
-    (*_delastic_strain[i])[_qp] = _eigen_base_tensor * (*_dprefactor[i])[_qp];
+    (*_delastic_strain[i])[_qp] = - _eigen_base_tensor * (*_dprefactor[i])[_qp];
     for (unsigned int j = i; j < _num_args; ++j)
-      (*_d2elastic_strain[i][j])[_qp] = _eigen_base_tensor * (*_d2prefactor[i][j])[_qp];
+      (*_d2elastic_strain[i][j])[_qp] = - _eigen_base_tensor * (*_d2prefactor[i][j])[_qp];
   }
 }

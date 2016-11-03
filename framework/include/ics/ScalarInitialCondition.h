@@ -16,20 +16,15 @@
 #define SCALARINITIALCONDITION_H
 
 #include "MooseObject.h"
-#include "ParallelUniqueId.h"
-#include "InputParameters.h"
-#include "Coupleable.h"
 #include "ScalarCoupleable.h"
+#include "FunctionInterface.h"
 #include "DependencyResolverInterface.h"
 
 #include "libmesh/dense_vector.h"
 
-// System includes
-#include <string>
-
 //forward declarations
 class ScalarInitialCondition;
-class SubProblem;
+class FeProblem;
 class SystemBase;
 class Assembly;
 class MooseVariableScalar;
@@ -43,16 +38,16 @@ InputParameters validParams<ScalarInitialCondition>();
 class ScalarInitialCondition :
   public MooseObject,
   public ScalarCoupleable,
+  public FunctionInterface,
   public DependencyResolverInterface
 {
 public:
   /**
    * Constructor
    *
-   * @param name The name given to the initial condition in the input file.
    * @param parameters The parameters object holding data for the class to use.
    */
-  ScalarInitialCondition(const std::string & name, InputParameters parameters);
+  ScalarInitialCondition(const InputParameters & parameters);
 
   virtual ~ScalarInitialCondition();
 
@@ -75,11 +70,14 @@ public:
   virtual const std::set<std::string> & getSuppliedItems();
 
 protected:
-  SubProblem & _subproblem;
+  FEProblem & _fe_problem;
   SystemBase & _sys;
   THREAD_ID _tid;
 
   Assembly & _assembly;
+  /// Time
+  Real & _t;
+
   /// Scalar variable this initial condition works on
   MooseVariableScalar & _var;
 

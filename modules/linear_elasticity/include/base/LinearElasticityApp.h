@@ -17,7 +17,7 @@ InputParameters validParams<LinearElasticityApp>();
 class LinearElasticityApp : public MooseApp
 {
 public:
-  LinearElasticityApp(const std::string & name, InputParameters parameters);
+  LinearElasticityApp(const InputParameters & parameters);
   virtual ~LinearElasticityApp();
 
   static void registerApps();

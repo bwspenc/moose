@@ -8,6 +8,7 @@
 #define JVARMAPINTERFACE_H
 
 #include "MooseVariable.h"
+#include "NonlinearSystem.h"
 
 /**
  * Interface class ("Veneer") to provide a mapping from 'jvar' in
@@ -17,7 +18,7 @@ template <class T>
 class JvarMapInterface : public T
 {
 public:
-  JvarMapInterface(const std::string & name, InputParameters parameters);
+  JvarMapInterface(const InputParameters & parameters);
 
   /// Set the cvar value to the mapped jvar value and return true if the mapping exists.
   /// Otherwise return false
@@ -30,8 +31,8 @@ private:
 
 
 template<class T>
-JvarMapInterface<T>::JvarMapInterface(const std::string & name, InputParameters parameters) :
-    T(name, parameters),
+JvarMapInterface<T>::JvarMapInterface(const InputParameters & parameters) :
+    T(parameters),
     _jvar_map(this->_fe_problem.getNonlinearSystem().nVariables(), -1)
 {
   unsigned int nvar = this->_coupled_moose_vars.size();
@@ -45,6 +46,7 @@ JvarMapInterface<T>::JvarMapInterface(const std::string & name, InputParameters 
       _jvar_map[number] = i;
   }
 }
+
 
 template<class T>
 bool

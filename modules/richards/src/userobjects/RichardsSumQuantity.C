@@ -16,8 +16,8 @@ InputParameters validParams<RichardsSumQuantity>()
   return params;
 }
 
-RichardsSumQuantity::RichardsSumQuantity(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters),
+RichardsSumQuantity::RichardsSumQuantity(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
     _total(0)
 {
 }
@@ -59,3 +59,4 @@ RichardsSumQuantity::getValue() const
 {
   return _total;
 }
+

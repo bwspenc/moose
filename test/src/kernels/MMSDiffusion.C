@@ -11,7 +11,9 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 #include "MMSDiffusion.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<MMSDiffusion>()
@@ -21,8 +23,8 @@ InputParameters validParams<MMSDiffusion>()
 }
 
 
-MMSDiffusion::MMSDiffusion(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+MMSDiffusion::MMSDiffusion(const InputParameters & parameters) :
+    Kernel(parameters),
     _mesh_dimension(_mesh.dimension())
 {}
 

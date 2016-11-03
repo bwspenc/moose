@@ -20,7 +20,7 @@ InputParameters validParams<SplitCHBase>();
 class SplitCHBase : public Kernel
 {
 public:
-  SplitCHBase(const std::string & name, InputParameters parameters);
+  SplitCHBase(const InputParameters & parameters);
 
 protected:
   enum PFFunctionType

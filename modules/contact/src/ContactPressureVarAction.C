@@ -22,8 +22,8 @@ InputParameters validParams<ContactPressureVarAction>()
   return params;
 }
 
-ContactPressureVarAction::ContactPressureVarAction(const std::string & name, InputParameters params) :
-  Action(name, params)
+ContactPressureVarAction::ContactPressureVarAction(const InputParameters & params) :
+  Action(params)
 {
 }
 

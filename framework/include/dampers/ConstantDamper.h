@@ -16,7 +16,7 @@
 #define CONSTANTDAMPER_H
 
 // Moose Includes
-#include "Damper.h"
+#include "GeneralDamper.h"
 
 //Forward Declarations
 class ConstantDamper;
@@ -25,22 +25,21 @@ template<>
 InputParameters validParams<ConstantDamper>();
 
 /**
- * Simple constant damper
+ * Simple constant damper.
  *
- * Modifies the npn-linear step by a constant damping factor
+ * Modifies the non-linear step by applying a constant damping factor
  */
-class ConstantDamper : public Damper
+class ConstantDamper : public GeneralDamper
 {
 public:
-  ConstantDamper(const std::string & name, InputParameters parameters);
+  ConstantDamper(const InputParameters & parameters);
 
 protected:
   /**
-   * This MUST be overridden by a child ConstantDamper.
-   *
-   * This is where they actually compute a number between 0 and 1.
+   * Return the constant damping value.
    */
-  virtual Real computeQpDamping();
+  virtual Real computeDamping(const NumericVector<Number> & solution,
+                              const NumericVector<Number> & update) override;
 
   /// The constant amount of the Newton update to take.
   Real _damping;

@@ -24,14 +24,10 @@ InputParameters validParams<QuotientScalarAux>()
   return params;
 }
 
-QuotientScalarAux::QuotientScalarAux(const std::string & name, InputParameters parameters) :
-    AuxScalarKernel(name, parameters),
+QuotientScalarAux::QuotientScalarAux(const InputParameters & parameters) :
+    AuxScalarKernel(parameters),
     _a(coupledScalarValue("numerator")),
     _b(coupledScalarValue("denominator"))
-{
-}
-
-QuotientScalarAux::~QuotientScalarAux()
 {
 }
 

@@ -34,7 +34,7 @@ class RichardsPiecewiseLinearSinkFlux:
   public SideIntegralVariablePostprocessor
 {
 public:
-  RichardsPiecewiseLinearSinkFlux(const std::string & name, InputParameters parameters);
+  RichardsPiecewiseLinearSinkFlux(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpIntegral();

@@ -20,21 +20,37 @@
 //Forward Declarations
 class NumDOFs;
 
+// libMesh forward declarations
+namespace libMesh
+{
+class System;
+class EquationSystems;
+}
+
 template<>
 InputParameters validParams<NumDOFs>();
 
 class NumDOFs : public GeneralPostprocessor
 {
 public:
-  NumDOFs(const std::string & name, InputParameters parameters);
+  NumDOFs(const InputParameters & parameters);
 
-  virtual void initialize() {}
-  virtual void execute() {}
+  virtual void initialize() override {}
+  virtual void execute() override {}
+  virtual Real getValue() override;
 
-  /**
-   * This will return the degrees of freedom in the system.
-   */
-  virtual Real getValue();
+protected:
+  enum SystemEnum
+  {
+    NL,
+    AUX,
+    ALL
+  };
+
+  const SystemEnum _system_enum;
+
+  const System * _system_pointer;
+  const EquationSystems * _es_pointer;
 };
 
 #endif //NUMDOFS_H

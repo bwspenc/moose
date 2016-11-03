@@ -30,16 +30,16 @@ InputParameters validParams<SolutionTimeAdaptiveDT>();
 class SolutionTimeAdaptiveDT : public TimeStepper
 {
 public:
-  SolutionTimeAdaptiveDT(const std::string & name, InputParameters parameters);
+  SolutionTimeAdaptiveDT(const InputParameters & parameters);
   virtual ~SolutionTimeAdaptiveDT();
 
-  virtual void step();
+  virtual void step() override;
 
-  virtual void rejectStep();
+  virtual void rejectStep() override;
 
 protected:
-  virtual Real computeInitialDT();
-  virtual Real computeDT();
+  virtual Real computeInitialDT() override;
+  virtual Real computeDT() override;
 
   /**
    * Multiplier specifying the direction the timestep is currently going.

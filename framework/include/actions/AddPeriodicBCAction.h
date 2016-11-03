@@ -34,9 +34,9 @@ InputParameters validParams<AddPeriodicBCAction>();
 class AddPeriodicBCAction : public Action
 {
 public:
-  AddPeriodicBCAction(const std::string & name, InputParameters params);
+  AddPeriodicBCAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 
 protected:
   /**

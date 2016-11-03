@@ -17,8 +17,8 @@ InputParameters validParams<SwitchingFunctionConstraintLagrange>()
   return params;
 }
 
-SwitchingFunctionConstraintLagrange::SwitchingFunctionConstraintLagrange(const std::string & name, InputParameters parameters) :
-    DerivativeMaterialInterface<Kernel>(name, parameters),
+SwitchingFunctionConstraintLagrange::SwitchingFunctionConstraintLagrange(const InputParameters & parameters) :
+    DerivativeMaterialInterface<Kernel>(parameters),
     _h_names(getParam<std::vector<MaterialPropertyName> >("h_names")),
     _num_h(_h_names.size()),
     _h(_num_h),
@@ -29,7 +29,7 @@ SwitchingFunctionConstraintLagrange::SwitchingFunctionConstraintLagrange(const s
 {
   // parameter check. We need exactly one eta per h
   if (_num_h != coupledComponents("etas"))
-    mooseError("Need to pass in as many h_names as etas in SwitchingFunctionConstraintLagrange kernel " << name);
+    mooseError("Need to pass in as many h_names as etas in SwitchingFunctionConstraintLagrange kernel " << name());
 
   // fetch switching functions (for the residual) and h derivatives (for the Jacobian)
   for (unsigned int i = 0; i < _num_h; ++i)
@@ -70,3 +70,4 @@ SwitchingFunctionConstraintLagrange::computeQpOffDiagJacobian(unsigned int j_var
   else
     return 0.0;
 }
+

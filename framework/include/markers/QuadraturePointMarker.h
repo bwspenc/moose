@@ -19,9 +19,6 @@
 #include "Coupleable.h"
 #include "MaterialPropertyInterface.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
 class QuadraturePointMarker;
 
 template<>
@@ -33,12 +30,11 @@ class QuadraturePointMarker :
   public MaterialPropertyInterface
 {
 public:
-  QuadraturePointMarker(const std::string & name, InputParameters parameters);
-  virtual ~QuadraturePointMarker(){};
+  QuadraturePointMarker(const InputParameters & parameters);
 
 protected:
 
-  virtual MarkerValue computeElementMarker();
+  virtual MarkerValue computeElementMarker() override;
 
   /**
    * Override this to compute a marker value at each quadrature point.

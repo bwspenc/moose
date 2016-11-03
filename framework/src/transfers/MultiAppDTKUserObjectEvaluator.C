@@ -14,16 +14,19 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
+// MOOSE includes
 #include "MultiAppDTKUserObjectEvaluator.h"
-
-// Moose
 #include "UserObject.h"
 #include "Executioner.h"
 #include "FEProblem.h"
-
+#include "MultiApp.h"
 #include "MooseTypes.h"
+#include "MooseMesh.h"
+
+// libMesh includes
+#include "libmesh/mesh_tools.h"
 
 MultiAppDTKUserObjectEvaluator::MultiAppDTKUserObjectEvaluator(MultiApp & multi_app, const std::string & user_object_name):
     _multi_app(multi_app),
@@ -46,7 +49,7 @@ MultiAppDTKUserObjectEvaluator::evaluate(const Teuchos::ArrayRCP<GlobalOrdinal>&
 
   unsigned int dim = 3;  // TODO: REPLACE ME!!!!!!!!!
 
-  for (GlobalOrdinal i=0; i<num_values; i++)
+  for (GlobalOrdinal i=0; i<static_cast<GlobalOrdinal>(num_values); i++)
   {
     // See if this app is on this processor
     if (std::binary_search(_box_ids.begin(), _box_ids.end(), bids[i]))
@@ -57,7 +60,7 @@ MultiAppDTKUserObjectEvaluator::evaluate(const Teuchos::ArrayRCP<GlobalOrdinal>&
       for (unsigned int j=0; j<dim; j++)
         p(j) = coords[(j*num_values)+i];
 
-      evaluated_data[i] = _multi_app.appUserObjectBase(app, _user_object_name).spatialValue(p - _multi_app.position(app) );
+      evaluated_data[i] = _multi_app.appUserObjectBase(app, _user_object_name).spatialValue(p - _multi_app.position(app));
     }
     else
       evaluated_data[i] = 0.0;
@@ -71,9 +74,6 @@ MultiAppDTKUserObjectEvaluator::createSourceGeometry( const Teuchos::RCP<const T
 {
   _boxes.resize(_multi_app.numLocalApps());
   _box_ids.resize(_multi_app.numLocalApps());
-
-  // How much to inflate each bounding box by (helps with non-matching surfaces)
-  unsigned int inflation = 0.01;
 
   comm->barrier();
 
@@ -89,8 +89,7 @@ MultiAppDTKUserObjectEvaluator::createSourceGeometry( const Teuchos::RCP<const T
     _box_ids[app] = global_app;
   }
 
-  return Teuchos::rcp( new DataTransferKit::GeometryManager<DataTransferKit::Box,GlobalOrdinal>(_boxes, _box_ids, comm, 3));
-
+  return Teuchos::rcp(new DataTransferKit::GeometryManager<DataTransferKit::Box,GlobalOrdinal>(_boxes, _box_ids, comm, 3));
 }
 
-#endif //LIBMESH_HAVE_DTK
+#endif //LIBMESH_TRILINOS_HAVE_DTK

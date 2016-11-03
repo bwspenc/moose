@@ -15,15 +15,13 @@
 #ifndef RESTARTABLEDATA_H
 #define RESTARTABLEDATA_H
 
+// MOOSE includes
+#include "DataIO.h"
+
+// C++ includes
 #include <vector>
 
-#include "ColumnMajorMatrix.h"
-#include "MaterialPropertyIO.h"
-
-#include "libmesh/libmesh_common.h"
-#include "libmesh/tensor_value.h"
-#include "libmesh/vector_value.h"
-
+// Forward declarations
 class RestartableDataValue;
 
 /**
@@ -45,7 +43,7 @@ public:
   /**
    * Destructor.
    */
-  virtual ~RestartableDataValue() {};
+  virtual ~RestartableDataValue() = default;
 
   /**
    * String identifying the type of parameter stored.
@@ -111,22 +109,22 @@ public:
   /**
    * String identifying the type of parameter stored.
    */
-  virtual std::string type ();
+  virtual std::string type() override;
 
   /**
    * Swap
    */
-  virtual void swap (RestartableDataValue *rhs);
+  virtual void swap (RestartableDataValue *rhs) override;
 
   /**
    * Store the RestartableData into a binary stream
    */
-  virtual void store(std::ostream & stream);
+  virtual void store(std::ostream & stream) override;
 
   /**
    * Load the RestartableData from a binary stream
    */
-  virtual void load(std::istream & stream);
+  virtual void load(std::istream & stream) override;
 
 private:
 
@@ -146,7 +144,7 @@ RestartableData<T>::type ()
 
 template <typename T>
 inline void
-RestartableData<T>::swap (RestartableDataValue *rhs)
+RestartableData<T>::swap (RestartableDataValue * libmesh_dbg_var(rhs))
 {
   mooseAssert(rhs != NULL, "Assigning NULL?");
 //  _value.swap(cast_ptr<RestartableData<T>*>(rhs)->_value);
@@ -175,27 +173,16 @@ class RestartableDatas : public std::vector<std::map<std::string, RestartableDat
 public:
   RestartableDatas(size_type n) :
       std::vector<std::map<std::string, RestartableDataValue *> >(n)
-    {
-    }
+  {}
 
 
   virtual ~RestartableDatas()
-    {
-      for (std::vector<std::map<std::string, RestartableDataValue *> >::iterator i = begin(); i != end(); ++i)
-        for (std::map<std::string, RestartableDataValue *>::iterator j=(*i).begin();
-             j != (*i).end();
-             ++j)
-          delete j->second;
-    }
-
-//   /**
-//    * Parameter map iterator.
-//    */
-//   typedef std::vector<RestartableDataValue *>::iterator iterator;
-
-//   /**
-//    * Constant parameter map iterator.
-//    */
-//   typedef std::vector<RestartableDataValue *>::const_iterator const_iterator;
+  {
+    for (std::vector<std::map<std::string, RestartableDataValue *> >::iterator i = begin(); i != end(); ++i)
+      for (std::map<std::string, RestartableDataValue *>::iterator j=(*i).begin();
+           j != (*i).end();
+           ++j)
+        delete j->second;
+  }
 };
 #endif

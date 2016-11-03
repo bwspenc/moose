@@ -80,14 +80,20 @@ public:
    */
   Real shearModulus() const;
 
+  /**
+   * Return the youngs  modulus
+   */
+  Real youngsModulus() const;
 
-  virtual Real stiffness( const unsigned i, const unsigned j,
-                          const RealGradient & test,
-                          const RealGradient & phi );
+  virtual Real stiffness(const unsigned i,
+                         const unsigned j,
+                         const RealGradient & test,
+                         const RealGradient & phi) const;
 
-  virtual void multiply( const SymmTensor & x, SymmTensor & b ) const;
+  virtual void multiply(const SymmTensor & x, SymmTensor & b) const;
 
-  virtual void adjustForCracking( const RealVectorValue & crack_flags );
+  virtual void adjustForCracking(const RealVectorValue & crack_flags);
+  virtual void adjustForCrackingWithShearRetention(const RealVectorValue & crack_flags);
 
 protected:
 

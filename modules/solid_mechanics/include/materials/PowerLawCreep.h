@@ -23,8 +23,7 @@ InputParameters validParams<PowerLawCreep>();
 class PowerLawCreep : public SolidModel
 {
 public:
-  PowerLawCreep( const std::string & name,
-                 InputParameters parameters );
+  PowerLawCreep( const InputParameters & parameters);
 
 protected:
 

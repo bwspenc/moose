@@ -110,7 +110,7 @@
   [../]
 
   [./exact_x]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = exact_x_fn
     execute_on = 'initial timestep_end'
     point = '0 0 0'
@@ -135,7 +135,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

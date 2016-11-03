@@ -4,19 +4,21 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "Nonlinear.h"
-
 #include "SolidModel.h"
-
 #include "Problem.h"
 #include "SymmIsotropicElasticityTensor.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 namespace SolidMechanics
 {
 
 Nonlinear::Nonlinear( SolidModel & solid_model,
                           const std::string & name,
-                          InputParameters parameters )
+                          const InputParameters & parameters )
   :Element( solid_model, name, parameters ),
    _decomp_method( RashidApprox ),
    _incremental_rotation(3,3),

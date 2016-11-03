@@ -26,9 +26,9 @@ InputParameters validParams<SetAdaptivityOptionsAction>();
 class SetAdaptivityOptionsAction : public Action
 {
 public:
-  SetAdaptivityOptionsAction(const std::string & name, InputParameters params);
+  SetAdaptivityOptionsAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // SETADAPTIVITYOPTIONSACTION_H

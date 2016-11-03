@@ -21,12 +21,12 @@ template<>
 InputParameters validParams<TimeIntegrator>()
 {
   InputParameters params = validParams<MooseObject>();
-
+  params.registerBase("TimeIntegrator");
   return params;
 }
 
-TimeIntegrator::TimeIntegrator(const std::string & name, InputParameters parameters) :
-    MooseObject(name, parameters),
+TimeIntegrator::TimeIntegrator(const InputParameters & parameters) :
+    MooseObject(parameters),
     Restartable(parameters, "TimeIntegrators"),
     _fe_problem(*parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
     _sys(*parameters.getCheckedPointerParam<SystemBase *>("_sys")),
@@ -53,3 +53,4 @@ TimeIntegrator::solve()
 {
   _nl.sys().solve();
 }
+

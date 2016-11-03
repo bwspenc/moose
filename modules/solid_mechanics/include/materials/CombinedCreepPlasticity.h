@@ -18,8 +18,7 @@ class ReturnMappingModel;
 class CombinedCreepPlasticity : public ConstitutiveModel
 {
 public:
-  CombinedCreepPlasticity( const std::string & name,
-                           InputParameters parameters );
+  CombinedCreepPlasticity( const InputParameters & parameters);
   virtual ~CombinedCreepPlasticity() {}
 
 
@@ -39,7 +38,7 @@ protected:
 
   virtual void initialSetup();
 
-  std::map<SubdomainID, std::vector<ReturnMappingModel*> > _submodels;
+  std::map<SubdomainID, std::vector<MooseSharedPointer<ReturnMappingModel> > > _submodels;
 
   unsigned int _max_its;
   bool _output_iteration_info;

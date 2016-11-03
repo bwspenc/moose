@@ -31,15 +31,15 @@ InputParameters validParams<ValueThresholdMarker>()
 }
 
 
-ValueThresholdMarker::ValueThresholdMarker(const std::string & name, InputParameters parameters) :
-    QuadraturePointMarker(name, parameters),
+ValueThresholdMarker::ValueThresholdMarker(const InputParameters & parameters) :
+    QuadraturePointMarker(parameters),
     _coarsen_set(parameters.isParamValid("coarsen")),
     _coarsen(parameters.get<Real>("coarsen")),
     _refine_set(parameters.isParamValid("refine")),
     _refine(parameters.get<Real>("refine")),
 
     _invert(parameters.get<bool>("invert")),
-    _third_state((MarkerValue)(int)getParam<MooseEnum>("third_state")),
+    _third_state(getParam<MooseEnum>("third_state").getEnum<MarkerValue>()),
 
     _u(coupledValue("variable"))
 {

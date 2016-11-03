@@ -30,13 +30,15 @@ InputParameters validParams<TypesMaterial>();
 class TypesMaterial : public Material
 {
 public:
-  TypesMaterial(const std::string & name, InputParameters parameters);
+  TypesMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpProperties();
 
   MaterialProperty<Real> & _real_prop;
   MaterialProperty<std::vector<Real> > & _std_vec_prop;
+  MaterialProperty<std::vector<Real> > & _std_vec_prop_qp;
+  MaterialProperty<std::vector<RealGradient> > & _std_vec_grad_prop;
   MaterialProperty<RealVectorValue> & _real_vec_prop;
   MaterialProperty<DenseMatrix<Real> > & _matrix_prop;
   MaterialProperty<RealTensorValue> & _tensor_prop;

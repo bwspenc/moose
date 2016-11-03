@@ -19,8 +19,8 @@ InputParameters validParams<DomainIntegralQFunction>()
   return params;
 }
 
-DomainIntegralQFunction::DomainIntegralQFunction(const std::string & name, InputParameters parameters):
-    AuxKernel(name, parameters),
+DomainIntegralQFunction::DomainIntegralQFunction(const InputParameters & parameters):
+    AuxKernel(parameters),
     _j_integral_radius_inner(getParam<Real>("j_integral_radius_inner")),
     _j_integral_radius_outer(getParam<Real>("j_integral_radius_outer")),
     _crack_front_definition(&getUserObject<CrackFrontDefinition>("crack_front_definition")),
@@ -115,5 +115,5 @@ DomainIntegralQFunction::projectToFrontAtPoint(Real & dist_to_front, Real & dist
   dist_along_tangent = crack_node_to_current_node * crack_front_tangent;
   RealVectorValue projection_point = *crack_front_point + dist_along_tangent * crack_front_tangent;
   RealVectorValue axis_to_current_node = p - projection_point;
-  dist_to_front = axis_to_current_node.size();
+  dist_to_front = axis_to_current_node.norm();
 }

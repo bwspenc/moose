@@ -18,8 +18,8 @@ InputParameters validParams<RichardsRelPerm>()
   return params;
 }
 
-RichardsRelPerm::RichardsRelPerm(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name, parameters)
+RichardsRelPerm::RichardsRelPerm(const InputParameters & parameters) :
+    GeneralUserObject(parameters)
 {}
 
 void
@@ -32,3 +32,4 @@ RichardsRelPerm::execute()
 
 void RichardsRelPerm::finalize()
 {}
+

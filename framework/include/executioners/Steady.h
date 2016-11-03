@@ -37,22 +37,14 @@ public:
   /**
    * Constructor
    *
-   * @param name The name given to the Executioner in the input file.
    * @param parameters The parameters object holding data for the class to use.
    * @return Whether or not the solve was successful.
    */
-  Steady(const std::string & name, InputParameters parameters);
+  Steady(const InputParameters & parameters);
 
-  virtual ~Steady();
+  virtual void init() override;
 
-  virtual void init();
-
-  /**
-   * This will call solve() on the NonlinearSystem.
-   */
-  virtual void execute();
-
-  virtual Problem & problem();
+  virtual void execute() override;
 
   virtual void checkIntegrity();
 

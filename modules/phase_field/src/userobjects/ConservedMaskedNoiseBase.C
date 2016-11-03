@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ConservedMaskedNoiseBase.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<ConservedMaskedNoiseBase>()
@@ -18,8 +22,8 @@ InputParameters validParams<ConservedMaskedNoiseBase>()
   return params;
 }
 
-ConservedMaskedNoiseBase::ConservedMaskedNoiseBase(const std::string & name, InputParameters parameters) :
-    ConservedNoiseInterface(name, parameters),
+ConservedMaskedNoiseBase::ConservedMaskedNoiseBase(const InputParameters & parameters) :
+    ConservedNoiseInterface(parameters),
     _mask(getMaterialProperty<Real>("mask"))
 {
 }
@@ -54,6 +58,8 @@ ConservedMaskedNoiseBase::threadJoin(const UserObject &y)
   const ConservedMaskedNoiseBase & uo = static_cast<const ConservedMaskedNoiseBase &>(y);
 
   _random_data.insert(uo._random_data.begin(), uo._random_data.end());
+  _integral += uo._integral;
+  _volume += uo._volume;
 }
 
 void
@@ -79,3 +85,4 @@ ConservedMaskedNoiseBase::getQpValue(dof_id_type element_id, unsigned int qp) co
     return (me->second[qp].first - _offset) * me->second[qp].second;
   }
 }
+

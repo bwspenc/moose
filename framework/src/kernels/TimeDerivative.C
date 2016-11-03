@@ -13,6 +13,10 @@
 /****************************************************************/
 
 #include "TimeDerivative.h"
+#include "Assembly.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<TimeDerivative>()
@@ -22,8 +26,8 @@ InputParameters validParams<TimeDerivative>()
   return params;
 }
 
-TimeDerivative::TimeDerivative(const std::string & name, InputParameters parameters) :
-    TimeKernel(name, parameters),
+TimeDerivative::TimeDerivative(const InputParameters & parameters) :
+    TimeKernel(parameters),
     _lumping(getParam<bool>("lumping"))
 {
 }
@@ -50,10 +54,9 @@ TimeDerivative::computeJacobian()
     for (_i = 0; _i < _test.size(); _i++)
       for (_j = 0; _j < _phi.size(); _j++)
         for (_qp = 0; _qp < _qrule->n_points(); _qp++)
-        {
           ke(_i, _i) += _JxW[_qp] * _coord[_qp] * computeQpJacobian();
-        }
   }
   else
     TimeKernel::computeJacobian();
 }
+

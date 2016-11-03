@@ -4,7 +4,9 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "INSDivergenceAux.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<INSDivergenceAux>()
@@ -19,12 +21,13 @@ InputParameters validParams<INSDivergenceAux>()
   return params;
 }
 
-INSDivergenceAux::INSDivergenceAux(const std::string & name, InputParameters parameters)
-  :AuxKernel(name, parameters),
-  _grad_u_vel(coupledGradient("u")),
-  _grad_v_vel(_mesh.dimension() >= 2 ? coupledGradient("v") : _grad_zero),
-  _grad_w_vel(_mesh.dimension() == 3 ? coupledGradient("w") : _grad_zero)
-{}
+INSDivergenceAux::INSDivergenceAux(const InputParameters & parameters) :
+    AuxKernel(parameters),
+    _grad_u_vel(coupledGradient("u")),
+    _grad_v_vel(_mesh.dimension() >= 2 ? coupledGradient("v") : _grad_zero),
+    _grad_w_vel(_mesh.dimension() == 3 ? coupledGradient("w") : _grad_zero)
+{
+}
 
 Real
 INSDivergenceAux::computeValue()

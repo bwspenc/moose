@@ -1,31 +1,15 @@
-#The purpose of this test is to test the loadstep predictor.  This is a very
-#small, monotonically loaded block of material.  If things are working right,
-#the predictor should come very close to exactly nailing the solution on steps
-#after the first step.  Because of nonlinear geometry, the predictor is slightly
-#off in general, but that is mitigated by setting this up so that the elements
-#undergo no rotations.
+# The purpose of this test is to test the simple predictor.  This is a very
+# small, monotonically loaded block of material.  If things are working right,
+# the predictor should come very close to exactly nailing the solution on steps
+# after the first step.  Because of nonlinear geometry, the predictor is slightly
+# off in general, but that is mitigated by setting this up so that the elements
+# undergo no rotations.
 
-#The main thing to check here is that once the predictor kicks in, there are
-#no iterations required.  Only the last step is output because we don't want
-#to check the number of nonlinear iterations in the step where the solver actually
-#has to work.
+# The main thing to check here is that once the predictor kicks in, there are
+# no iterations required.
 
 [Mesh]
-#  generated =true
   displacements = 'disp_x disp_y disp_z'
-#  [./Generation]
-#    dim = 3
-#    nx = 2
-#    ny = 2
-#    nz = 1
-#    xmin = 0
-#    xmax = 2
-#    ymin = 0
-#    ymax = 2
-#    zmin = 0
-#    zmax = 1
-#    elem_type = HEX8
-#  [../]
   file = predictor_test.e
 [] # Mesh
 
@@ -139,14 +123,14 @@
 
 # controls for nonlinear iterations
   nl_max_its = 15
-  nl_rel_tol = 1e-5
-  nl_abs_tol = 1e-7
+  nl_rel_tol = 1e-14
+  nl_abs_tol = 1e-9
 
 #  l_max_its = 20
 
   start_time = 0.0
-  dt = 0.25
-  num_steps = 4
+  dt = 0.5
+  num_steps = 2
   end_time = 1.0
 
   [./Predictor]
@@ -156,16 +140,13 @@
 [] # Executioner
 
 [Postprocessors]
-  [./nonlinear_its]
-    type = NumNonlinearIterations
+  [./initial_residual]
+    type = Residual
+    residual_type = initial_after_preset
   [../]
 []
 
 [Outputs]
-  file_base = out
-  interval = 4
-  output_initial = true
+  csv = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 [] # Outputs

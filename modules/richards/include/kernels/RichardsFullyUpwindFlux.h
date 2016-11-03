@@ -48,7 +48,7 @@ class RichardsFullyUpwindFlux : public Kernel
 {
 public:
 
-  RichardsFullyUpwindFlux(const std::string & name, InputParameters parameters);
+  RichardsFullyUpwindFlux(const InputParameters & parameters);
 
 
 protected:
@@ -63,17 +63,8 @@ protected:
   /// This simply calls upwind
   virtual void computeResidual();
 
-  /// Not used.  I use computeQpJac instead.
-  virtual Real computeQpJacobian();
-
-  /// Not used.  I use computeQpJac instead.
+  /// this simply calls upwind
   virtual void computeOffDiagJacobian(unsigned int jvar);
-
-  /// this simply calls upwind
-  virtual void computeJacobian();
-
-  /// this simply calls upwind
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   /// the derivative of the flux without the upstream mobility terms
   Real computeQpJac(unsigned int dvar);
@@ -150,9 +141,7 @@ protected:
    * _ps_at_nodes[_pvar] is a pointer to this variable's nodal porepressure values
    * So: (*_ps_at_nodes[_pvar])[i] = _var.nodalSln()[i] = value of porepressure at node i
    */
-  std::vector<VariableValue *> _ps_at_nodes;
-
-
+  std::vector<const VariableValue *> _ps_at_nodes;
 };
 
 #endif //RICHARDSFULLYUPWINDFLUX

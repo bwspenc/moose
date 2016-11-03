@@ -15,10 +15,10 @@
 #ifndef VERIFYELEMENTUNIQUEID_H
 #define VERIFYELEMENTUNIQUEID_H
 
+// MOOSE includes
 #include "ElementUserObject.h"
-#include "libmesh/id_types.h"
 
-//Forward Declarations
+// Forward Declarations
 class VerifyElementUniqueID;
 
 template<>
@@ -27,12 +27,12 @@ InputParameters validParams<VerifyElementUniqueID>();
 class VerifyElementUniqueID : public ElementUserObject
 {
 public:
-  VerifyElementUniqueID(const std::string & name, InputParameters parameters);
+  VerifyElementUniqueID(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual void threadJoin(const UserObject & y);
-  virtual void finalize();
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual void threadJoin(const UserObject & y) override;
+  virtual void finalize() override;
 
 protected:
   std::vector<dof_id_type> _all_ids;

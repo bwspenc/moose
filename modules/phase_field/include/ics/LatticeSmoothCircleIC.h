@@ -29,12 +29,9 @@ public:
   /**
    * Constructor
    *
-   * @param name The name given to the initial condition in the input file.
    * @param parameters The parameters object holding data for the class to use.
-   * @param var_name The variable this InitialCondtion is supposed to provide values for.
    */
-  LatticeSmoothCircleIC(const std::string & name,
-                        InputParameters parameters);
+  LatticeSmoothCircleIC(const InputParameters & parameters);
 
   virtual void initialSetup();
 

@@ -12,13 +12,14 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "MultiAppPostprocessorInterpolationTransfer.h"
-
-// Moose
 #include "MooseTypes.h"
 #include "FEProblem.h"
+#include "MultiApp.h"
+#include "MooseMesh.h"
 
-// libMesh
+// libMesh includes
 #include "libmesh/meshfree_interpolation.h"
 #include "libmesh/system.h"
 #include "libmesh/radial_basis_interpolation.h"
@@ -41,8 +42,8 @@ InputParameters validParams<MultiAppPostprocessorInterpolationTransfer>()
   return params;
 }
 
-MultiAppPostprocessorInterpolationTransfer::MultiAppPostprocessorInterpolationTransfer(const std::string & name, InputParameters parameters) :
-    MultiAppTransfer(name, parameters),
+MultiAppPostprocessorInterpolationTransfer::MultiAppPostprocessorInterpolationTransfer(const InputParameters & parameters) :
+    MultiAppTransfer(parameters),
     _postprocessor(getParam<PostprocessorName>("postprocessor")),
     _to_var_name(getParam<AuxVariableName>("variable")),
     _num_points(getParam<unsigned int>("num_points")),
@@ -55,6 +56,8 @@ MultiAppPostprocessorInterpolationTransfer::MultiAppPostprocessorInterpolationTr
 void
 MultiAppPostprocessorInterpolationTransfer::execute()
 {
+  _console << "Beginning PostprocessorInterpolationTransfer " << name() << std::endl;
+
   switch (_direction)
   {
     case TO_MULTIAPP:
@@ -102,14 +105,14 @@ MultiAppPostprocessorInterpolationTransfer::execute()
 
       // Loop over the master nodes and set the value of the variable
       {
-        System * to_sys = find_sys(_multi_app->problem()->es(), _to_var_name);
+        System * to_sys = find_sys(_multi_app->problem().es(), _to_var_name);
 
         unsigned int sys_num = to_sys->number();
         unsigned int var_num = to_sys->variable_number(_to_var_name);
 
         NumericVector<Real> & solution = *to_sys->solution;
 
-        MooseMesh & mesh = _multi_app->problem()->mesh();
+        MooseMesh & mesh = _multi_app->problem().mesh();
 
         std::vector<std::string> vars;
 
@@ -144,11 +147,13 @@ MultiAppPostprocessorInterpolationTransfer::execute()
         solution.close();
       }
 
-      _multi_app->problem()->es().update();
+      _multi_app->problem().es().update();
 
       delete idi;
 
       break;
     }
   }
+
+  _console << "Finished PostprocessorInterpolationTransfer " << name() << std::endl;
 }

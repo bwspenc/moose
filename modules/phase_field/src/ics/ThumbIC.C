@@ -20,9 +20,8 @@ InputParameters validParams<ThumbIC>()
   return params;
 }
 
-ThumbIC::ThumbIC(const std::string & name,
-                 InputParameters parameters) :
-    InitialCondition(name, parameters),
+ThumbIC::ThumbIC(const InputParameters & parameters) :
+    InitialCondition(parameters),
     _xcoord(parameters.get<Real>("xcoord")),
     _width(parameters.get<Real>("width")),
     _height(parameters.get<Real>("height")),
@@ -59,3 +58,4 @@ ThumbIC::value(const Point & p)
 
   return value;
 }
+

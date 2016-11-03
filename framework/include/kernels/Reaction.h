@@ -26,11 +26,11 @@ InputParameters validParams<Reaction>();
 class Reaction : public Kernel
 {
 public:
-  Reaction(const std::string & name, InputParameters parameters);
+  Reaction(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
+  virtual Real computeQpResidual() override;
+  virtual Real computeQpJacobian() override;
 
 };
 #endif //REACTION_H

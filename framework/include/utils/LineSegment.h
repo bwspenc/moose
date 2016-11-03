@@ -15,24 +15,28 @@
 #ifndef LINESEGMENT_H
 #define LINESEGMENT_H
 
-#include "Moose.h"
+// MOOSE includes
+#include "Moose.h" // using namespace libMesh
 
 // libMesh includes
 #include "libmesh/point.h"
 
-// forward declares
-namespace libMesh {
+// forward declarations
+namespace libMesh
+{
   class Plane;
 }
 
-
+/**
+ * The LineSegment class is used by the LineMaterialSamplerBase class
+ * and for some ray tracing stuff.
+ */
 class LineSegment
 {
- public:
-
+public:
   LineSegment (const Point & p0, const Point & p1);
 
-  virtual ~LineSegment();
+  virtual ~LineSegment() = default;
 
   /**
    * Returns the closest point on the LineSegment
@@ -57,7 +61,22 @@ class LineSegment
 
   bool intersect (const LineSegment & l1, Point & intersect_p) const;
 
- private:
+  /**
+   * Beginning of the line segment.
+   */
+  const Point & start() const { return _p0; }
+
+  /**
+   * Ending of the line segment.
+   */
+  const Point & end() const { return _p1; }
+
+  /**
+   * Length of segment
+   */
+  Real length() const { return (_p0 - _p1).norm(); }
+
+private:
   bool closest_point(const Point & p, bool clamp_to_segment, Point & closest_p) const;
 
   Point _p0, _p1;

@@ -15,6 +15,7 @@
 #include "AddAllSideSetsByNormals.h"
 #include "Parser.h"
 #include "InputParameters.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/mesh_generation.h"
@@ -30,12 +31,8 @@ InputParameters validParams<AddAllSideSetsByNormals>()
   return params;
 }
 
-AddAllSideSetsByNormals::AddAllSideSetsByNormals(const std::string & name, InputParameters parameters):
-    AddSideSetsBase(name, parameters)
-{
-}
-
-AddAllSideSetsByNormals::~AddAllSideSetsByNormals()
+AddAllSideSetsByNormals::AddAllSideSetsByNormals(const InputParameters & parameters) :
+    AddSideSetsBase(parameters)
 {
 }
 
@@ -48,7 +45,7 @@ AddAllSideSetsByNormals::modify()
     mooseError("_mesh_ptr must be initialized before calling AddAllSideSetsByNormals::modify()!");
 
   // We can't call this in the constructor, it appears that _mesh_ptr is always NULL there.
-  _mesh_ptr->errorIfParallelDistribution("AddAllSideSetsByNormals");
+  _mesh_ptr->errorIfDistributedMesh("AddAllSideSetsByNormals");
 
   // Get the current list of boundaries so we can generate new ones that won't conflict
   _mesh_boundary_ids = _mesh_ptr->meshBoundaryIds();
@@ -62,11 +59,11 @@ AddAllSideSetsByNormals::modify()
   // We can't rely on flood catching them all here...
   MeshBase::const_element_iterator       el     = _mesh_ptr->getMesh().elements_begin();
   const MeshBase::const_element_iterator end_el = _mesh_ptr->getMesh().elements_end();
-  for ( ; el != end_el ; ++el)
+  for (; el != end_el ; ++el)
   {
-    const Elem *elem = *el;
+    const Elem * elem = *el;
 
-    for (unsigned int side=0; side < elem->n_sides(); ++side)
+    for (unsigned int side = 0; side < elem->n_sides(); ++side)
     {
       if (elem->neighbor(side))
         continue;

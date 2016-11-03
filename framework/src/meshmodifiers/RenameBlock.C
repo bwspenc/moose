@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "RenameBlock.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<RenameBlock>()
@@ -26,8 +27,8 @@ InputParameters validParams<RenameBlock>()
   return params;
 }
 
-RenameBlock::RenameBlock(const std::string & name, InputParameters parameters) :
-    MeshModifier(name, parameters)
+RenameBlock::RenameBlock(const InputParameters & parameters) :
+    MeshModifier(parameters)
 {
   // error checking.  Must have exactly one of old_block_id or old_block_name
   if (isParamValid("old_block_id") && isParamValid("old_block_name"))
@@ -43,10 +44,6 @@ RenameBlock::RenameBlock(const std::string & name, InputParameters parameters) :
     mooseError("RenameBlock: You must supply exactly one of new_block_id or new_block_name\n");
   else if (!isParamValid("new_block_id") && !isParamValid("new_block_name"))
     mooseError("RenameBlock: You must supply exactly one of new_block_id or new_block_name\n");
-}
-
-RenameBlock::~RenameBlock()
-{
 }
 
 void

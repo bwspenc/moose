@@ -30,7 +30,7 @@
      invalue = 1.0
      outvalue = 0.0001
      circles_per_side = '3 3 3'
-     Rnd_variation = 10.0
+     pos_variation = 10.0
      radius = 10.0
      int_width = 12.0
      radius_variation = 2
@@ -64,7 +64,6 @@ active = 'Dv'
     type = GenericConstantMaterial
     prop_names = D_v
     prop_values = 0.074802
-    block = 0
   [../]
 []
 
@@ -75,6 +74,7 @@ active = 'Dv'
     type = FeatureFloodCount
     variable = c
     execute_on = 'initial timestep_end'
+    flood_entity_type = NODAL
   [../]
 []
 
@@ -104,8 +104,5 @@ active = 'Dv'
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

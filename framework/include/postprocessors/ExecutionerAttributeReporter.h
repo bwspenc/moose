@@ -20,7 +20,6 @@
 
 // Forward declarations
 class ExecutionerAttributeReporter;
-class EigenExecutionerBase;
 
 template<>
 InputParameters validParams<ExecutionerAttributeReporter>();
@@ -38,30 +37,23 @@ public:
 
   /**
    * Class constructor
-   * @param
    * @param parameters
    */
-  ExecutionerAttributeReporter(const std::string & name, InputParameters parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~ExecutionerAttributeReporter(){}
+  ExecutionerAttributeReporter(const InputParameters & parameters);
 
   ///@{
   /**
    * These methods are intentionally empty
    */
-  virtual void execute(){};
-  virtual void finalize(){};
-  virtual void initialize(){}
+  virtual void execute() override {}
+  virtual void initialize() override {}
   ///@}
 
   /**
    * Returns the value of the eigen value as computed
    * by an EigenExecutionerBase object.
    */
-  virtual PostprocessorValue getValue();
+  virtual PostprocessorValue getValue() override;
 
 private:
 

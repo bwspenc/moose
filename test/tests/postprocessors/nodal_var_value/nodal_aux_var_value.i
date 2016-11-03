@@ -8,11 +8,11 @@
   ymin = 0
   ymax = 1
   elem_type = QUAD4
-  # This test can only be run with SerialMesh since, in parallel with
-  # ParallelMesh, the nodes get renumbered and thus the
+  # This test can only be run with ReplicatedMesh since, in parallel with
+  # DistributedMesh, the nodes get renumbered and thus the
   # NodalVariableValue postprocessor's output is necessarily
   # different.
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -115,11 +115,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = out_nodal_aux_var_value
   exodus = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

@@ -11,9 +11,11 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 #include "TiedValueConstraint.h"
 
-#include "SystemBase.h"
+// libMesh includes
+#include "libmesh/sparse_matrix.h"
 
 template<>
 InputParameters validParams<TiedValueConstraint>()
@@ -24,8 +26,8 @@ InputParameters validParams<TiedValueConstraint>()
   return params;
 }
 
-TiedValueConstraint::TiedValueConstraint(const std::string & name, InputParameters parameters) :
-    NodeFaceConstraint(name, parameters),
+TiedValueConstraint::TiedValueConstraint(const InputParameters & parameters) :
+    NodeFaceConstraint(parameters),
     _scaling(getParam<Real>("scaling")),
     _residual_copy(_sys.residualGhosted())
 {}
@@ -81,3 +83,4 @@ TiedValueConstraint::computeQpJacobian(Moose::ConstraintJacobianType type)
   }
   return retVal;
 }
+

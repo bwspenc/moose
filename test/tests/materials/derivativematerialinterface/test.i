@@ -10,6 +10,7 @@
     type = DerivativeMaterialInterfaceTestProvider
     block = 0
     outputs = exodus
+    output_properties = 'dprop/db dprop/da d^2prop/dadb d^2prop/dadc d^3prop/dadbdc'
   [../]
   [./client]
     type = DerivativeMaterialInterfaceTestClient
@@ -25,12 +26,10 @@
   solve = false
 []
 
+[Debug]
+  show_material_props = true
+[]
+
 [Outputs]
-  output_initial = true
   exodus = true
-  [./console]
-    type = Console
-    perf_log = false
-    output_on = 'initial timestep_end failed nonlinear'
-  [../]
 []

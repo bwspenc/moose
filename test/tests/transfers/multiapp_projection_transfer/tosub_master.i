@@ -65,13 +65,10 @@
   dt = 1
 
   solve_type = 'NEWTON'
-  print_linear_residuals = true
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []
 
 [Debug]
@@ -95,8 +92,6 @@
     multi_app = sub
     source_variable = u
     variable = u_nodal
-    family = LAGRANGE
-    order = FIRST
   [../]
   [./elemental_tosub]
     type = MultiAppProjectionTransfer
@@ -104,8 +99,6 @@
     multi_app = sub
     source_variable = u
     variable = u_elemental
-    order = CONSTANT
-    family = MONOMIAL
   [../]
   [./elemental_to_sub_elemental]
     type = MultiAppProjectionTransfer
@@ -113,8 +106,6 @@
     multi_app = sub
     source_variable = x
     variable = x_elemental
-    order = CONSTANT
-    family = MONOMIAL
   [../]
   [./elemental_to_sub_nodal]
     type = MultiAppProjectionTransfer
@@ -122,7 +113,5 @@
     multi_app = sub
     source_variable = x
     variable = x_nodal
-    family = LAGRANGE
-    order = FIRST
   [../]
 []

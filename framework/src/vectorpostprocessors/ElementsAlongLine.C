@@ -12,9 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "ElementsAlongLine.h"
-
 #include "RayTracing.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<ElementsAlongLine>()
@@ -26,8 +27,8 @@ InputParameters validParams<ElementsAlongLine>()
   return params;
 }
 
-ElementsAlongLine::ElementsAlongLine(const std::string & name, InputParameters parameters) :
-    GeneralVectorPostprocessor(name, parameters),
+ElementsAlongLine::ElementsAlongLine(const InputParameters & parameters) :
+    GeneralVectorPostprocessor(parameters),
     _start(getParam<Point>("start")),
     _end(getParam<Point>("end")),
     _elem_ids(declareVector("elem_ids"))
@@ -44,8 +45,10 @@ void
 ElementsAlongLine::execute()
 {
   std::vector<Elem *> intersected_elems;
+  std::vector<LineSegment> segments;
 
-  Moose::elementsIntersectedByLine(_start, _end, _fe_problem.mesh(), intersected_elems);
+  std::unique_ptr<PointLocatorBase> pl = _fe_problem.mesh().getPointLocator();
+  Moose::elementsIntersectedByLine(_start, _end, _fe_problem.mesh(), *pl, intersected_elems, segments);
 
   unsigned int num_elems = intersected_elems.size();
 

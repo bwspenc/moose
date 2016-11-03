@@ -58,6 +58,7 @@
 
   # Preconditioned JFNK (default)
   solve_type = 'PJFNK'
+  nl_rel_tol = 1e-15
 
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
@@ -91,7 +92,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_perf_log = true
 []

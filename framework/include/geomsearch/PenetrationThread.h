@@ -15,9 +15,12 @@
 #ifndef PENETRATIONTHREAD_H
 #define PENETRATIONTHREAD_H
 
+// MOOSE includes
 #include "PenetrationLocator.h"
 #include "ParallelUniqueId.h"
-#include "MooseVariable.h"
+
+// Forward declarations
+class MooseVariable;
 
 class PenetrationThread
 {
@@ -37,11 +40,10 @@ public:
                     std::vector<std::vector<FEBase *> > & fes,
                     FEType & fe_type,
                     NearestNodeLocator & nearest_node,
-                    std::map<dof_id_type, std::vector<dof_id_type> > & node_to_elem_map,
+                    const std::map<dof_id_type, std::vector<dof_id_type> > & node_to_elem_map,
                     std::vector<dof_id_type> & elem_list,
                     std::vector<unsigned short int> & side_list,
-                    std::vector<boundary_id_type> & id_list,
-                    bool skip_off_process_slaves);
+                    std::vector<boundary_id_type> & id_list);
 
   // Splitting Constructor
   PenetrationThread(PenetrationThread & x, Threads::split split);
@@ -76,14 +78,15 @@ protected:
 
   NearestNodeLocator & _nearest_node;
 
-  std::map<dof_id_type, std::vector<dof_id_type> > & _node_to_elem_map;
+  const std::map<dof_id_type, std::vector<dof_id_type> > & _node_to_elem_map;
 
   std::vector<dof_id_type> & _elem_list;
   std::vector<unsigned short int> & _side_list;
   std::vector<boundary_id_type> & _id_list;
+
   unsigned int _n_elems;
+
   THREAD_ID _tid;
-  bool _skip_off_process_slaves;
 
   enum CompeteInteractionResult
   {
@@ -111,7 +114,7 @@ protected:
   bool
   findRidgeContactPoint(Point &contact_point,
                         Real & tangential_distance,
-                        Node* &closest_node,
+                        const Node * & closest_node,
                         unsigned int &index,
                         Point &contact_point_ref,
                         std::vector<PenetrationInfo*> &p_info,
@@ -124,12 +127,12 @@ protected:
 
   bool
   restrictPointToSpecifiedEdgeOfFace(Point& p,
-                                     Node* &closest_node,
+                                     const Node * & closest_node,
                                      const Elem* side,
                                      const std::vector<Node*> &edge_nodes);
   bool
   restrictPointToFace(Point& p,
-                      Node* &closest_node,
+                      const Node * & closest_node,
                       const Elem* side);
 
   bool
@@ -193,14 +196,14 @@ protected:
     Point _closest_coor;
     Point _closest_coor_ref;
     Real _tangential_distance;
-    Node* _closest_node;
+    const Node * _closest_node;
   };
 
   struct RidgeSetData
   {
     Real _distance;
     Point _closest_coor;
-    Node* _closest_node;
+    const Node * _closest_node;
     std::vector<RidgeData> _ridge_data_vec;
   };
 };

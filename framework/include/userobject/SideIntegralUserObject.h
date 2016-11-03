@@ -15,9 +15,10 @@
 #ifndef SIDEINTEGRALUSEROBJECT_H
 #define SIDEINTEGRALUSEROBJECT_H
 
-#include "SidePostprocessor.h"
+// MOOSE includes
+#include "SideUserObject.h"
 
-//Forward Declarations
+// Forward Declarations
 class SideIntegralUserObject;
 
 template<>
@@ -32,14 +33,15 @@ InputParameters validParams<SideIntegralUserObject>();
 class SideIntegralUserObject : public SideUserObject
 {
 public:
-  SideIntegralUserObject(const std::string & name, InputParameters parameters);
+  SideIntegralUserObject(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual void threadJoin(const UserObject & y) override;
+  virtual void finalize() override {}
+
+  /// Returns the integral value
   virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
-
-  virtual void finalize(){}
 
 protected:
   virtual Real computeQpIntegral() = 0;

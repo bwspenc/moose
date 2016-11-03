@@ -19,13 +19,15 @@
 #include <string>
 #include <vector>
 
+// MOOSE includes
+#include "ParallelUniqueId.h"
+#include "MooseError.h"
+
 // libMesh includes
-#include "libmesh/dense_vector.h"
-#include "libmesh/point.h"
 #include "libmesh/parsed_function.h"
 
-// MOOSE includes
-#include "FEProblem.h"
+// Forward declarations
+class FEProblem;
 
 /**
  * A wrapper class for creating and evaluating parsed functions via the
@@ -102,7 +104,7 @@ private:
   std::vector<unsigned int> _pp_index;
 
   /// Vector of pointers to PP values
-  std::vector<Real *> _pp_vals;
+  std::vector<const Real *> _pp_vals;
 
   /// Stores the relative location of variables (in _vars) that are connected to Postprocessors
   std::vector<unsigned int> _scalar_index;

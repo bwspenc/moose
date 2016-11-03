@@ -14,6 +14,10 @@
 
 #include "VTKOutput.h"
 
+// libMesh includes
+#include "libmesh/vtk_io.h"
+#include "libmesh/equation_systems.h"
+
 template<>
 InputParameters validParams<VTKOutput>()
 {
@@ -29,8 +33,8 @@ InputParameters validParams<VTKOutput>()
   return params;
 }
 
-VTKOutput::VTKOutput(const std::string & name, InputParameters & parameters) :
-    BasicOutput<OversampleOutput>(name, parameters),
+VTKOutput::VTKOutput(const InputParameters & parameters) :
+    BasicOutput<OversampleOutput>(parameters),
     _binary(getParam<bool>("binary"))
 {
 }
@@ -62,14 +66,15 @@ VTKOutput::filename()
   std::ostringstream output;
   output << _file_base;
 
-  // Add the _00x.vtk extension to the file
+  // In serial, add the _00x.vtk extension.
+  // In parallel, add the _00x.pvtu extension.
+  std::string ext = (n_processors() == 1) ? ".vtk" : ".pvtu";
   output << "_"
          << std::setw(_padding)
-         << std::setprecision(0)
          << std::setfill('0')
          << std::right
          << _file_num
-         << ".vtk";
+         << ext;
 
   // Return the filename
   return output.str();

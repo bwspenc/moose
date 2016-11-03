@@ -27,7 +27,7 @@
   [./SeffVG]
     type = RichardsSeff1VG
     m = 0.5
-    al = 1 # same deal with PETSc's "constant state"
+    al = 1 # same deal with PETScs constant state
   [../]
   [./RelPermPower]
     type = RichardsRelPermPower
@@ -105,7 +105,7 @@
     variable = pressure
   [../]
   [./mass_bal]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = mass_bal_fcn
   [../]
 []
@@ -139,6 +139,12 @@
   [../]
 []
 
+[AuxVariables]
+  [./one]
+    initial_condition = 1
+  [../]
+[]
+
 [Materials]
   [./rock]
     type = RichardsMaterial
@@ -157,30 +163,17 @@
 []
 
 
-[Preconditioning]
-  [./andy]
-    type = SMP
-    full = true
-    #petsc_options = '-snes_test_display'
-    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it'
-    petsc_options_value = 'bcgs bjacobi 1E-12 1E-10 10000'
-  [../]
-[]
-
 [Executioner]
   type = Transient
   solve_type = Newton
   dt = 2E-3
   end_time = 0.2
+  nl_rel_tol = 1E-12
+  nl_abs_tol = 1E-12
 []
 
 [Outputs]
   file_base = s01
-  output_initial = true
   csv = true
-  print_perf_log = true
-[]
-
-[Problem]
-  use_legacy_uo_initialization = true
+  execute_on = timestep_end
 []

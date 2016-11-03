@@ -22,16 +22,21 @@ class AnisotropicDiffusion;
 template<>
 InputParameters validParams<AnisotropicDiffusion>();
 
-
+/**
+ * This kernel implements the Laplacian operator
+ * multiplied by a 2nd order tensor giving
+ * anisotropic (direction specific) diffusion:
+ * $\overline K \cdot \nabla u \cdot \nabla \phi_i$
+ */
 class AnisotropicDiffusion : public Kernel
 {
 public:
-  AnisotropicDiffusion(const std::string & name, InputParameters parameters);
-  virtual ~AnisotropicDiffusion();
+  AnisotropicDiffusion(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
-  virtual Real computeQpJacobian();
+  virtual Real computeQpResidual() override;
+
+  virtual Real computeQpJacobian() override;
 
   RealTensorValue _k;
 };

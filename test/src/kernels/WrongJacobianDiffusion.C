@@ -23,8 +23,8 @@ InputParameters validParams<WrongJacobianDiffusion>()
   return params;
 }
 
-WrongJacobianDiffusion::WrongJacobianDiffusion(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+WrongJacobianDiffusion::WrongJacobianDiffusion(const InputParameters & parameters) :
+    Kernel(parameters),
     _rfactor(getParam<Real>("rfactor")),
     _jfactor(getParam<Real>("jfactor"))
 {
@@ -40,4 +40,10 @@ Real
 WrongJacobianDiffusion::computeQpJacobian()
 {
   return _jfactor * _grad_test[_i][_qp] * _grad_phi[_j][_qp];
+}
+
+Real
+WrongJacobianDiffusion::computeQpOffDiagJacobian(unsigned int)
+{
+  return 1.0;
 }

@@ -31,17 +31,16 @@ class CoupledTiedValueConstraint :
   public NodeFaceConstraint
 {
 public:
-  CoupledTiedValueConstraint(const std::string & name, InputParameters parameters);
-  virtual ~CoupledTiedValueConstraint(){}
+  CoupledTiedValueConstraint(const InputParameters & parameters);
 
-  virtual Real computeQpSlaveValue();
-
-  virtual Real computeQpResidual(Moose::ConstraintType type);
-
-  virtual Real computeQpJacobian(Moose::ConstraintJacobianType type);
-
-  virtual Real computeQpOffDiagJacobian(Moose::ConstraintJacobianType type, unsigned int jvar);
 protected:
+  virtual Real computeQpSlaveValue() override;
+
+  virtual Real computeQpResidual(Moose::ConstraintType type) override;
+
+  virtual Real computeQpJacobian(Moose::ConstraintJacobianType type) override;
+
+  virtual Real computeQpOffDiagJacobian(Moose::ConstraintJacobianType type, unsigned int jvar) override;
   const Real _scaling;
   NumericVector<Number> & _residual_copy;
 };

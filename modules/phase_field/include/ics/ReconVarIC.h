@@ -23,28 +23,32 @@ InputParameters validParams<ReconVarIC>();
 class ReconVarIC : public InitialCondition
 {
 public:
-
-  ReconVarIC(const std::string & name, InputParameters parameters);
+  ReconVarIC(const InputParameters & parameters);
 
   virtual void initialSetup();
   virtual Real value(const Point & /*p*/);
 
 private:
+  Point getCenterPoint(unsigned int grain);
+
   MooseMesh & _mesh;
   NonlinearSystem & _nl;
   const EBSDReader & _ebsd_reader;
 
   bool _consider_phase;
   unsigned int _phase;
-  bool _all_to_one;
   unsigned int _op_num;
   unsigned int _op_index;
 
   unsigned int _grain_num;
 
+  const bool _all_op_elemental;
+  const bool _advanced_op_assignment;
+
   std::vector<Point> _centerpoints;
-  std::vector<Real> _assigned_op;
-  std::map<dof_id_type, std::vector<Real> > node_to_grn_weight_map;
+  std::vector<unsigned int> _assigned_op;
+
+  const std::map<dof_id_type, std::vector<Real> > & _node_to_grain_weight_map;
 };
 
 #endif //RECONVARIC_H

@@ -15,8 +15,7 @@
 class CLSHPlasticModel : public ReturnMappingModel
 {
 public:
-  CLSHPlasticModel(std::string name,
-                   InputParameters parameters);
+  CLSHPlasticModel(const InputParameters & parameters);
 
 protected:
 

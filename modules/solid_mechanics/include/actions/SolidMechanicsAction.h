@@ -18,7 +18,7 @@ InputParameters validParams<SolidMechanicsAction>();
 class SolidMechanicsAction : public Action
 {
 public:
-  SolidMechanicsAction(const std::string & name, InputParameters params);
+  SolidMechanicsAction(const InputParameters & params);
 
   virtual void act();
 
@@ -28,6 +28,8 @@ private:
   const NonlinearVariableName _disp_z;
   const NonlinearVariableName _disp_r;
   const NonlinearVariableName _temp;
+  const Real _zeta;
+  const Real _alpha;
 };
 
 

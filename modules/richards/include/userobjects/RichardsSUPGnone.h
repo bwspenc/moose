@@ -24,7 +24,7 @@ InputParameters validParams<RichardsSUPGnone>();
 class RichardsSUPGnone : public RichardsSUPG
 {
 public:
-  RichardsSUPGnone(const std::string & name, InputParameters parameters);
+  RichardsSUPGnone(const InputParameters & parameters);
 
   /// SUPG velocity = zero
   RealVectorValue velSUPG(RealTensorValue /*perm*/, RealVectorValue /*gradp*/, Real /*density*/, RealVectorValue /*gravity*/) const;

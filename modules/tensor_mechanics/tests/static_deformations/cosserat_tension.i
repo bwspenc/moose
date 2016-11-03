@@ -8,12 +8,8 @@
 []
 
 [GlobalParams]
-  disp_z = disp_z
-  disp_y = disp_y
-  disp_x = disp_x
-  wc_z = wc_z
-  wc_y = wc_y
-  wc_x = wc_x
+  displacements = 'disp_x disp_y disp_z'
+  Cosserat_rotations = 'wc_x wc_y wc_z'
 []
 
 [Postprocessors]
@@ -96,29 +92,23 @@
   [./x_couple]
     type = StressDivergenceTensors
     variable = wc_x
-    disp_z = wc_z
-    disp_y = wc_y
-    disp_x = wc_x
+    displacements = 'wc_x wc_y wc_z'
     component = 0
-    base_name = coupled
+    base_name = couple
   [../]
   [./y_couple]
     type = StressDivergenceTensors
     variable = wc_y
-    disp_z = wc_z
-    disp_y = wc_y
-    disp_x = wc_x
+    displacements = 'wc_x wc_y wc_z'
     component = 1
-    base_name = coupled
+    base_name = couple
   [../]
   [./z_couple]
     type = StressDivergenceTensors
     variable = wc_z
-    disp_z = wc_z
-    disp_y = wc_y
-    disp_x = wc_x
+    displacements = 'wc_x wc_y wc_z'
     component = 2
-    base_name = coupled
+    base_name = couple
   [../]
   [./x_moment]
     type = MomentBalancing
@@ -185,12 +175,17 @@
 []
 
 [Materials]
-  [./cosserat]
-    type = CosseratLinearElasticMaterial
-    block = 0
+  [./elasticity_tensor]
+    type = ComputeCosseratElasticityTensor
     B_ijkl = 0.5
-    C_ijkl = '1 2 1.3333'
+    E_ijkl = '1 2 1.3333'
     fill_method = 'general_isotropic'
+  [../]
+  [./strain]
+    type = ComputeCosseratSmallStrain
+  [../]
+  [./stress]
+    type = ComputeCosseratLinearElasticStress
   [../]
 []
 
@@ -198,7 +193,6 @@
   [./andy]
     type = SMP
     full = true
-    #petsc_options = '-snes_test_display'
     petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it -ksp_atol -ksp_rtol'
     petsc_options_value = 'gmres bjacobi 1E-10 1E-10 10 1E-15 1E-10'
   [../]
@@ -211,5 +205,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
+  file_base = cosserat_tension_out
   exodus = true
 []

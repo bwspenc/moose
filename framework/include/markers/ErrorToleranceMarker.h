@@ -25,11 +25,10 @@ InputParameters validParams<ErrorToleranceMarker>();
 class ErrorToleranceMarker : public IndicatorMarker
 {
 public:
-  ErrorToleranceMarker(const std::string & name, InputParameters parameters);
-  virtual ~ErrorToleranceMarker(){};
+  ErrorToleranceMarker(const InputParameters & parameters);
 
 protected:
-  virtual MarkerValue computeElementMarker();
+  virtual MarkerValue computeElementMarker() override;
 
   Real _coarsen;
   Real _refine;

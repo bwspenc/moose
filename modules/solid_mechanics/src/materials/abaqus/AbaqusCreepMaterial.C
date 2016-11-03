@@ -26,9 +26,8 @@ InputParameters validParams<AbaqusCreepMaterial>()
   return params;
 }
 
-AbaqusCreepMaterial::AbaqusCreepMaterial(const std::string  & name,
-                                 InputParameters parameters) :
-    SolidModel( name, parameters ),
+AbaqusCreepMaterial::AbaqusCreepMaterial(const InputParameters & parameters) :
+    SolidModel( parameters ),
     _plugin(getParam<FileName>("plugin")),
     _youngs_modulus(getParam<Real>("youngs_modulus")),
     _poissons_ratio(getParam<Real>("poissons_ratio")),
@@ -297,3 +296,4 @@ void AbaqusCreepMaterial::computeStress()
   _stress[_qp] = stressnew;
   _stress[_qp] += _stress_old[_qp];
 }
+

@@ -17,21 +17,23 @@
 #include "SubProblem.h"
 #include "MooseTypes.h"
 
+// libmesh includes
+#include "libmesh/quadrature.h"
+
 template<>
 InputParameters validParams<ElementVariablePostprocessor>()
 {
   InputParameters params = validParams<ElementPostprocessor>();
-  params.addRequiredParam<VariableName>("variable", "The name of the variable that this postprocessor operates on");
+  params.addRequiredCoupledVar("variable", "The name of the variable that this postprocessor operates on");
   return params;
 }
 
-ElementVariablePostprocessor::ElementVariablePostprocessor(const std::string & name, InputParameters parameters) :
-    ElementPostprocessor(name, parameters),
-    MooseVariableInterface(parameters, false),
-    _var(_subproblem.getVariable(_tid, parameters.get<VariableName>("variable"))),
-    _u(_var.sln()),
-    _grad_u(_var.gradSln()),
-    _u_dot(_var.uDot()),
+ElementVariablePostprocessor::ElementVariablePostprocessor(const InputParameters & parameters) :
+    ElementPostprocessor(parameters),
+    MooseVariableInterface(this, false),
+    _u(coupledValue("variable")),
+    _grad_u(coupledGradient("variable")),
+    _u_dot(coupledDot("variable")),
     _qp(0)
 {
   addMooseVariableDependency(mooseVariable());

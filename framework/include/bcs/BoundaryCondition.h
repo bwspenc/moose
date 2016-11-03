@@ -18,25 +18,16 @@
 // MOOSE
 #include "MooseObject.h"
 #include "SetupInterface.h"
-#include "MooseVariable.h"
 #include "ParallelUniqueId.h"
-#include "MooseArray.h"
 #include "FunctionInterface.h"
 #include "UserObjectInterface.h"
 #include "TransientInterface.h"
 #include "PostprocessorInterface.h"
 #include "GeometricSearchInterface.h"
 #include "BoundaryRestrictableRequired.h"
-#include "Assembly.h"
 #include "Restartable.h"
 #include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
-
-// libMesh
-#include "libmesh/elem.h"
-#include "libmesh/vector_value.h"
-#include "libmesh/tensor_value.h"
-#include "libmesh/numeric_vector.h"
 
 // Forward declerations
 class MooseVariable;
@@ -45,13 +36,13 @@ class Problem;
 class SubProblem;
 class SystemBase;
 class BoundaryCondition;
+class Assembly;
 
 template<>
 InputParameters validParams<BoundaryCondition>();
 
 /**
- * Base class for creating new types of boundary conditions
- *
+ * Base class for creating new types of boundary conditions.
  */
 class BoundaryCondition :
   public MooseObject,
@@ -70,10 +61,10 @@ public:
 
   /**
    * Class constructor.
-   * @param name The name of the boundary condition object
    * @param parameters The InputParameters for the object
+   * @param nodal Whether this BC is applied to nodes or not
    */
-  BoundaryCondition(const std::string & name, InputParameters parameters);
+  BoundaryCondition(const InputParameters & parameters, bool nodal);
 
   /**
    * Gets the variable this BC is active on

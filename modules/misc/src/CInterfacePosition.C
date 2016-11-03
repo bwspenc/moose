@@ -23,8 +23,8 @@ InputParameters validParams<CInterfacePosition>()
   return params;
 }
 
-CInterfacePosition::CInterfacePosition(const std::string & name, InputParameters parameters) :
-  NodalProxyMaxValue(name, parameters),
+CInterfacePosition::CInterfacePosition(const InputParameters & parameters) :
+  NodalProxyMaxValue(parameters),
   _RefVal(getParam<Real>("RefVal")),
     _direction_index(parameters.get<unsigned int>("direction_index")),
     _mesh(_subproblem.mesh())
@@ -45,5 +45,6 @@ Real
 CInterfacePosition::getValue()
 {
   unsigned int node_id = NodalProxyMaxValue::getValue();
-  return _mesh.node(node_id)(_direction_index);
+  return _mesh.nodeRef(node_id)(_direction_index);
 }
+

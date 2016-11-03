@@ -22,7 +22,7 @@ class HomogenizationKernel : public Kernel
 {
 public:
 
-  HomogenizationKernel(const std::string & name, InputParameters parameters);
+  HomogenizationKernel(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

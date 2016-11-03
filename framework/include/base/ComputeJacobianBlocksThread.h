@@ -17,10 +17,7 @@
 
 #include "ComputeFullJacobianThread.h"
 
-// libMesh includes
-#include "libmesh/elem_range.h"
-
-
+// Forward declarations
 class FEProblem;
 class NonlinearSystem;
 
@@ -59,7 +56,7 @@ public:
   {}
 
 protected:
-  virtual void postElement(const Elem * elem);
+  virtual void postElement(const Elem * elem) override;
 
   std::vector<JacobianBlock*> _blocks;
 };

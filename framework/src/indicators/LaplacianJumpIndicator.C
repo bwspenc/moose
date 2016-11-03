@@ -17,17 +17,16 @@
 template<>
 InputParameters validParams<LaplacianJumpIndicator>()
 {
-  InputParameters params = validParams<JumpIndicator>();
+  InputParameters params = validParams<InternalSideIndicator>();
   return params;
 }
 
 
-LaplacianJumpIndicator::LaplacianJumpIndicator(const std::string & name, InputParameters parameters) :
-    JumpIndicator(name, parameters),
+LaplacianJumpIndicator::LaplacianJumpIndicator(const InputParameters & parameters) :
+    InternalSideIndicator(parameters),
     _second_u(second()),
     _second_u_neighbor(neighborSecond())
 {
-  _mesh.errorIfParallelDistribution("LaplacianJumpIndicator");
 }
 
 
@@ -38,4 +37,3 @@ LaplacianJumpIndicator::computeQpIntegral()
 
   return jump*jump;
 }
-

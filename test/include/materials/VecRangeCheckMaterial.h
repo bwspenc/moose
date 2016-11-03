@@ -30,7 +30,10 @@ InputParameters validParams<VecRangeCheckMaterial>();
 class VecRangeCheckMaterial : public Material
 {
 public:
-  VecRangeCheckMaterial(const std::string & name, InputParameters parameters);
+  VecRangeCheckMaterial(const InputParameters & parameters);
+
+protected:
+  void computeQpProperties();
 };
 
 #endif //VECRANGECHECKMATERIAL_H

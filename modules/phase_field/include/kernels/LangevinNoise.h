@@ -18,7 +18,7 @@ InputParameters validParams<LangevinNoise>();
 class LangevinNoise : public Kernel
 {
 public:
-  LangevinNoise(const std::string & name, InputParameters parameters);
+  LangevinNoise(const InputParameters & parameters);
 
 protected:
   virtual void residualSetup();

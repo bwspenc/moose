@@ -20,7 +20,7 @@
 class LinearElasticMaterial : public TensorMechanicsMaterial
 {
 public:
-  LinearElasticMaterial(const std::string & name, InputParameters parameters);
+  LinearElasticMaterial(const InputParameters & parameters);
 
 protected:
   virtual void computeQpStrain();
@@ -28,7 +28,7 @@ protected:
   virtual RankTwoTensor computeStressFreeStrain();
 
 private:
-  VariableValue & _T;
+  const VariableValue & _T;
 
   const Real _T0;
   Real _thermal_expansion_coeff;

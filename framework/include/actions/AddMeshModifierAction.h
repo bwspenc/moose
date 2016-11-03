@@ -19,7 +19,6 @@
 
 //Forward Declaration
 class AddMeshModifierAction;
-class MooseMesh;
 
 template<>
 InputParameters validParams<AddMeshModifierAction>();
@@ -28,9 +27,9 @@ InputParameters validParams<AddMeshModifierAction>();
 class AddMeshModifierAction : public MooseObjectAction
 {
 public:
-  AddMeshModifierAction(const std::string & name, InputParameters params);
+  AddMeshModifierAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // ADDMESHMODIFIERACTION_H

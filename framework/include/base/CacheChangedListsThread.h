@@ -15,7 +15,7 @@
 #ifndef CACHECHANGEDLISTSTHREAD_H
 #define CACHECHANGEDLISTSTHREAD_H
 
-#include "ThreadedElementLoop.h"
+#include "ThreadedElementLoopBase.h"
 
 // libMesh includes
 #include "libmesh/stored_range.h"
@@ -27,7 +27,7 @@ public:
   CacheChangedListsThread(CacheChangedListsThread & x, Threads::split split);
   virtual ~CacheChangedListsThread();
 
-  virtual void onElement(const Elem *elem);
+  virtual void onElement(const Elem * elem) override;
 
   void join(const CacheChangedListsThread & y);
 

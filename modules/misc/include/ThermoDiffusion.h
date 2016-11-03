@@ -35,7 +35,7 @@
 class ThermoDiffusion : public Kernel
 {
 public:
-  ThermoDiffusion( const std::string & name, InputParameters parameters );
+  ThermoDiffusion( const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

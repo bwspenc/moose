@@ -4,8 +4,6 @@
 []
 
 [Variables]
-  active = 'convected diffused'
-
   [./convected]
     order = FIRST
     family = LAGRANGE
@@ -18,8 +16,6 @@
 []
 
 [Kernels]
-  active = 'convected_ie example_diff conv diffused_ie diff'
-
   [./convected_ie]
     type = TimeDerivative
     variable = convected
@@ -32,7 +28,7 @@
   [../]
 
   [./conv]
-    type = Convection
+    type = ExampleConvection
     variable = convected
     some_variable = diffused
   [../]
@@ -49,8 +45,6 @@
 []
 
 [BCs]
-  active = 'left_convected right_convected left_diffused right_diffused'
-
   [./left_convected]
     type = DirichletBC
     variable = convected
@@ -84,8 +78,6 @@
 []
 
 [Materials]
-  active = example_material
-
   [./example_material]
     type = ExampleMaterial
     block = 1
@@ -95,19 +87,12 @@
 
 [Executioner]
   type = Transient
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
-
   num_steps = 10
   dt = 1.0
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

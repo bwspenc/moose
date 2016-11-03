@@ -1,8 +1,14 @@
 [Tests]
   [./test]
-    type = 'Exodiff'
+    type = 'CSVDiff'
     input = 'predictor_test.i'
-    exodiff = 'out.e'
-    abs_zero = 1e-10
+    csvdiff = 'predictor_test_out.csv'
+    abs_zero = 1e-8
+  [../]
+  [./test_skip]
+    type = 'CSVDiff'
+    input = 'predictor_skip_test.i'
+    csvdiff = 'predictor_skip_test_out.csv'
+    abs_zero = 1e-8
   [../]
 []

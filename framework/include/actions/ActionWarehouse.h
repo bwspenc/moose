@@ -23,13 +23,11 @@
 // MOOSE includes
 #include "Action.h"
 #include "ConsoleStreamInterface.h"
-#include "Warehouse.h"
 
 /// Typedef to hide implementation details
 typedef std::vector<Action *>::iterator ActionIterator;
 
 class MooseMesh;
-class Executioner;
 class Syntax;
 class ActionFactory;
 
@@ -37,7 +35,6 @@ class ActionFactory;
  * Storage for action instances.
  */
 class ActionWarehouse :
-  public Warehouse<Action>,
   public ConsoleStreamInterface
 {
 public:
@@ -102,6 +99,46 @@ public:
   const std::vector<Action *> & getActionsByName(const std::string & task) const;
 
   /**
+   * Retrieve an action with its name and the desired type.
+   * @param name The action name.
+   */
+  template <class T>
+  const T & getAction(const std::string & name)
+    {
+      T* p = NULL;
+      for (unsigned int i=0; i<_all_ptrs.size(); ++i)
+      {
+        Action * act = _all_ptrs[i].get();
+        if (act->name() == name)
+        {
+          p = dynamic_cast<T*>(act);
+          if (p)
+            break;
+        }
+      }
+      if (!p)
+        mooseError("Action with name being "+name+" does not exist");
+      return *p;
+    }
+
+  /**
+   * Retrieve all actions in a specific type.
+   */
+  template <class T>
+  std::set<const T *> getActions()
+    {
+      std::set<const T*> actions;
+      for (unsigned int i=0; i<_all_ptrs.size(); i++)
+      {
+        Action * act = _all_ptrs[i].get();
+        T* p = dynamic_cast<T*>(act);
+        if (p)
+          actions.insert(p);
+      }
+      return actions;
+    }
+
+  /**
    * Check if Actions associated with passed in task exist.
    */
   bool hasActions(const std::string & task) const;
@@ -139,7 +176,6 @@ public:
   MooseSharedPointer<MooseMesh> & displacedMesh() { return _displaced_mesh; }
 
   MooseSharedPointer<FEProblem> & problem() { return _problem; }
-  MooseSharedPointer<Executioner> & executioner() { return _executioner; }
   MooseApp & mooseApp() { return _app; }
   const std::string & getCurrentTaskName() const { return _current_task; }
 
@@ -195,9 +231,6 @@ protected:
 
   /// Problem class
   MooseSharedPointer<FEProblem> _problem;
-
-  /// Executioner for the simulation (top-level class, is stored in MooseApp, where it is freed)
-  MooseSharedPointer<Executioner> _executioner;
 };
 
 #endif // ACTIONWAREHOUSE_H

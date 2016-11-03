@@ -25,9 +25,8 @@ InputParameters validParams<MacroElastic>()
   return params;
 }
 
-MacroElastic::MacroElastic( const std::string & name,
-                  InputParameters parameters )
-  :Elastic( name, parameters ),
+MacroElastic::MacroElastic( const InputParameters & parameters)
+  :Elastic(parameters),
    _C1111(getPostprocessorValue("C1111")),
    _C1122(getPostprocessorValue("C1122")),
    _C1133(getPostprocessorValue("C1133")),
@@ -72,3 +71,4 @@ MacroElastic::createElasticityTensor()
 {
   elasticityTensor( new SymmElasticityTensor(false) );
 }
+

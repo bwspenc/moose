@@ -28,13 +28,9 @@ InputParameters validParams<SetupTimeStepperAction>();
 class SetupTimeStepperAction : public MooseObjectAction
 {
 public:
-  SetupTimeStepperAction(const std::string & name, InputParameters parameters);
-  virtual ~SetupTimeStepperAction();
+  SetupTimeStepperAction(InputParameters parameters);
 
-  virtual void act();
-
-protected:
-
+  virtual void act() override;
 };
 
 

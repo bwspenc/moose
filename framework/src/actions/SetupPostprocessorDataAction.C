@@ -23,17 +23,13 @@ InputParameters validParams<SetupPostprocessorDataAction>()
   return params;
 }
 
-SetupPostprocessorDataAction::SetupPostprocessorDataAction(const std::string & name, InputParameters params) :
-  Action(name, params)
-{
-}
-
-SetupPostprocessorDataAction::~SetupPostprocessorDataAction()
+SetupPostprocessorDataAction::SetupPostprocessorDataAction(InputParameters params) :
+  Action(params)
 {
 }
 
 void
 SetupPostprocessorDataAction::act()
 {
-  _problem->initPostprocessorData(getShortName());
+  _problem->initPostprocessorData(_name);
 }

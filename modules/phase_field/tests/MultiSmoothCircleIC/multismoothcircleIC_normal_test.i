@@ -30,6 +30,7 @@
     numbub = 10
     radius = 10.0
     int_width = 12.0
+    rand_seed = 2000
     radius_variation = 2 #This is the standard deviation
     radius_variation_type = normal
   [../]
@@ -60,7 +61,6 @@
     type = GenericConstantMaterial
     prop_names = D_v
     prop_values = 0.074802
-    block = 0
   [../]
 []
 
@@ -69,6 +69,7 @@
     type = FeatureFloodCount
     variable = c
     execute_on = 'initial timestep_end'
+    flood_entity_type = NODAL
   [../]
 []
 
@@ -93,8 +94,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

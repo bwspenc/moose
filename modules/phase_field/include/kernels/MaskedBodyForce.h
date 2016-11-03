@@ -26,7 +26,7 @@ class MaskedBodyForce : public BodyForce
 {
 public:
 
-  MaskedBodyForce(const std::string & name, InputParameters parameters);
+  MaskedBodyForce(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

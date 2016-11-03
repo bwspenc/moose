@@ -1,3 +1,12 @@
+# This test places a single large feature in the middle of a square domain.
+# The domain is sized such that individual element areas are uniform and equal
+# to 1.0. The feature is a circle with a radius of 10.0.
+#
+# The area of the feature is calculated to be:
+# pi * 10^2 ~ 3.14e+2
+#
+# The mesh is very coarse for this simulation so the calculated result
+# based on a flood value of 0.5 is 3.16e+2
 
 [Mesh]
   type = GeneratedMesh
@@ -30,6 +39,23 @@
   [../]
 []
 
+[AuxVariables]
+  [./centroids]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./centroids]
+    type = FeatureFloodCountAux
+    variable = centroids
+    flood_counter = bubbles
+    execute_on = 'initial timestep_end'
+    field_display = CENTROID
+  [../]
+[]
+
 [Kernels]
   [./diff]
     type = Diffusion
@@ -43,14 +69,13 @@
 []
 
 [Postprocessors]
-  active = 'bubbles'
-
   [./bubbles]
     type = FeatureFloodCount
     variable = u
-    threshold = 0.9
-    bubble_volume_file = nodal_flood_particle_distribution.csv
+    threshold = 0.5
+    feature_volume_file = nodal_flood_particle_distribution.csv
     execute_on = 'initial timestep_end'
+    flood_entity_type = ELEMENTAL
   [../]
 []
 
@@ -61,11 +86,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = nodal_flood_particle_distribution
   exodus = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

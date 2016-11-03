@@ -16,40 +16,45 @@ InputParameters validParams<KKSSplitCHCRes>()
   params.addRequiredCoupledVar("ca", "phase concentration corresponding to the non-linear variable of this kernel");
   params.addRequiredCoupledVar("cb", "phase concentration corresponding to the non-linear variable of this kernel");
   params.addCoupledVar("args_a", "Vector of additional arguments to Fa");
-  params.addParam<MaterialPropertyName>("h_name", "h", "Base name for the switching function h(eta)");
+  params.addParam<MaterialPropertyName>("h_name", "h", "Base name for the switching function h(eta)"); // TODO: everywhere else this is called just "h"
   params.addRequiredCoupledVar("w", "Chemical potenial non-linear helper variable for the split solve");
 
   return params;
 }
 
-KKSSplitCHCRes::KKSSplitCHCRes(const std::string & name, InputParameters parameters) :
-    DerivativeMaterialInterface<SplitCHBase>(name, parameters),
+KKSSplitCHCRes::KKSSplitCHCRes(const InputParameters & parameters) :
+    DerivativeMaterialInterface<JvarMapInterface<SplitCHBase> >(parameters),
     // number of coupled variables (ca, args_a[])
     _nvar(_coupled_moose_vars.size()),
-    _Fa_name(getParam<MaterialPropertyName>("fa_name")),
-    _Fb_name(getParam<MaterialPropertyName>("fb_name")),
     _ca_var(coupled("ca")),
     _ca_name(getVar("ca", 0)->name()),
     _cb_var(coupled("cb")),
     _cb_name(getVar("cb", 0)->name()),
     _prop_h(getMaterialProperty<Real>("h_name")),
-    _first_derivative_Fa(getMaterialPropertyDerivative<Real>(_Fa_name, _ca_name)),
-    _second_derivative_Fa(getMaterialPropertyDerivative<Real>(_Fa_name, _ca_name, _ca_name)),
-    _second_derivative_Fb(getMaterialPropertyDerivative<Real>(_Fb_name, _cb_name, _cb_name)),
+    _first_derivative_Fa(getMaterialPropertyDerivative<Real>("fa_name", _ca_name)),
+    _second_derivative_Fa(getMaterialPropertyDerivative<Real>("fa_name", _ca_name, _ca_name)),
+    _second_derivative_Fb(getMaterialPropertyDerivative<Real>("fb_name", _cb_name, _cb_name)),
     _w_var(coupled("w")),
     _w(coupledValue("w"))
 {
   // reserve space for derivatives
-  _second_derivatives.resize(_nvar);
+  _d2Fadcadarg.resize(_nvar);
 
   // Iterate over all coupled variables
   for (unsigned int i = 0; i < _nvar; ++i)
   {
     MooseVariable *cvar = this->_coupled_moose_vars[i];
 
-    // get the second derivative material property (TODO:warn)
-    _second_derivatives[i] = &getMaterialPropertyDerivative<Real>(_Fa_name, _ca_name, cvar->name());
+    // get the second derivative material property
+    _d2Fadcadarg[i] = &getMaterialPropertyDerivative<Real>("fa_name", _ca_name, cvar->name());
   }
+}
+
+void
+KKSSplitCHCRes::initialSetup()
+{
+  validateNonlinearCoupling<Real>("fa_name");
+  validateDerivativeMaterialPropertyBase<Real>("fa_name");
 }
 
 Real
@@ -76,20 +81,7 @@ KKSSplitCHCRes::computeDFDC(PFFunctionType type)
       return _first_derivative_Fa[_qp]; // dFa/dca ( = dFb/dcb = dF/dc)
 
     case Jacobian:
-      return 0.0; // PetSc finite differencing says this should be 0.0!
-#if 0
-      // the non linear variable is c, but the free energy only contains the
-      // phase concentrations. Equation (23) in the KKS paper gives the chain-
-      // rule derivative dca/dc
-      Real dcadc = _second_derivative_Fb[_qp]
-                  / (  (1.0 - _prop_h[_qp]) * _second_derivative_Fb[_qp]
-                     + _prop_h[_qp]         * _second_derivative_Fa[_qp]);
-      // The (1-h)*X_b, h*X_a pairing is opposite to what the KKSPhaseConcentration kernel does!
-
-      res = _second_derivative_Fa[_qp] * _phi[_j][_qp];
-
-      return res * dcadc + 1e9;
-#endif
+      return 0.0;
   }
 
   mooseError("Invalid type passed in");
@@ -100,14 +92,15 @@ KKSSplitCHCRes::computeQpOffDiagJacobian(unsigned int jvar)
 {
   // treat w variable explicitly
   if (jvar == _w_var)
-    return -_phi[_j][_qp] * _test[_i][_qp]; // OK
+    return -_phi[_j][_qp] * _test[_i][_qp];
 
   if (jvar == _ca_var)
-    return _phi[_j][_qp] * _test[_i][_qp] * _second_derivative_Fa[_qp]; // OK
+    return _phi[_j][_qp] * _test[_i][_qp] * _second_derivative_Fa[_qp];
 
-  if (jvar == _cb_var)
-    // return _phi[_j][_qp] * _test[_i][_qp] * _second_derivative_Fb[_qp]; // PetSc fd wants this to be 0.0. Why?
+  // get the coupled variable jvar is referring to
+  unsigned int cvar;
+  if (!mapJvarToCvar(jvar, cvar))
     return 0.0;
 
-  return 0.0; // OK
+  return _phi[_j][_qp] * _test[_i][_qp] * (*_d2Fadcadarg[cvar])[_qp];
 }

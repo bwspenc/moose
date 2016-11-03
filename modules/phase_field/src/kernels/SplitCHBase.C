@@ -14,8 +14,8 @@ InputParameters validParams<SplitCHBase>()
   return params;
 }
 
-SplitCHBase::SplitCHBase(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters)
+SplitCHBase::SplitCHBase(const InputParameters & parameters) :
+    Kernel(parameters)
 {
 }
 
@@ -74,3 +74,4 @@ SplitCHBase::computeDEDC(PFFunctionType /*type*/)
 {
   return 0.0;
 }
+

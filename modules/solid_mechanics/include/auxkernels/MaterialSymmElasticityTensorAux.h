@@ -31,7 +31,7 @@ class MaterialSymmElasticityTensorAux : public AuxKernel
 {
 public:
 
-  MaterialSymmElasticityTensorAux(const std::string & name, InputParameters parameters);
+  MaterialSymmElasticityTensorAux(const InputParameters & parameters);
 
 protected:
 

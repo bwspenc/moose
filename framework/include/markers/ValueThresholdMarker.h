@@ -17,9 +17,6 @@
 
 #include "QuadraturePointMarker.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
 class ValueThresholdMarker;
 
 template<>
@@ -28,11 +25,10 @@ InputParameters validParams<ValueThresholdMarker>();
 class ValueThresholdMarker : public QuadraturePointMarker
 {
 public:
-  ValueThresholdMarker(const std::string & name, InputParameters parameters);
-  virtual ~ValueThresholdMarker(){};
+  ValueThresholdMarker(const InputParameters & parameters);
 
 protected:
-  virtual MarkerValue computeQpMarker();
+  virtual MarkerValue computeQpMarker() override;
 
   bool _coarsen_set;
   Real _coarsen;
@@ -42,7 +38,7 @@ protected:
   bool _invert;
   MarkerValue _third_state;
 
-  VariableValue & _u;
+  const VariableValue & _u;
 };
 
 #endif /* VALUETHRESHOLDMARKER_H */

@@ -27,7 +27,7 @@ class RichardsExcavFlow :
   public SideIntegralVariablePostprocessor
 {
 public:
-  RichardsExcavFlow(const std::string & name, InputParameters parameters);
+  RichardsExcavFlow(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpIntegral();

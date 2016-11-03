@@ -26,7 +26,7 @@ InputParameters validParams<RichardsSUPGstandard>();
 class RichardsSUPGstandard : public RichardsSUPG
 {
 public:
-  RichardsSUPGstandard(const std::string & name, InputParameters parameters);
+  RichardsSUPGstandard(const InputParameters & parameters);
 
   /**
    * SUPG velocity = -perm*(gradp - density*gravity)
@@ -55,7 +55,7 @@ public:
   /**
    * |bb| ~ 2*velocity/element_length
    * @param vel SUPG velocity
-   * @param dim dimension of problem
+   * @param dimen dimension of problem
    * @param xi_prime spatial gradient of the isoparametric coordinate xi
    * @param eta_prime spatial gradient of the isoparametric coordinate eta
    * @param zeta_prime spatial gradient of the isoparametric coordinate zeta

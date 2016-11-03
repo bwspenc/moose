@@ -38,9 +38,8 @@ InputParameters validParams<PLC_LSH>()
 }
 
 
-PLC_LSH::PLC_LSH( const std::string & name,
-                  InputParameters parameters )
-  :SolidModel( name, parameters ),
+PLC_LSH::PLC_LSH( const InputParameters & parameters)
+  :SolidModel(parameters),
    _coefficient(parameters.get<Real>("coefficient")),
    _n_exponent(parameters.get<Real>("n_exponent")),
    _m_exponent(parameters.get<Real>("m_exponent")),
@@ -89,7 +88,8 @@ PLC_LSH::computeStress()
   // stress = stressOld + stressIncrement
   // creep_strain = creep_strainOld + creep_strainIncrement
 
-  if (_t_step == 0) return;
+  if (_t_step == 0 && !_app.isRestarting())
+    return;
 
   if (_output_iteration_info == true)
   {

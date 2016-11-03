@@ -51,7 +51,6 @@
 [Materials]
   [./mask_material]
     type = GenericFunctionMaterial
-    block = 0
     prop_names  = 'mask_prop'
     prop_values = 'mask_func'
   [../]
@@ -94,9 +93,6 @@
 
 [Outputs]
   file_base = normal_masked
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./csv]
     type = CSV
   [../]

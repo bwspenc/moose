@@ -1,11 +1,11 @@
 [Mesh]
-  # uniform_refine = 4
+  uniform_refine = 2
   type = EBSDMesh
-  filename = IN100_128x128.txt
+  filename = IN100_120x120.txt
 []
 
 [GlobalParams]
-  op_num = 30
+  op_num = 8
   var_name_base = gr
 []
 
@@ -23,18 +23,25 @@
 [AuxVariables]
   [./bnds]
   [../]
-  [./gt_indices]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
   [./unique_grains]
     order = CONSTANT
     family = MONOMIAL
   [../]
-  [./T]
+  [./ghost_elements]
     order = CONSTANT
     family = MONOMIAL
-    initial_condition = 500
+  [../]
+  [./halos]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./var_indices]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./ebsd_grains]
+    family = MONOMIAL
+    order = CONSTANT
   [../]
 []
 
@@ -42,7 +49,7 @@
   [./PolycrystalICs]
     [./ReconVarIC]
       ebsd_reader = ebsd
-      consider_phase = false
+      advanced_op_assignment = true
     [../]
   [../]
 []
@@ -58,19 +65,50 @@
     variable = bnds
     execute_on = 'initial timestep_end'
   [../]
-  [./gt_indices]
+  [./ghost_elements]
     type = FeatureFloodCountAux
-    variable = gt_indices
+    variable = ghost_elements
+    field_display = GHOSTED_ENTITIES
     execute_on = 'initial timestep_end'
-    bubble_object = grain_tracker
+    flood_counter = grain_tracker
+  [../]
+  [./halos]
+    type = FeatureFloodCountAux
+    variable = halos
+    field_display = HALOS
+    execute_on = 'initial timestep_end'
+    flood_counter = grain_tracker
+  [../]
+  [./var_indices]
+    type = FeatureFloodCountAux
+    variable = var_indices
+    execute_on = 'initial timestep_end'
+    flood_counter = grain_tracker
     field_display = VARIABLE_COLORING
   [../]
   [./unique_grains]
     type = FeatureFloodCountAux
     variable = unique_grains
     execute_on = 'initial timestep_end'
-    bubble_object = grain_tracker
+    flood_counter = grain_tracker
     field_display = UNIQUE_REGION
+  [../]
+  [./grain_aux]
+    type = EBSDReaderPointDataAux
+    variable = ebsd_grains
+    ebsd_reader = ebsd
+    data_name = 'feature_id'
+    execute_on = 'initial timestep_end'
+  [../]
+[]
+
+[Modules]
+  [./PhaseField]
+    [./EulerAngles2RGB]
+      crystal_structure = cubic
+      euler_angle_provider = ebsd
+      grain_tracker = grain_tracker
+    [../]
   [../]
 []
 
@@ -78,13 +116,12 @@
   [./Copper]
     # T = 500 # K
     type = GBEvolution
-    block = 0
-    T = T
-    wGB = 0.6 # um
-    GBmob0 = 2.5e-6 # m^4/(Js) from Schoenfelder 1997
-    Q = 0.23 # Migration energy in eV
-    GBenergy = 0.708 # GB energy in J/m^2
-    molar_volume = 7.11e-6; # Molar volume in m^3/mol
+    T = 500
+    wGB = 0.6               # um
+    GBmob0 = 2.5e-6         # m^4/(Js) from Schoenfelder 1997
+    Q = 0.23                # Migration energy in eV
+    GBenergy = 0.708        # GB energy in J/m^2
+    molar_volume = 7.11e-6  # Molar volume in m^3/mol
     length_scale = 1.0e-6
     time_scale = 1.0e-6
   [../]
@@ -106,42 +143,28 @@
     type = NumDOFs
   [../]
   [./grain_tracker]
-    # ebsd_reader = ebsd
     type = GrainTracker
-    threshold = 0.1
-    convex_hull_buffer = -3
-    use_single_map = false
-    enable_var_coloring = true
-    condense_map_info = true
-    connecting_threshold = 0.05
-    bubble_volume_file = IN100-grn-vols.txt
-    execute_on = 'initial timestep_end'
-    tracking_step = 0
     ebsd_reader = ebsd
-    flood_entity_type = ELEMENTAL
+    compute_halo_maps = true # Only necessary for displaying HALOS
   [../]
 []
 
 [Executioner]
-  # [./Adaptivity]
-  # initial_adaptivity = 3
-  # refine_fraction = 0.7
-  # coarsen_fraction = 0.1
-  # max_h_level = 4
-  # print_changed_info = true
-  # [../]
   type = Transient
   scheme = bdf2
-  solve_type = PJFNK # Preconditioned JFNK (default)
+  solve_type = PJFNK
+
   petsc_options_iname = '-pc_type -pc_hypre_type -pc_hypre_boomeramg_strong_threshold'
-  petsc_options_value = '  hypre    boomeramg                   0.7'
+  petsc_options_value = 'hypre    boomeramg      0.7'
+
   l_tol = 1.0e-4
   l_max_its = 20
   nl_max_its = 20
   nl_rel_tol = 1.0e-8
+
   start_time = 0.0
   num_steps = 30
-  dt = 10
+
   [./TimeStepper]
     type = IterationAdaptiveDT
     cutback_factor = 0.9
@@ -149,25 +172,17 @@
     growth_factor = 1.1
     optimal_iterations = 7
   [../]
+
+  [./Adaptivity]
+    initial_adaptivity = 2
+    refine_fraction = 0.7
+    coarsen_fraction = 0.1
+    max_h_level = 2
+  [../]
 []
 
 [Outputs]
-  output_initial = true
-  csv = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'linear nonlinear'
-  [../]
-  [./exodus]
-    type = Exodus
-    interval = 1
-    file_base = IN100-111grn
-    output_on = 'initial timestep_end'
-    output_postprocessors_on = 'initial timestep_end'
-  [../]
-[]
-
-[Problem]
-  use_legacy_uo_initialization = false
+  exodus = true
+  checkpoint = true
+  print_perf_log = true
 []

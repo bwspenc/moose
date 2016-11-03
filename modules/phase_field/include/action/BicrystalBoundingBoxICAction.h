@@ -16,7 +16,7 @@
 class BicrystalBoundingBoxICAction: public Action
 {
 public:
-  BicrystalBoundingBoxICAction(const std::string & name, InputParameters params);
+  BicrystalBoundingBoxICAction(const InputParameters & params);
 
   virtual void act();
 

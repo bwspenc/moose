@@ -26,9 +26,9 @@ InputParameters validParams<AddUserObjectAction>();
 class AddUserObjectAction : public MooseObjectAction
 {
 public:
-  AddUserObjectAction(const std::string & name, InputParameters params);
+  AddUserObjectAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // ADDUSEROBJECTACTION_H

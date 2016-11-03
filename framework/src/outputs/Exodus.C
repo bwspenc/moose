@@ -20,6 +20,9 @@
 #include "ExodusFormatter.h"
 #include "FileMesh.h"
 
+// libMesh includes
+#include "libmesh/exodusII_io.h"
+
 template<>
 InputParameters validParams<Exodus>()
 {
@@ -30,34 +33,33 @@ InputParameters validParams<Exodus>()
   // Enable sequential file output (do not set default, the use_displace criteria relies on isParamValid, see Constructor)
   params.addParam<bool>("sequence", "Enable/disable sequential file output (enabled by default when 'use_displace = true', otherwise defaults to false");
 
+  // Select problem dimension for mesh output
+  params.addParam<bool>("use_problem_dimension", "Use the problem dimension to the mesh output. Set to false when outputting lower dimensional meshes embedded in a higher dimensional space.");
+
   // Set the default padding to 3
   params.set<unsigned int>("padding") = 3;
-
-  // Add parameter to handle EnSight timestep related output
-  params.addParam<bool>("ensight_time", false, "Control the use of timesteps that are compatible for EnSight, this is only needed if the timesteps can not be stored with single precision");
 
   // Add description for the Exodus class
   params.addClassDescription("Object for output data in the Exodus II format");
 
+  // Flag for overwriting at each timestep
+  params.addParam<bool>("overwrite", false, "When true the latest timestep will overwrite the existing file, so only a single timestep exists.");
+
   // Set outputting of the input to be on by default
-  params.set<MultiMooseEnum>("output_input_on") = "initial";
+  params.set<MultiMooseEnum>("execute_input_on") = "initial";
 
   // Return the InputParameters
   return params;
 }
 
-Exodus::Exodus(const std::string & name, InputParameters parameters) :
-    AdvancedOutput<OversampleOutput>(name, parameters),
+Exodus::Exodus(const InputParameters & parameters) :
+    AdvancedOutput<OversampleOutput>(parameters),
     _exodus_initialized(false),
     _exodus_num(declareRestartableData<unsigned int>("exodus_num", 0)),
     _recovering(_app.isRecovering()),
     _exodus_mesh_changed(declareRestartableData<bool>("exodus_mesh_changed", true)),
     _sequence(isParamValid("sequence") ? getParam<bool>("sequence") : _use_displaced ? true : false),
-    _ensight_time(getParam<bool>("ensight_time"))
-{
-}
-
-Exodus::~Exodus()
+    _overwrite(getParam<bool>("overwrite"))
 {
 }
 
@@ -117,7 +119,7 @@ Exodus::outputSetup()
   _exodus_initialized = false;
 
   // Increment file number and set appending status, append if all the following conditions are met:
-  //   (2) If the application is recovering (not restarting)
+  //   (1) If the application is recovering (not restarting)
   //   (2) The mesh has NOT changed
   //   (3) An existing Exodus file exists for appending (_exodus_num > 0)
   //   (4) Sequential output is NOT desired
@@ -140,9 +142,40 @@ Exodus::outputSetup()
     _exodus_num = 1;
   }
 
-  // Utilize the spatial dimensions
-  if (_es_ptr->get_mesh().mesh_dimension() != 1)
-    _exodus_io_ptr->use_mesh_dimension_instead_of_spatial_dimension(true);
+  if (isParamValid("use_problem_dimension"))
+    _exodus_io_ptr->use_mesh_dimension_instead_of_spatial_dimension(getParam<bool>("use_problem_dimension"));
+  else
+  {
+    // If the spatial_dimension is 1 (this can only happen in recent
+    // versions of libmesh where the meaning of spatial_dimension has
+    // changed), then force the Exodus file to be written with
+    // num_dim==3.
+    //
+    // This works around an issue in Paraview where 1D meshes cannot
+    // not be visualized correctly.  Note: the mesh_dimension() should
+    // get changed back to 1 the next time MeshBase::prepare_for_use()
+    // is called.
+    if (_es_ptr->get_mesh().spatial_dimension() == 1)
+      _exodus_io_ptr->write_as_dimension(3);
+
+    // If the spatial_dimension is 2 (again, only possible in recent
+    // versions of libmesh), then we need to be careful as this mesh
+    // would not have been written with num_dim==2 in the past.
+    //
+    // We *can't* simply write it with num_dim==mesh_dimension,
+    // because mesh_dimension might be 1, and as discussed above, we
+    // don't allow num_dim==1 Exodus files.  Therefore, in this
+    // particular case, we force writing with num_dim==3.  Note: the
+    // humor of writing a mesh of 1D elements which lives in 2D space
+    // as num_dim==3 is not lost on me.
+    if (_es_ptr->get_mesh().spatial_dimension() == 2 && _es_ptr->get_mesh().mesh_dimension() == 1)
+      _exodus_io_ptr->write_as_dimension(3);
+
+    // Utilize the spatial dimension.  This value of this flag is
+    // superseded by the value passed to write_as_dimension(), if any.
+    if (_es_ptr->get_mesh().mesh_dimension() != 1)
+      _exodus_io_ptr->use_mesh_dimension_instead_of_spatial_dimension(true);
+  }
 }
 
 
@@ -154,8 +187,10 @@ Exodus::outputNodalVariables()
   _exodus_io_ptr->set_output_variables(nodal);
 
   // Write the data via libMesh::ExodusII_IO
-  _exodus_io_ptr->write_timestep(filename(), *_es_ptr, _exodus_num, time());
-  _exodus_num++;
+  _exodus_io_ptr->write_timestep(filename(), *_es_ptr, _exodus_num, time() + _app.getGlobalTimeOffset());
+
+  if (!_overwrite)
+    _exodus_num++;
 
   // This satisfies the initialization of the ExodusII_IO object
   _exodus_initialized = true;
@@ -182,10 +217,10 @@ Exodus::outputPostprocessors()
 
   // Append the postprocessor data to the global name value parameters; scalar outputs
   // also append these member variables
-  for (std::set<std::string>::const_iterator it = pps.begin(); it != pps.end(); ++it)
+  for (const auto & name : pps)
   {
-    _global_names.push_back(*it);
-    _global_values.push_back(_problem_ptr->getPostprocessorValue(*it));
+    _global_names.push_back(name);
+    _global_values.push_back(_problem_ptr->getPostprocessorValue(name));
   }
 }
 
@@ -196,15 +231,15 @@ Exodus::outputScalarVariables()
   const std::set<std::string> & out = getScalarOutput();
 
   // Append the scalar to the global output lists
-  for (std::set<std::string>::const_iterator it = out.begin(); it != out.end(); ++it)
+  for (const auto & out_name : out)
   {
-    VariableValue & variable = _problem_ptr->getScalarVariable(0, *it).sln();
+    VariableValue & variable = _problem_ptr->getScalarVariable(0, out_name).sln();
     unsigned int n = variable.size();
 
     // If the scalar has a single component, output the name directly
     if (n == 1)
     {
-      _global_names.push_back(*it);
+      _global_names.push_back(out_name);
       _global_values.push_back(variable[0]);
     }
 
@@ -214,7 +249,7 @@ Exodus::outputScalarVariables()
       for (unsigned int i = 0; i < n; ++i)
       {
         std::ostringstream os;
-        os << *it << "_" << i;
+        os << out_name << "_" << i;
         _global_names.push_back(os.str());
         _global_values.push_back(variable[i]);
       }
@@ -243,7 +278,7 @@ Exodus::output(const ExecFlagType & type)
     return;
 
   // Start the performance log
-  Moose::perf_log.push("output()", "Exodus");
+  Moose::perf_log.push("Exodus::output()", "Output");
 
   // Prepare the ExodusII_IO object
   outputSetup();
@@ -278,7 +313,7 @@ Exodus::output(const ExecFlagType & type)
   _exodus_mesh_changed = false;
 
   // Stop the logging
-  Moose::perf_log.pop("output()", "Exodus");
+  Moose::perf_log.pop("Exodus::output()", "Output");
 }
 
 std::string
@@ -306,16 +341,10 @@ Exodus::outputEmptyTimestep()
 {
   // Write a timestep with no variables
   _exodus_io_ptr->set_output_variables(std::vector<std::string>());
-  _exodus_io_ptr->write_timestep(filename(), *_es_ptr, _exodus_num, time());
-  _exodus_num++;
-  _exodus_initialized = true;
-}
+  _exodus_io_ptr->write_timestep(filename(), *_es_ptr, _exodus_num, time() + _app.getGlobalTimeOffset());
 
-Real
-Exodus::time()
-{
-  if (_ensight_time)
-    return _t_step;
-  else
-    return OversampleOutput::time() + _app.getGlobalTimeOffset();
+  if (!_overwrite)
+    _exodus_num++;
+
+  _exodus_initialized = true;
 }

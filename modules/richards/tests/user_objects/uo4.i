@@ -2,10 +2,10 @@
 #
 # If you want to add another test for another UserObject
 # then add the UserObject, add a Function defining the expected result,
-# add an AuxVariable and AuxKernel that will record the UserObject's value
+# add an AuxVariable and AuxKernel that will record the UserObjects value
 # and finally add a NodalL2Error that compares this with the Function
 #
-# pressure = x (-5<=x<=5)
+# Here pressure is x where x is between -5 and 5
 
 [UserObjects]
   [./Seff2waterVG]
@@ -349,7 +349,7 @@
 
 #############################################################################
 #
-# Following is largely unimportant as we're not running an actual similation
+# Following is largely unimportant as we are not running an actual similation
 #
 #############################################################################
 [Mesh]
@@ -429,13 +429,12 @@
 []
 
 [Outputs]
-  active = 'csv exodus'
+  execute_on = 'timestep_end'
+  active = 'csv'
   file_base = uo4
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
-  [../]
+    [../]
   [./exodus]
     type = Exodus
   [../]

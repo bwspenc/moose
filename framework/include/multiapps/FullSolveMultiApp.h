@@ -15,11 +15,10 @@
 #define FULLSOLVEMULTIAPP_H
 
 #include "MultiApp.h"
-#include "MooseApp.h"
-#include "Transient.h"
-#include "TransientInterface.h"
 
+// Forward declarations
 class FullSolveMultiApp;
+class Executioner;
 
 template<>
 InputParameters validParams<FullSolveMultiApp>();
@@ -33,21 +32,13 @@ class FullSolveMultiApp :
   public MultiApp
 {
 public:
-  FullSolveMultiApp(const std::string & name, InputParameters parameters);
+  FullSolveMultiApp(const InputParameters & parameters);
 
-  virtual ~FullSolveMultiApp();
+  virtual void initialSetup() override;
 
-  virtual void initialSetup();
+  virtual bool solveStep(Real dt, Real target_time, bool auto_advance=true) override;
 
-  /**
-   * Completely solve all of the Apps
-   */
-  virtual void solveStep(Real dt, Real target_time, bool auto_advance=true);
-
-  /**
-   * Actually advances time and causes output.
-   */
-  virtual void advanceStep(){}
+  virtual void advanceStep() override {}
 
 private:
   std::vector<Executioner *> _executioners;

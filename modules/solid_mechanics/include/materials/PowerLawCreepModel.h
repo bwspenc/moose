@@ -16,8 +16,7 @@
 class PowerLawCreepModel : public ReturnMappingModel
 {
 public:
-  PowerLawCreepModel( const std::string & name,
-                       InputParameters parameters );
+  PowerLawCreepModel( const InputParameters & parameters);
 
 protected:
   virtual void computeStressInitialize(unsigned qp, Real effectiveTrialStress, const SymmElasticityTensor & elasticityTensor);

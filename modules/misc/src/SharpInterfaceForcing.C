@@ -16,8 +16,8 @@ InputParameters validParams<SharpInterfaceForcing>()
   return params;
 }
 
-SharpInterfaceForcing::SharpInterfaceForcing(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters),
+SharpInterfaceForcing::SharpInterfaceForcing(const InputParameters & parameters) :
+    Kernel(parameters),
     _x_center(getFunction("x_center")),
     _y_center(getFunction("y_center")),
     _amplitude(getParam<Real>("amplitude"))
@@ -28,10 +28,11 @@ Real
 SharpInterfaceForcing::computeQpResidual()
 {
   Point current_point = _q_point[_qp];
-  Real distance = (current_point - Point(_x_center.value(_t, _q_point[_qp]), _y_center.value(_t, _q_point[_qp]), 0.0)).size();
+  Real distance = (current_point - Point(_x_center.value(_t, _q_point[_qp]), _y_center.value(_t, _q_point[_qp]), 0.0)).norm();
 
   if (distance <= 0.1)
     return -_amplitude*_test[_i][_qp];
   else
     return 0.0;
 }
+

@@ -26,9 +26,9 @@ InputParameters validParams<AddTransferAction>();
 class AddTransferAction : public MooseObjectAction
 {
 public:
-  AddTransferAction(const std::string & name, InputParameters params);
+  AddTransferAction(InputParameters params);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // ADDTRANSFERACTION_H

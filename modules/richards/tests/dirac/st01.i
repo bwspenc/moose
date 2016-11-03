@@ -110,18 +110,16 @@
     type = RichardsMass
     variable = pressure
     execute_on = timestep_begin
-    #output = file
   [../]
 
   [./fluid_mass1]
     type = RichardsMass
     variable = pressure
     execute_on = timestep_end
-    #output = file
   [../]
 
   [./zmass_error]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = mass_bal_fcn
     execute_on = timestep_end
   [../]
@@ -200,13 +198,7 @@
 
 [Outputs]
   file_base = st01
-  output_initial = true
   exodus = false
   csv = true
-  print_linear_residuals = true
-  print_perf_log = true
-[]
-
-[Problem]
-  use_legacy_uo_initialization = true
+  execute_on = timestep_end
 []

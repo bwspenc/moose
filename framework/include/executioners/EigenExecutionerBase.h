@@ -16,11 +16,11 @@
 #define EIGENEXECUTIONERBASE_H
 
 #include "Executioner.h"
-#include "FEProblem.h"
 
 // Forward Declarations
 class EigenExecutionerBase;
-class EigenSystem;
+class MooseEigenSystem;
+class FEProblem;
 
 template<>
 InputParameters validParams<EigenExecutionerBase>();
@@ -35,20 +35,17 @@ public:
   /**
    * Constructor
    *
-   * @param name The name given to the Executioner in the input file.
    * @param parameters The parameters object holding data for the class to use.
    * @return Whether or not the solve was successful.
    */
-  EigenExecutionerBase(const std::string & name, InputParameters parameters);
+  EigenExecutionerBase(const InputParameters & parameters);
 
-  virtual ~EigenExecutionerBase();
-
-  virtual Problem & problem() { return _problem; }
+  virtual void init() override;
 
   /**
-   * Initialization
+   * The old eigenvalue used by inverse power iterations
    */
-  virtual void init();
+  const Real & eigenvalueOld();
 
   /**
    * Normalize solution so that |Bx| = k
@@ -91,7 +88,7 @@ public:
   /**
    * Override this for actions that should take place after the main solve
    */
-  virtual void postExecute();
+  virtual void postExecute() override;
 
   /**
    * Normalize the solution vector based on the postprocessor value for normalization
@@ -126,13 +123,14 @@ protected:
 
   // the fe problem
   FEProblem & _problem;
-  EigenSystem & _eigen_sys;
+  MooseEigenSystem & _eigen_sys;
 
   /// Storage for the eigenvalue computed by the executioner
-  Real _eigenvalue;
+  Real & _eigenvalue;
 
   // postprocessor for eigenvalue
   const Real & _source_integral;
+  Real _source_integral_old;
 
   /// Postprocessor for normalization
   const Real & _normalization;

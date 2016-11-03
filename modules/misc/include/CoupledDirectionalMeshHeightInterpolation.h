@@ -37,7 +37,7 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  CoupledDirectionalMeshHeightInterpolation(const std::string & name, InputParameters parameters);
+  CoupledDirectionalMeshHeightInterpolation(const InputParameters & parameters);
 
   virtual ~CoupledDirectionalMeshHeightInterpolation() {}
 
@@ -45,7 +45,7 @@ protected:
   virtual Real computeValue();
 
   /// The value of a coupled variable to modulate
-  VariableValue & _coupled_val;
+  const VariableValue & _coupled_val;
 
   /// The direction to interpolate in
   unsigned int _direction;

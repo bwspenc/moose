@@ -17,7 +17,6 @@
 
 // MOOSE includes
 #include "TableOutput.h"
-#include "FormattedTable.h"
 
 // Forward declarations
 class Console;
@@ -36,7 +35,7 @@ public:
   /**
    * Class constructor
    */
-  Console(const std::string & name, InputParameters);
+  Console(const InputParameters & parameters);
 
   /**
    * Destructor
@@ -48,7 +47,7 @@ public:
    * Prints the system information, this is done here so that the system information
    * is printed prior to any PETSc solve information
    */
-  virtual void initialSetup();
+  virtual void initialSetup() override;
 
   /**
    * Customizes the order of output for the various components as well as adds additional
@@ -59,14 +58,14 @@ public:
    * (e.g., elemental or nodal) are required in the future this calls will need to be explicitly added
    * as well.
    */
-  virtual void output(const ExecFlagType & type);
+  virtual void output(const ExecFlagType & type) override;
 
   /**
    * Creates the output file name
    * Appends the user-supplied 'file_base' input parameter with a '.txt' extension
    * @return A string containing the output filename
    */
-  virtual std::string filename();
+  virtual std::string filename() override;
 
   /**
    * Output string for setting up PETSC output
@@ -76,7 +75,17 @@ public:
   /**
    * Performs console related printing when the mesh is changed
    */
-  void meshChanged();
+  void meshChanged() override;
+
+  /**
+   * Return system information flags
+   */
+  MultiMooseEnum & systemInfoFlags()
+    {
+      if (!_allow_changing_sysinfo_flag)
+        mooseError("accessing console system information flags is not allowed after console initial setup");
+      return _system_info_flags;
+    }
 
 protected:
 
@@ -88,27 +97,27 @@ protected:
   /**
    * Print the input file at the beginning of the simulation
    */
-  virtual void outputInput();
+  virtual void outputInput() override;
 
   /**
    * Prints the aux scalar variables table to the screen
    */
-  virtual void outputScalarVariables();
+  virtual void outputScalarVariables() override;
 
   /**
    * Prints the postprocessor table to the screen
    */
-  virtual void outputPostprocessors();
+  virtual void outputPostprocessors() override;
 
   /**
    * Not implemented.
    */
-  virtual void outputVectorPostprocessors() { mooseError("Can't currently output VectorPostprocessors to the screen"); };
+  virtual void outputVectorPostprocessors() override { mooseError("Can't currently output VectorPostprocessors to the screen"); };
 
   /**
    * Print system information
    */
-  virtual void outputSystemInformation();
+  virtual void outputSystemInformation() override;
 
   /**
    * A helper function for outputting norms in color
@@ -128,12 +137,6 @@ protected:
    * @param indent True if multiapp indenting is desired
    */
   void write(std::string message, bool indent = true);
-
-  /**
-   * Apply indentation to newlines in the supplied stream
-   * @param message Reference to the message being changed
-   */
-  void indentMessage(std::string & message);
 
   /**
    * Write the file stream to the file
@@ -173,6 +176,9 @@ protected:
 
   /// State for all performance logging
   bool _perf_log;
+
+  /// The interval at which the performance log is printed
+  unsigned int _perf_log_interval;
 
   /// State for solve performance log
   bool _solve_log;
@@ -220,9 +226,6 @@ private:
   /// State of the --timing command line argument from MooseApp
   bool _timing;
 
-  /// Level of indent to add to output
-  std::string _multiapp_indent;
-
   /// Reference to cached messages from calls to _console
   const std::ostringstream & _console_buffer;
 
@@ -238,8 +241,11 @@ private:
   /// Flags for controlling the what simulations information is shown
   MultiMooseEnum _system_info_flags;
 
-
   friend class OutputWarehouse;
+
+private:
+  /// A boolean for protecting _system_info_flags from being changed undesirably
+  bool _allow_changing_sysinfo_flag;
 };
 
 #endif /* CONSOLE_H */

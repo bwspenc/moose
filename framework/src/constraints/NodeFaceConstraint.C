@@ -11,11 +11,13 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-#include "NodeFaceConstraint.h"
 
+#include "NodeFaceConstraint.h"
 #include "SystemBase.h"
 #include "PenetrationLocator.h"
 #include "MooseEnum.h"
+#include "Assembly.h"
+#include "MooseMesh.h"
 
 // libMesh includes
 #include "libmesh/string_to_enum.h"
@@ -37,10 +39,10 @@ InputParameters validParams<NodeFaceConstraint>()
   return params;
 }
 
-NodeFaceConstraint::NodeFaceConstraint(const std::string & name, InputParameters parameters) :
-    Constraint(name, parameters),
+NodeFaceConstraint::NodeFaceConstraint(const InputParameters & parameters) :
+    Constraint(parameters),
     // The slave side is at nodes (hence passing 'true').  The neighbor side is the master side and it is not at nodes (so passing false)
-    NeighborCoupleableMooseVariableDependencyIntermediateInterface(parameters, true, false),
+    NeighborCoupleableMooseVariableDependencyIntermediateInterface(this, true, false),
     _slave(_mesh.getBoundaryID(getParam<BoundaryName>("slave"))),
     _master(_mesh.getBoundaryID(getParam<BoundaryName>("master"))),
 
@@ -227,23 +229,23 @@ NodeFaceConstraint::getConnectedDofIndices(unsigned int var_num)
   _connected_dof_indices.clear();
   std::set<dof_id_type> unique_dof_indices;
 
-  std::vector<dof_id_type> & elems = _node_to_elem_map[_current_node->id()];
+  auto node_to_elem_pair = _node_to_elem_map.find(_current_node->id());
+  mooseAssert(node_to_elem_pair != _node_to_elem_map.end(), "Missing entry in node to elem map");
+  const std::vector<dof_id_type> & elems = node_to_elem_pair->second;
 
   // Get the dof indices from each elem connected to the node
-  for (unsigned int el=0; el < elems.size(); ++el)
+  for (const auto & cur_elem : elems)
   {
-    dof_id_type cur_elem = elems[el];
-
     std::vector<dof_id_type> dof_indices;
 
-    var.getDofIndices(_mesh.elem(cur_elem), dof_indices);
+    var.getDofIndices(_mesh.elemPtr(cur_elem), dof_indices);
 
-    for (unsigned int di=0; di < dof_indices.size(); di++)
-      unique_dof_indices.insert(dof_indices[di]);
+    for (const auto & dof : dof_indices)
+      unique_dof_indices.insert(dof);
   }
 
-  for (std::set<dof_id_type>::iterator sit=unique_dof_indices.begin(); sit != unique_dof_indices.end(); ++sit)
-    _connected_dof_indices.push_back(*sit);
+  for (const auto & dof : unique_dof_indices)
+    _connected_dof_indices.push_back(dof);
 }
 
 bool

@@ -20,9 +20,8 @@ InputParameters validParams<SpecifiedSmoothCircleIC>()
   return params;
 }
 
-SpecifiedSmoothCircleIC::SpecifiedSmoothCircleIC(const std::string & name,
-                                               InputParameters parameters) :
-    SmoothCircleBaseIC(name, parameters),
+SpecifiedSmoothCircleIC::SpecifiedSmoothCircleIC(const InputParameters & parameters) :
+    SmoothCircleBaseIC(parameters),
     _x_positions(getParam<std::vector<Real> >("x_positions")),
     _y_positions(getParam<std::vector<Real> >("y_positions")),
     _z_positions(getParam<std::vector<Real> >("z_positions")),
@@ -53,3 +52,4 @@ SpecifiedSmoothCircleIC::computeCircleCenters()
     _centers[circ](2) = _z_positions[circ];
   }
 }
+

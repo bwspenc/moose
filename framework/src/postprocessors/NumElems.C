@@ -12,8 +12,10 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "NumElems.h"
 #include "SubProblem.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<NumElems>()
@@ -22,8 +24,8 @@ InputParameters validParams<NumElems>()
   return params;
 }
 
-NumElems::NumElems(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters)
+NumElems::NumElems(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters)
 {}
 
 Real
@@ -31,3 +33,4 @@ NumElems::getValue()
 {
   return _subproblem.mesh().nElem();
 }
+

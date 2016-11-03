@@ -27,7 +27,7 @@ class CrackFrontDefinition :
   public BoundaryRestrictable
 {
 public:
-  CrackFrontDefinition(const std::string & name, InputParameters parameters);
+  CrackFrontDefinition(const InputParameters & parameters);
   virtual ~CrackFrontDefinition();
 
   virtual void initialSetup();

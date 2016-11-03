@@ -14,11 +14,15 @@
 #include "MooseTestApp.h"
 #include "Moose.h"
 #include "Factory.h"
+#include "MooseSyntax.h"
+
 #include "ActionFactory.h"
 #include "AppFactory.h"
 
 #include "MooseTestApp.h"
 
+#include "ConservativeAdvection.h"
+#include "CoeffParamDiffusion.h"
 #include "CoupledConvection.h"
 #include "ForcingFn.h"
 #include "MatDiffusion.h"
@@ -46,6 +50,7 @@
 #include "ForcingFunctionXYZ0.h"
 #include "TEJumpFFN.h"
 #include "NanKernel.h"
+#include "NanAtCountKernel.h"
 #include "ExceptionKernel.h"
 #include "MatConvection.h"
 #include "PPSDiffusion.h"
@@ -70,7 +75,7 @@
 #include "ConsoleMessageKernel.h"
 #include "WrongJacobianDiffusion.h"
 #include "DefaultMatPropConsumerKernel.h"
-
+#include "DoNotCopyParametersKernel.h"
 #include "CoupledAux.h"
 #include "CoupledScalarAux.h"
 #include "CoupledGradAux.h"
@@ -85,7 +90,16 @@
 #include "RandomAux.h"
 #include "PostprocessorAux.h"
 #include "FluxAverageAux.h"
+#include "OldMaterialAux.h"
+#include "DotCouplingAux.h"
+#include "VectorPostprocessorAux.h"
+#include "ExampleShapeElementKernel.h"
+#include "ExampleShapeElementKernel2.h"
+#include "SimpleTestShapeElementKernel.h"
 
+#include "RobinBC.h"
+#include "InflowBC.h"
+#include "OutflowBC.h"
 #include "MTBC.h"
 #include "PolyCoupledDirichletBC.h"
 #include "MMSCoupledDirichletBC.h"
@@ -99,6 +113,7 @@
 #include "MatTestNeumannBC.h"
 #include "MatDivergenceBC.h"
 #include "CoupledDirichletBC.h"
+#include "TestLapBC.h"
 
 // ICs
 #include "TEIC.h"
@@ -126,19 +141,24 @@
 #include "DerivativeMaterialInterfaceTestProvider.h"
 #include "DerivativeMaterialInterfaceTestClient.h"
 #include "DefaultMatPropConsumerMaterial.h"
+#include "RandomMaterial.h"
+#include "RecomputeMaterial.h"
+#include "NewtonMaterial.h"
 
 #include "DGMatDiffusion.h"
+#include "DGAdvection.h"
 #include "DGMDDBC.h"
 #include "DGFunctionConvectionDirichletBC.h"
 #include "CoupledKernelGradBC.h"
-#include "PenaltyDirichletBC.h"
-#include "FunctionPenaltyDirichletBC.h"
+
+#include "InterfaceDiffusion.h"
 
 #include "ExplicitODE.h"
 #include "ImplicitODEx.h"
 #include "ImplicitODEy.h"
 #include "AlphaCED.h"
 #include "PostprocessorCED.h"
+#include "VectorPostprocessorScalarKernel.h"
 
 #include "EqualValueNodalConstraint.h"
 
@@ -160,6 +180,11 @@
 #include "BoundaryUserObject.h"
 #include "TestBoundaryRestrictableAssert.h"
 #include "GetMaterialPropertyBoundaryBlockNamesTest.h"
+#include "SetupInterfaceCount.h"
+#include "ReadDoubleIndex.h"
+#include "TestShapeElementUserObject.h"
+#include "ExampleShapeElementUserObject.h"
+#include "SimpleTestShapeElementUserObject.h"
 
 // Postprocessors
 #include "TestCopyInitialSolution.h"
@@ -171,6 +196,10 @@
 #include "NumSideQPs.h"
 #include "ElementL2Diff.h"
 #include "TestPostprocessor.h"
+#include "ElementSidePP.h"
+#include "RealControlParameterReporter.h"
+#include "ScalarCoupledPostprocessor.h"
+#include "NumAdaptivityCycles.h"
 
 // Functions
 #include "TimestepSetupFunction.h"
@@ -184,7 +213,7 @@
 #include "ReportingConstantSource.h"
 #include "FrontSource.h"
 #include "MaterialPointSource.h"
-#include "StatefulPointSource.h"
+#include "MaterialMultiPointSource.h"
 #include "CachingPointSource.h"
 #include "BadCachingPointSource.h"
 #include "NonlinearSource.h"
@@ -192,6 +221,7 @@
 // markers
 #include "RandomHitMarker.h"
 #include "QPointMarker.h"
+#include "CircleMarker.h"
 
 // meshes
 #include "StripeMesh.h"
@@ -208,12 +238,22 @@
 #include "AddLotsOfAuxVariablesAction.h"
 #include "ApplyCoupledVariablesTestAction.h"
 #include "AddLotsOfDiffusion.h"
+#include "BadAddKernelAction.h"
+
+// TimeSteppers
+#include "TimeSequenceStepperFailTest.h"
 
 // From MOOSE
 #include "AddVariableAction.h"
 
 // Outputs
 #include "OutputObjectTest.h"
+
+// Controls
+#include "TestControl.h"
+
+// Indicators
+#include "MaterialTestIndicator.h"
 
 template<>
 InputParameters validParams<MooseTestApp>()
@@ -226,11 +266,9 @@ InputParameters validParams<MooseTestApp>()
 }
 
 
-MooseTestApp::MooseTestApp(const std::string & name, InputParameters parameters):
-    MooseApp(name, parameters)
+MooseTestApp::MooseTestApp(const InputParameters & parameters):
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
   MooseTestApp::registerObjects(_factory);
 
@@ -256,6 +294,8 @@ void
 MooseTestApp::registerObjects(Factory & factory)
 {
   // Kernels
+  registerKernel(ConservativeAdvection);
+  registerKernel(CoeffParamDiffusion);
   registerKernel(CoupledConvection);
   registerKernel(ForcingFn);
   registerKernel(MatDiffusion);
@@ -283,6 +323,7 @@ MooseTestApp::registerObjects(Factory & factory)
   registerKernel(ForcingFunctionXYZ0);
   registerKernel(TEJumpFFN);
   registerKernel(NanKernel);
+  registerKernel(NanAtCountKernel);
   registerKernel(ExceptionKernel);
   registerKernel(MatConvection);
   registerKernel(PPSDiffusion);
@@ -307,6 +348,10 @@ MooseTestApp::registerObjects(Factory & factory)
   registerKernel(ConsoleMessageKernel);
   registerKernel(WrongJacobianDiffusion);
   registerKernel(DefaultMatPropConsumerKernel);
+  registerKernel(DoNotCopyParametersKernel);
+  registerKernel(ExampleShapeElementKernel);
+  registerKernel(ExampleShapeElementKernel2);
+  registerKernel(SimpleTestShapeElementKernel);
 
   // Aux kernels
   registerAux(CoupledAux);
@@ -323,11 +368,21 @@ MooseTestApp::registerObjects(Factory & factory)
   registerAux(RandomAux);
   registerAux(PostprocessorAux);
   registerAux(FluxAverageAux);
+  registerAux(OldMaterialAux);
+  registerAux(DotCouplingAux);
+  registerAux(VectorPostprocessorAux);
 
   // DG kernels
   registerDGKernel(DGMatDiffusion);
+  registerDGKernel(DGAdvection);
+
+  // Interface kernels
+  registerInterfaceKernel(InterfaceDiffusion);
 
   // Boundary Conditions
+  registerBoundaryCondition(RobinBC);
+  registerBoundaryCondition(InflowBC);
+  registerBoundaryCondition(OutflowBC);
   registerBoundaryCondition(MTBC);
   registerBoundaryCondition(PolyCoupledDirichletBC);
   registerBoundaryCondition(MMSCoupledDirichletBC);
@@ -341,14 +396,13 @@ MooseTestApp::registerObjects(Factory & factory)
 
   registerBoundaryCondition(DGMDDBC);
   registerBoundaryCondition(DGFunctionConvectionDirichletBC);
-  registerBoundaryCondition(PenaltyDirichletBC);
-  registerBoundaryCondition(FunctionPenaltyDirichletBC);
 
   registerBoundaryCondition(CoupledKernelGradBC);
 
   registerBoundaryCondition(DivergenceBC);
   registerBoundaryCondition(MatDivergenceBC);
   registerBoundaryCondition(CoupledDirichletBC);
+  registerBoundaryCondition(TestLapBC);
 
   // Initial conditions
   registerInitialCondition(TEIC);
@@ -375,7 +429,10 @@ MooseTestApp::registerObjects(Factory & factory)
   registerMaterial(VecRangeCheckMaterial);
   registerMaterial(DerivativeMaterialInterfaceTestProvider);
   registerMaterial(DerivativeMaterialInterfaceTestClient);
-  registerKernel(DefaultMatPropConsumerMaterial);
+  registerMaterial(DefaultMatPropConsumerMaterial);
+  registerMaterial(RandomMaterial);
+  registerMaterial(RecomputeMaterial);
+  registerMaterial(NewtonMaterial);
 
 
   registerScalarKernel(ExplicitODE);
@@ -383,6 +440,7 @@ MooseTestApp::registerObjects(Factory & factory)
   registerScalarKernel(ImplicitODEy);
   registerScalarKernel(AlphaCED);
   registerScalarKernel(PostprocessorCED);
+  registerScalarKernel(VectorPostprocessorScalarKernel);
 
   // Functions
   registerFunction(TimestepSetupFunction);
@@ -396,7 +454,7 @@ MooseTestApp::registerObjects(Factory & factory)
   registerDiracKernel(ReportingConstantSource);
   registerDiracKernel(FrontSource);
   registerDiracKernel(MaterialPointSource);
-  registerDiracKernel(StatefulPointSource);
+  registerDiracKernel(MaterialMultiPointSource);
   registerDiracKernel(CachingPointSource);
   registerDiracKernel(BadCachingPointSource);
   registerDiracKernel(NonlinearSource);
@@ -424,6 +482,15 @@ MooseTestApp::registerObjects(Factory & factory)
   registerUserObject(BoundaryUserObject);
   registerUserObject(TestBoundaryRestrictableAssert);
   registerUserObject(GetMaterialPropertyBoundaryBlockNamesTest);
+  registerUserObject(GeneralSetupInterfaceCount);
+  registerUserObject(ElementSetupInterfaceCount);
+  registerUserObject(SideSetupInterfaceCount);
+  registerUserObject(InternalSideSetupInterfaceCount);
+  registerUserObject(NodalSetupInterfaceCount);
+  registerUserObject(ReadDoubleIndex);
+  registerUserObject(TestShapeElementUserObject);
+  registerUserObject(ExampleShapeElementUserObject);
+  registerUserObject(SimpleTestShapeElementUserObject);
 
   registerPostprocessor(InsideValuePPS);
   registerPostprocessor(TestCopyInitialSolution);
@@ -434,9 +501,14 @@ MooseTestApp::registerObjects(Factory & factory)
   registerPostprocessor(NumSideQPs);
   registerPostprocessor(ElementL2Diff);
   registerPostprocessor(TestPostprocessor);
+  registerPostprocessor(ElementSidePP);
+  registerPostprocessor(RealControlParameterReporter);
+  registerPostprocessor(ScalarCoupledPostprocessor);
+  registerPostprocessor(NumAdaptivityCycles);
 
   registerMarker(RandomHitMarker);
   registerMarker(QPointMarker);
+  registerMarker(CircleMarker);
 
   registerExecutioner(TestSteady);
   registerExecutioner(AdaptAndModify);
@@ -444,8 +516,17 @@ MooseTestApp::registerObjects(Factory & factory)
   registerProblem(MooseTestProblem);
   registerProblem(FailingProblem);
 
+  // TimeSteppers
+  registerTimeStepper(TimeSequenceStepperFailTest);
+
   // Outputs
   registerOutput(OutputObjectTest);
+
+  // Controls
+  registerControl(TestControl);
+
+  // Indicators
+  registerIndicator(MaterialTestIndicator);
 }
 
 // External entry point for dynamic syntax association
@@ -456,11 +537,11 @@ MooseTestApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   // and add more
   registerAction(ConvDiffMetaAction, "meta_action");
   registerAction(AddLotsOfAuxVariablesAction, "meta_action");
+  registerAction(BadAddKernelAction, "add_kernel");
 
   registerAction(AddLotsOfDiffusion, "add_variable");
   registerAction(AddLotsOfDiffusion, "add_kernel");
   registerAction(AddLotsOfDiffusion, "add_bc");
-
 
   syntax.registerActionSyntax("ConvDiffMetaAction", "ConvectionDiffusion");
   syntax.registerActionSyntax("AddAuxVariableAction", "MoreAuxVariables/*", "add_aux_variable");
@@ -468,6 +549,6 @@ MooseTestApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 
   registerAction(ApplyCoupledVariablesTestAction, "meta_action");
   syntax.registerActionSyntax("ApplyCoupledVariablesTestAction", "ApplyInputParametersTest");
-
   syntax.registerActionSyntax("AddLotsOfDiffusion", "Testing/LotsOfDiffusion/*");
+  syntax.registerActionSyntax("BadAddKernelAction", "BadKernels/*");
 }

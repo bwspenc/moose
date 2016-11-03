@@ -12,10 +12,12 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
+// MOOSE includes
 #include "CopyNodalVarsAction.h"
 #include "FEProblem.h"
 #include "ActionWarehouse.h"
 #include "MooseApp.h"
+#include "NonlinearSystem.h"
 
 #include <map>
 
@@ -23,7 +25,8 @@ template<>
 InputParameters validParams<CopyNodalVarsAction>()
 {
   InputParameters params = validParams<Action>();
-  params.addParam<int>("initial_from_file_timestep", 2, "Gives the timestep for which to read a solution from a file for a given variable");
+  params.addParam<std::string>("initial_from_file_timestep", "LATEST", "Gives the timestep (or \"LATEST\") for which to read a solution from a file "
+                               "for a given variable. (Default: LATEST)");
   params.addParam<std::string>("initial_from_file_var", "Gives the name of a variable for which to read an initial condition from a mesh file");
 
   params.addParamNamesToGroup("initial_from_file_timestep initial_from_file_var", "Initial From File");
@@ -32,14 +35,15 @@ InputParameters validParams<CopyNodalVarsAction>()
   return params;
 }
 
-CopyNodalVarsAction::CopyNodalVarsAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+CopyNodalVarsAction::CopyNodalVarsAction(InputParameters params) :
+    Action(params)
 {
 }
 
 void
 CopyNodalVarsAction::act()
 {
+
   if (isParamValid("initial_from_file_var"))
   {
     SystemBase * system;
@@ -54,7 +58,7 @@ CopyNodalVarsAction::act()
       else
         system = &_problem->getAuxiliarySystem();
 
-      system->addVariableToCopy(getShortName(), getParam<std::string>("initial_from_file_var"), getParam<int>("initial_from_file_timestep"));
+      system->addVariableToCopy(name(), getParam<std::string>("initial_from_file_var"), getParam<std::string>("initial_from_file_timestep"));
     }
   }
 }

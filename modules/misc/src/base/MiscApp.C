@@ -7,10 +7,10 @@
 #include "MiscApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
+#include "MooseSyntax.h"
 
 #include "BodyForceVoid.h"
 #include "CoefDiffusion.h"
-#include "Convection.h"
 #include "Density.h"
 #include "InternalVolume.h"
 #include "RobinBC.h"
@@ -30,15 +30,12 @@ InputParameters validParams<MiscApp>()
   InputParameters params = validParams<MooseApp>();
   params.set<bool>("use_legacy_uo_initialization") = false;
   params.set<bool>("use_legacy_uo_aux_computation") = false;
-
   return params;
 }
 
-MiscApp::MiscApp(const std::string & name, InputParameters parameters) :
-    MooseApp(name, parameters)
+MiscApp::MiscApp(const InputParameters & parameters) :
+    MooseApp(parameters)
 {
-  srand(processor_id());
-
   Moose::registerObjects(_factory);
   MiscApp::registerObjects(_factory);
 
@@ -69,7 +66,6 @@ MiscApp::registerObjects(Factory & factory)
 
   registerKernel(BodyForceVoid);
   registerKernel(CoefDiffusion);
-  registerKernel(Convection);
   registerKernel(JouleHeating);
   registerKernel(CoefTimeDerivative);
   registerKernel(GaussContForcing);

@@ -8,11 +8,6 @@
 # which makes it trivial to check displacements.
 #
 
-[GlobalParams]
-  disp_x = disp_x
-  disp_y = disp_y
-  disp_z = disp_z
-[]
 
 [Mesh]
   # Comment
@@ -59,9 +54,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
-    disp_z = disp_z
+    displacements = 'disp_x disp_y disp_z'
   [../]
 []
 
@@ -84,18 +77,27 @@
     boundary = 6
     value = 0.0
   [../]
-  [./PressureTM]
+  [./Pressure]
     [./Side1]
       boundary = 1
       function = rampConstant
+      disp_x = disp_x
+      disp_y = disp_y
+      disp_z = disp_z
     [../]
     [./Side2]
       boundary = 2
       function = zeroRamp
+      disp_x = disp_x
+      disp_y = disp_y
+      disp_z = disp_z
     [../]
     [./Side3]
       boundary = 3
       function = rampUnramp
+      disp_x = disp_x
+      disp_y = disp_y
+      disp_z = disp_z
     [../]
   [../]
 []
@@ -110,6 +112,7 @@
   [../]
   [./strain]
     type = ComputeSmallStrain
+    displacements = 'disp_x disp_y disp_z'
     block = 1
   [../]
   [./stress]
@@ -131,9 +134,6 @@
 []
 
 [Outputs]
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
   [./out]
     type = Exodus
     elemental_as_nodal = true

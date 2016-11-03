@@ -30,11 +30,10 @@ InputParameters validParams<ExampleMaterial>();
 class ExampleMaterial : public Material
 {
 public:
-  ExampleMaterial(const std::string & name,
-                  InputParameters parameters);
+  ExampleMaterial(const InputParameters & parameters);
 
 protected:
-  virtual void computeQpProperties();
+  virtual void computeQpProperties() override;
 
 private:
   /**
@@ -52,7 +51,7 @@ private:
    * This is the member reference that will hold the gradient
    * of the coupled variable
    */
-  VariableGradient & _diffusion_gradient;
+  const VariableGradient & _diffusion_gradient;
 
   /**
    * This object returns a piecewise linear function based an a series

@@ -34,12 +34,9 @@ public:
   /**
    * Class constructor
    */
-  AddAuxVariableAction(const std::string & name, InputParameters params);
+  AddAuxVariableAction(InputParameters params);
 
-  /**
-   * Creates the AuxVariable
-   */
-  virtual void act();
+  virtual void act() override;
 
   /**
    * Returns available families for AuxVariables

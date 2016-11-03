@@ -30,37 +30,13 @@ InputParameters validParams<SetupRecoverFileBaseAction>();
 class SetupRecoverFileBaseAction : public Action
 {
 public:
-
   /**
    * Class constructor
-   * @param name Name of the action
    * @param params Input parameters for this action
    */
-  SetupRecoverFileBaseAction(const std::string & name, InputParameters params);
+  SetupRecoverFileBaseAction(InputParameters params);
 
-  /**
-   * Class destructor
-   */
-  virtual ~SetupRecoverFileBaseAction();
-
-  /**
-   * Sets the recovery file base.
-   */
-  virtual void act();
-
-private:
-
-  /**
-   * Extract all possible checkpoint file names
-   * @param files A Set of checkpoint filenames to populate
-   */
-  void getCheckpointFiles(std::set<std::string> & files);
-
-  /**
-   * Extract the file base to utilize for recovery, uses the newest of the files in the supplied set
-   * @param The most current checkpoing file base
-   */
-  std::string getRecoveryFileBase(const std::set<std::string> checkpoint_files);
+  virtual void act() override;
 };
 
 #endif //SETUPRECOVERFILEBASEACTION_H

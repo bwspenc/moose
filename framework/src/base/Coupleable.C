@@ -16,31 +16,34 @@
 #include "Problem.h"
 #include "SubProblem.h"
 #include "FEProblem.h"
+#include "MooseVariable.h"
+#include "InputParameters.h"
+#include "MooseObject.h"
 
-Coupleable::Coupleable(const InputParameters & parameters, bool nodal) :
-    _c_fe_problem(*parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
+Coupleable::Coupleable(const MooseObject * moose_object, bool nodal) :
+    _c_parameters(moose_object->parameters()),
+    _c_fe_problem(*_c_parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
     _nodal(nodal),
-    _c_is_implicit(parameters.have_parameter<bool>("implicit") ? parameters.get<bool>("implicit") : true),
-    _coupleable_params(parameters),
-    _coupleable_neighbor(parameters.have_parameter<bool>("_neighbor") ? parameters.get<bool>("_neighbor") : false),
+    _c_is_implicit(_c_parameters.have_parameter<bool>("implicit") ? _c_parameters.get<bool>("implicit") : true),
+    _coupleable_params(_c_parameters),
+    _coupleable_neighbor(_c_parameters.have_parameter<bool>("_neighbor") ? _c_parameters.get<bool>("_neighbor") : false),
     _coupleable_max_qps(_c_fe_problem.getMaxQps())
 {
-  SubProblem & problem = *parameters.get<SubProblem *>("_subproblem");
+  SubProblem & problem = *_c_parameters.get<SubProblem *>("_subproblem");
 
-  THREAD_ID tid = parameters.get<THREAD_ID>("_tid");
+  THREAD_ID tid = _c_parameters.get<THREAD_ID>("_tid");
 
   // Coupling
-  for (std::set<std::string>::const_iterator iter = parameters.coupledVarsBegin();
-       iter != parameters.coupledVarsEnd();
+  for (std::set<std::string>::const_iterator iter = _c_parameters.coupledVarsBegin();
+       iter != _c_parameters.coupledVarsEnd();
        ++iter)
   {
     std::string name = *iter;
-    if (parameters.getVecMooseType(name) != std::vector<std::string>())
+    if (_c_parameters.getVecMooseType(name) != std::vector<std::string>())
     {
-      std::vector<std::string> vars = parameters.getVecMooseType(*iter);
-      for (unsigned int i = 0; i < vars.size(); i++)
+      std::vector<std::string> vars = _c_parameters.getVecMooseType(*iter);
+      for (const auto & coupled_var_name : vars)
       {
-        std::string coupled_var_name = vars[i];
         if (problem.hasVariable(coupled_var_name))
         {
           MooseVariable * moose_var = &problem.getVariable(tid, coupled_var_name);
@@ -64,10 +67,10 @@ Coupleable::Coupleable(const InputParameters & parameters, bool nodal) :
 
 Coupleable::~Coupleable()
 {
-  for (std::map<std::string, VariableValue *>::iterator it = _default_value.begin(); it != _default_value.end(); ++it)
+  for (auto & it : _default_value)
   {
-    it->second->release();
-    delete it->second;
+    it.second->release();
+    delete it.second;
   }
   _default_value_zero.release();
   _default_gradient.release();
@@ -129,8 +132,10 @@ Coupleable::coupled(const std::string & var_name, unsigned int comp)
   MooseVariable * var = getVar(var_name, comp);
   switch (var->kind())
   {
-  case Moose::VAR_NONLINEAR: return getVar(var_name, comp)->number();
-  case Moose::VAR_AUXILIARY: return std::numeric_limits<unsigned int>::max() - getVar(var_name, comp)->number();
+    case Moose::VAR_NONLINEAR:
+      return var->number();
+    case Moose::VAR_AUXILIARY:
+      return std::numeric_limits<unsigned int>::max() - var->number();
   }
   mooseError("Unknown variable kind. Corrupted binary?");
 }
@@ -148,7 +153,7 @@ Coupleable::getDefaultValue(const std::string & var_name)
   return default_value_it->second;
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledValue(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name))
@@ -174,6 +179,12 @@ Coupleable::coupledValue(const std::string & var_name, unsigned int comp)
 }
 
 VariableValue &
+Coupleable::writableCoupledValue(const std::string & var_name, unsigned int comp)
+{
+  return const_cast<VariableValue &>(coupledValue(var_name, comp));
+}
+
+const VariableValue &
 Coupleable::coupledValueOld(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name))
@@ -199,7 +210,7 @@ Coupleable::coupledValueOld(const std::string & var_name, unsigned int comp)
   }
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledValueOlder(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name))
@@ -246,7 +257,7 @@ Coupleable::coupledValueOlder(const std::string & var_name, unsigned int comp)
 
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledDot(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -271,7 +282,7 @@ Coupleable::coupledDot(const std::string & var_name, unsigned int comp)
   }
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledDotDu(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -296,7 +307,7 @@ Coupleable::coupledDotDu(const std::string & var_name, unsigned int comp)
 }
 
 
-VariableGradient &
+const VariableGradient &
 Coupleable::coupledGradient(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -314,7 +325,7 @@ Coupleable::coupledGradient(const std::string & var_name, unsigned int comp)
     return (_c_is_implicit) ? var->gradSlnNeighbor() : var->gradSlnOldNeighbor();
 }
 
-VariableGradient &
+const VariableGradient &
 Coupleable::coupledGradientOld(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -333,7 +344,7 @@ Coupleable::coupledGradientOld(const std::string & var_name, unsigned int comp)
     return (_c_is_implicit) ? var->gradSlnOldNeighbor() : var->gradSlnOlderNeighbor();
 }
 
-VariableGradient &
+const VariableGradient &
 Coupleable::coupledGradientOlder(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -357,7 +368,7 @@ Coupleable::coupledGradientOlder(const std::string & var_name, unsigned int comp
     mooseError("Older values not available for explicit schemes");
 }
 
-VariableSecond &
+const VariableSecond &
 Coupleable::coupledSecond(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -375,7 +386,7 @@ Coupleable::coupledSecond(const std::string & var_name, unsigned int comp)
     return (_c_is_implicit) ? var->secondSlnNeighbor() : var->secondSlnOlderNeighbor();
 }
 
-VariableSecond &
+const VariableSecond &
 Coupleable::coupledSecondOld(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -393,7 +404,7 @@ Coupleable::coupledSecondOld(const std::string & var_name, unsigned int comp)
     return (_c_is_implicit) ? var->secondSlnOldNeighbor() : var->secondSlnOlderNeighbor();
 }
 
-VariableSecond &
+const VariableSecond &
 Coupleable::coupledSecondOlder(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0
@@ -416,7 +427,7 @@ Coupleable::coupledSecondOlder(const std::string & var_name, unsigned int comp)
     mooseError("Older values not available for explicit schemes");
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledNodalValue(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name))
@@ -431,7 +442,7 @@ Coupleable::coupledNodalValue(const std::string & var_name, unsigned int comp)
     return (_c_is_implicit) ? var->nodalValueNeighbor() : var->nodalValueOldNeighbor();
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledNodalValueOld(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name))
@@ -447,7 +458,7 @@ Coupleable::coupledNodalValueOld(const std::string & var_name, unsigned int comp
     return (_c_is_implicit) ? var->nodalValueOldNeighbor() : var->nodalValueOlderNeighbor();
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledNodalValueOlder(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name))
@@ -467,7 +478,7 @@ Coupleable::coupledNodalValueOlder(const std::string & var_name, unsigned int co
     mooseError("Older values not available for explicit schemes");
 }
 
-VariableValue &
+const VariableValue &
 Coupleable::coupledNodalDot(const std::string & var_name, unsigned int comp)
 {
   if (!isCoupled(var_name)) // Return default 0

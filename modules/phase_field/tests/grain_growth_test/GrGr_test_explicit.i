@@ -5,13 +5,13 @@
   ny = 10
   nz = 0
   xmin = 0
-  xmax = 1000
+  xmax = 400
   ymin = 0
-  ymax = 1000
+  ymax = 400
   zmin = 0
   zmax = 0
   elem_type = QUAD4
-  uniform_refine = 2
+  uniform_refine = 1
 []
 
 [GlobalParams]
@@ -28,9 +28,9 @@
 [ICs]
   [./PolycrystalICs]
     [./BicrystalCircleGrainIC]
-      radius = 333.333
-      x = 500
-      y = 500
+      radius = 300
+      x = 400
+      y = 0
     [../]
   [../]
 []
@@ -58,7 +58,6 @@
 [Materials]
   [./Copper]
     type = GBEvolution
-    block = 0
     T = 500 # K
     wGB = 60 # nm
     GBmob0 = 2.5e-6 #m^4/(Js) from Schoenfelder 1997
@@ -97,13 +96,10 @@
 
 [Outputs]
   file_base = explicit
-  output_initial = true
-  output_final = true
+  execute_on = 'initial timestep_end final'
   csv = true
   interval = 20
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
 
 [Problem]

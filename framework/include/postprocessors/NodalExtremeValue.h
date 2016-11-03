@@ -37,14 +37,13 @@ public:
 
   /**
    * Class constructor
-   * @param name The name of the postprocessor
    * @param parameters The input parameters
    */
-  NodalExtremeValue(const std::string & name, InputParameters parameters);
-  virtual void initialize();
-  virtual void execute();
-  virtual Real getValue();
-  virtual void threadJoin(const UserObject & y);
+  NodalExtremeValue(const InputParameters & parameters);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual Real getValue() override;
+  virtual void threadJoin(const UserObject & y) override;
 
 protected:
   /// The extreme value type ("min" or "max")

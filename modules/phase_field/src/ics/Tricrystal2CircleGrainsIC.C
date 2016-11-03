@@ -4,8 +4,10 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "Tricrystal2CircleGrainsIC.h"
 #include "MooseRandom.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<Tricrystal2CircleGrainsIC>()
@@ -17,9 +19,8 @@ InputParameters validParams<Tricrystal2CircleGrainsIC>()
   return params;
 }
 
-Tricrystal2CircleGrainsIC::Tricrystal2CircleGrainsIC(const std::string & name,
-                                                     InputParameters parameters) :
-    InitialCondition(name, parameters),
+Tricrystal2CircleGrainsIC::Tricrystal2CircleGrainsIC(const InputParameters & parameters) :
+    InitialCondition(parameters),
     _mesh(_fe_problem.mesh()),
     _nl(_fe_problem.getNonlinearSystem()),
     _op_num(getParam<unsigned int>("op_num")),
@@ -51,11 +52,12 @@ Tricrystal2CircleGrainsIC::value(const Point & p)
   grain_center_right(2) = _bottom_left(2) + _range(2)/2.0;
 
   Real radius = _range(0)/5.0;
-  Real dist_left = (p - grain_center_left).size();
-  Real dist_right = (p - grain_center_right).size();
+  Real dist_left = (p - grain_center_left).norm();
+  Real dist_right = (p - grain_center_right).norm();
 
   if ((dist_left <= radius && _op_index == 1) || (dist_right <= radius && _op_index == 2) || (dist_left > radius && dist_right > radius && _op_index == 0))
     return 1.0;
   else
     return 0.0;
 }
+

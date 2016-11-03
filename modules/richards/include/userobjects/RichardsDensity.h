@@ -25,7 +25,7 @@ InputParameters validParams<RichardsDensity>();
 class RichardsDensity : public GeneralUserObject
 {
 public:
-  RichardsDensity(const std::string & name, InputParameters parameters);
+  RichardsDensity(const InputParameters & parameters);
 
   void initialize();
   void execute();

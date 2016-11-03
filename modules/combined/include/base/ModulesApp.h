@@ -17,7 +17,7 @@ InputParameters validParams<ModulesApp>();
 class ModulesApp : public MooseApp
 {
 public:
-  ModulesApp(const std::string & name, InputParameters parameters);
+  ModulesApp(const InputParameters & parameters);
   virtual ~ModulesApp();
 
   static void registerApps();

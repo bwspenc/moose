@@ -30,9 +30,8 @@ InputParameters validParams<LinearGeneralAnisotropicMaterial>()
   return params;
 }
 
-LinearGeneralAnisotropicMaterial::LinearGeneralAnisotropicMaterial(const std::string & name,
-                                                                   InputParameters parameters)
-    : SolidMechanicsMaterial(name, parameters),
+LinearGeneralAnisotropicMaterial::LinearGeneralAnisotropicMaterial(const InputParameters & parameters)
+    : SolidMechanicsMaterial(parameters),
       _euler_angle_1(getParam<Real>("euler_angle_1")),
       _euler_angle_2(getParam<Real>("euler_angle_2")),
       _euler_angle_3(getParam<Real>("euler_angle_3")),
@@ -85,3 +84,4 @@ void LinearGeneralAnisotropicMaterial::computeQpStress()
   // stress = C * e
   _stress[_qp] = _elasticity_tensor[_qp]*_elastic_strain[_qp];
 }
+

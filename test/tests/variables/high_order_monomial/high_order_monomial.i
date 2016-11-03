@@ -1,3 +1,10 @@
+###########################################################
+# This is a simple test demonstrating the use of the
+# Higher order monomial variable type.
+#
+# @Requirement F3.10
+###########################################################
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -10,6 +17,7 @@
   [../]
 []
 
+# Monomial variable types
 [AuxVariables]
   [./first]
     family = MONOMIAL
@@ -112,8 +120,5 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

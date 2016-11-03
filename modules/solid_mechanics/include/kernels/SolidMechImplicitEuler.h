@@ -20,7 +20,7 @@ class SolidMechImplicitEuler : public SecondDerivativeImplicitEuler
 {
 public:
 
-  SolidMechImplicitEuler(const std::string & name, InputParameters parameters);
+  SolidMechImplicitEuler(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();

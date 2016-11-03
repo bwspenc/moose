@@ -18,20 +18,14 @@
 template<>
 InputParameters validParams<Diffusion>()
 {
-  InputParameters p = validParams<Kernel>();
-  return p;
+  InputParameters params = validParams<Kernel>();
+  params.addClassDescription("The Laplacian operator ($-\\nabla \\cdot \\nabla u$), with the weak form of $(\\nabla \\phi_i, \\nabla u_h)$.");
+  return params;
 }
 
-
-Diffusion::Diffusion(const std::string & name, InputParameters parameters) :
-    Kernel(name, parameters)
+Diffusion::Diffusion(const InputParameters & parameters) :
+    Kernel(parameters)
 {
-
-}
-
-Diffusion::~Diffusion()
-{
-
 }
 
 Real

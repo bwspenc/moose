@@ -42,9 +42,7 @@ public:
    *
    * ConsoleStreamInterface contains an instance of this object, which allows message streams to be
    * transferred to Console output objects. This class simply provides an operator<< method
-   * that passes the stream to the Console objects. Note, that this class inserts a
-   * newline at the beginning of each call, but returns a reference to ConsoleStreamHelper
-   * that write the stream to the Console objects with out entering a new
+   * that passes the stream to the Console objects.
    */
   ConsoleStream(OutputWarehouse & output_warehouse);
 
@@ -55,8 +53,8 @@ public:
    * This allows any object to uses _console to write to the Console:
    *   _console << "The combination to the air lock is " << 12345 << std::endl;
    */
-  template<typename T>
-  const ConsoleStream & operator<<(T s) const;
+  template<typename StreamType>
+  const ConsoleStream & operator<<(const StreamType & s) const;
 
   /**
    * This overload is here to handle the the std::endl manipulator
@@ -72,9 +70,9 @@ private:
   std::ostringstream & _oss;
 };
 
-template<typename T>
+template<typename StreamType>
 const ConsoleStream &
-ConsoleStream::operator<<(T s) const
+ConsoleStream::operator<<(const StreamType & s) const
 {
   _oss << s;
   return *this;

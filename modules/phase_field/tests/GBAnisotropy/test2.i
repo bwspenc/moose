@@ -99,7 +99,6 @@
 [Materials]
   [./CuGrGranisotropic]
     type = GBAnisotropy
-    block = 0
     T = 600 # K
 
     op_num = 3
@@ -150,10 +149,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
   csv = true
-  [./console]
-    type = Console
-    perf_log = true
-  [../]
 []

@@ -11,11 +11,10 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-
-#include "Material.h"
-
 #ifndef STATEFULMATERIAL_H
 #define STATEFULMATERIAL_H
+
+#include "Material.h"
 
 //Forward Declarations
 class StatefulMaterial;
@@ -29,8 +28,7 @@ InputParameters validParams<StatefulMaterial>();
 class StatefulMaterial : public Material
 {
 public:
-  StatefulMaterial(const std::string & name,
-                  InputParameters parameters);
+  StatefulMaterial(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();

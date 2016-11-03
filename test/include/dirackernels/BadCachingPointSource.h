@@ -31,10 +31,16 @@ InputParameters validParams<BadCachingPointSource>();
 class BadCachingPointSource : public DiracKernel
 {
 public:
-  BadCachingPointSource(const std::string & name, InputParameters parameters);
+  BadCachingPointSource(const InputParameters & parameters);
 
   virtual void addPoints();
   virtual Real computeQpResidual();
+
+  /**
+   * Gets incremented every time the addPoints() method is called. Simulates a user
+   * adding points with a 'unique' ID that is already used by another point.
+   */
+  unsigned int _called;
 };
 
 #endif //BADCACHINGPOINTSOURCE_H

@@ -19,7 +19,7 @@
 #include "MooseEnum.h"
 #include "ComputeJacobianBlocksThread.h"
 
-//libMesh Includes
+// libMesh Includes
 #include "libmesh/libmesh_common.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/nonlinear_implicit_system.h"
@@ -29,6 +29,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/sparse_matrix.h"
 #include "libmesh/string_to_enum.h"
+#include "libmesh/coupling_matrix.h"
 
 template<>
 InputParameters validParams<PhysicsBasedPreconditioner>()
@@ -45,8 +46,8 @@ InputParameters validParams<PhysicsBasedPreconditioner>()
   return params;
 }
 
-PhysicsBasedPreconditioner::PhysicsBasedPreconditioner (const std::string & name, InputParameters params) :
-    MoosePreconditioner(name, params),
+PhysicsBasedPreconditioner::PhysicsBasedPreconditioner (const InputParameters & params) :
+    MoosePreconditioner(params),
     Preconditioner<Number>(MoosePreconditioner::_communicator),
     _nl(_fe_problem.getNonlinearSystem())
 {
@@ -132,9 +133,8 @@ PhysicsBasedPreconditioner::~PhysicsBasedPreconditioner ()
 {
   this->clear();
 
-  std::vector<Preconditioner<Number> *>::iterator it;
-  for (it = _preconditioners.begin(); it != _preconditioners.end(); ++it)
-    delete *it;
+  for (auto & pc : _preconditioners)
+    delete pc;
 }
 
 void
@@ -152,7 +152,7 @@ PhysicsBasedPreconditioner::addSystem(unsigned int var, std::vector<unsigned int
   _pre_type[var] = type;
 
   _off_diag_mats[var].resize(off_diag.size());
-  for (unsigned int i=0;i<off_diag.size();i++)
+  for (unsigned int i = 0; i < off_diag.size(); i++)
   {
     //Add the matrix to hold the off-diagonal piece
     _off_diag_mats[var][i] = &precond_system.add_matrix(_nl.sys().variable_name(off_diag[i]));
@@ -164,7 +164,7 @@ PhysicsBasedPreconditioner::addSystem(unsigned int var, std::vector<unsigned int
 void
 PhysicsBasedPreconditioner::init ()
 {
-  Moose::perf_log.push("init()","PhysicsBasedPreconditioner");
+  Moose::perf_log.push("init()", "PhysicsBasedPreconditioner");
 
   // Tell libMesh that this is initialized!
   _is_initialized = true;
@@ -175,7 +175,7 @@ PhysicsBasedPreconditioner::init ()
   if (_solve_order.size() == 0)
   {
     _solve_order.resize(num_systems);
-    for (unsigned int i=0;i<num_systems;i++)
+    for (unsigned int i = 0; i < num_systems; i++)
       _solve_order[i]=i;
   }
 
@@ -195,7 +195,7 @@ PhysicsBasedPreconditioner::init ()
     preconditioner->init();
   }
 
-  Moose::perf_log.pop("init()","PhysicsBasedPreconditioner");
+  Moose::perf_log.pop("init()", "PhysicsBasedPreconditioner");
 }
 
 void
@@ -215,7 +215,7 @@ PhysicsBasedPreconditioner::setup()
       blocks.push_back(block);
     }
 
-    for (unsigned int diag=0;diag<_off_diag[system_var].size();diag++)
+    for (unsigned int diag = 0; diag < _off_diag[system_var].size(); diag++)
     {
       unsigned int coupled_var = _off_diag[system_var][diag];
       std::string coupled_name = _nl.sys().variable_name(coupled_var);
@@ -228,14 +228,14 @@ PhysicsBasedPreconditioner::setup()
   _fe_problem.computeJacobianBlocks(blocks);
 
   // cleanup
-  for (unsigned int i=0; i<blocks.size(); i++)
-    delete blocks[i];
+  for (auto & block : blocks)
+    delete block;
 }
 
 void
 PhysicsBasedPreconditioner::apply(const NumericVector<Number> & x, NumericVector<Number> & y)
 {
-  Moose::perf_log.push("apply()","PhysicsBasedPreconditioner");
+  Moose::perf_log.push("apply()", "PhysicsBasedPreconditioner");
 
   const unsigned int num_systems = _systems.size();
 
@@ -259,7 +259,7 @@ PhysicsBasedPreconditioner::apply(const NumericVector<Number> & x, NumericVector
 
     //Modify the RHS by subtracting off the matvecs of the solutions for the other preconditioning
     //systems with the off diagonal blocks in this system.
-    for (unsigned int diag=0;diag<_off_diag[system_var].size();diag++)
+    for (unsigned int diag = 0; diag < _off_diag[system_var].size(); diag++)
     {
       unsigned int coupled_var = _off_diag[system_var][diag];
       LinearImplicitSystem & coupled_system = *_systems[coupled_var];
@@ -296,7 +296,7 @@ PhysicsBasedPreconditioner::apply(const NumericVector<Number> & x, NumericVector
 
   y.close();
 
-  Moose::perf_log.pop("apply()","PhysicsBasedPreconditioner");
+  Moose::perf_log.pop("apply()", "PhysicsBasedPreconditioner");
 }
 
 void

@@ -58,7 +58,7 @@
     mob_name = M
   [../]
   [./time]
-    type = CoupledImplicitEuler
+    type = CoupledTimeDerivative
     variable = w
     v = c
   [../]
@@ -75,14 +75,12 @@
 
 [Materials]
   [./pfmobility]
-    type = PFMobility
-    block = 0
-    kappa = 0.1
-    mob = 1e-3
+    type = GenericConstantMaterial
+    prop_names  = 'M kappa_c'
+    prop_values = '1e-3 0.1'
   [../]
   [./free_energy]
     type = DerivativeParsedMaterial
-    block = 0
     args = c
     constant_names = 'barr_height  cv_eq'
     constant_expressions = '0.1          1.0e-2'
@@ -120,7 +118,6 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   exodus = true
-  print_perf_log = true
 []
-

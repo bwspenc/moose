@@ -34,9 +34,10 @@
 []
 
 [GlobalParams]
-  # CHParsed needs the third derivatives
+  # CahnHilliard needs the third derivatives
   derivative_order = 3
   enable_jit = true
+  displacements = 'disp_x disp_y'
 []
 
 # AuxVars to compute the free energy density for outputting
@@ -121,13 +122,11 @@
 [Kernels]
   # Set up stress divergence kernels
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
   [../]
 
   # Cahn-Hilliard kernels
   [./c_res]
-    type = CHParsed
+    type = CahnHilliard
     variable = c
     f_name = F
     args = 'eta1 eta2 eta3'
@@ -143,7 +142,7 @@
     variable = eta1
   [../]
   [./ACBulk1]
-    type = ACParsed
+    type = AllenCahn
     variable = eta1
     args = 'eta2 eta3 c'
     mob_name = L1
@@ -169,7 +168,7 @@
     variable = eta2
   [../]
   [./ACBulk2]
-    type = ACParsed
+    type = AllenCahn
     variable = eta2
     args = 'eta1 eta3 c'
     mob_name = L2
@@ -195,7 +194,7 @@
     variable = eta3
   [../]
   [./ACBulk3]
-    type = ACParsed
+    type = AllenCahn
     variable = eta3
     args = 'eta1 eta2 c'
     mob_name = L3
@@ -229,16 +228,14 @@
   # declare a few constants, such as mobilities (L,M) and interface gradient prefactors (kappa*)
   [./consts]
     type = GenericConstantMaterial
-    block = 0
     prop_names  = 'M   kappa_c  L1 L2 L3  kappa11 kappa12 kappa13 kappa21 kappa22 kappa23 kappa31 kappa32 kappa33'
     prop_values = '0.2 0        1  1  1   2.00    2.00    2.00    2.00    2.00    2.00    2.00    2.00    2.00   '
   [../]
 
   # We use this to output the level of constraint enforcement
-  # ideally it should be 0 everywhere, if teh constraint is fully enforced
+  # ideally it should be 0 everywhere, if the constraint is fully enforced
   [./etasummat]
     type = ParsedMaterial
-    block = 0
     f_name = etasum
     args = 'eta1 eta2 eta3'
     material_property_names = 'h1 h2 h3'
@@ -250,7 +247,6 @@
   # It will be 0 for phase 1, -1 for phase 2, and 1 for phase 3
   [./phasemap]
     type = ParsedMaterial
-    block = 0
     f_name = phase
     args = 'eta2 eta3'
     function = 'if(eta3>0.5,1,0)-if(eta2>0.5,1,0)'
@@ -258,63 +254,81 @@
   [../]
 
   # matrix phase
-  [./eigenstrain_1]
-    type = LinearElasticMaterial
+  [./elasticity_tensor_1]
+    type = ComputeElasticityTensor
     base_name = phase1
-    block = 0
-    disp_y = disp_y
-    disp_x = disp_x
-    # Stiffness tensor lambda, mu values
     C_ijkl = '3 3'
     fill_method = symmetric_isotropic
   [../]
+  [./strain_1]
+    type = ComputeSmallStrain
+    base_name = phase1
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress_1]
+    type = ComputeLinearElasticStress
+    base_name = phase1
+  [../]
 
-  # oversized phase (simulated using thermal expansion)
-  [./eigenstrain_2]
-    type = LinearElasticMaterial
+  # oversized phase
+  [./elasticity_tensor_2]
+    type = ComputeElasticityTensor
     base_name = phase2
-    block = 0
-    thermal_expansion_coeff = 0.02
-    T0 = 0
-    T = 1
-    disp_y = disp_y
-    disp_x = disp_x
     C_ijkl = '7 7'
     fill_method = symmetric_isotropic
   [../]
+  [./strain_2]
+    type = ComputeSmallStrain
+    base_name = phase2
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress_2]
+    type = ComputeLinearElasticStress
+    base_name = phase2
+  [../]
+  [./eigenstrain_2]
+    type = ComputeEigenstrain
+    base_name = phase2
+    eigen_base = '0.02'
+  [../]
 
-  # undersized phase (simulated using thermal expansion)
-  [./eigenstrain_3]
-    type = LinearElasticMaterial
+  # undersized phase
+  [./elasticity_tensor_3]
+    type = ComputeElasticityTensor
     base_name = phase3
-    block = 0
-    thermal_expansion_coeff = -0.05
-    T0 = 0
-    T = 1
-    disp_y = disp_y
-    disp_x = disp_x
     C_ijkl = '7 7'
     fill_method = symmetric_isotropic
   [../]
+  [./strain_3]
+    type = ComputeSmallStrain
+    base_name = phase3
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress_3]
+    type = ComputeLinearElasticStress
+    base_name = phase3
+  [../]
+  [./eigenstrain_3]
+    type = ComputeEigenstrain
+    base_name = phase3
+    eigen_base = '-0.05'
+  [../]
 
-  # switchiung functions
+  # switching functions
   [./switching1]
     type = SwitchingFunctionMaterial
-    block = 0
     function_name = h1
     eta = eta1
     h_order = SIMPLE
   [../]
   [./switching2]
     type = SwitchingFunctionMaterial
-    block = 0
     function_name = h2
     eta = eta2
     h_order = SIMPLE
   [../]
   [./switching3]
     type = SwitchingFunctionMaterial
-    block = 0
     function_name = h3
     eta = eta3
     h_order = SIMPLE
@@ -322,14 +336,12 @@
 
   [./barrier]
     type = MultiBarrierFunctionMaterial
-    block = 0
     etas = 'eta1 eta2 eta3'
   [../]
 
   # chemical free energies
   [./chemical_free_energy_1]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = Fc1
     function = '4*c^2'
     args = 'c'
@@ -337,7 +349,6 @@
   [../]
   [./chemical_free_energy_2]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = Fc2
     function = '(c-0.9)^2-0.4'
     args = 'c'
@@ -345,7 +356,6 @@
   [../]
   [./chemical_free_energy_3]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = Fc3
     function = '(c-0.9)^2-0.5'
     args = 'c'
@@ -357,7 +367,6 @@
     type = ElasticEnergyMaterial
     base_name = phase1
     f_name = Fe1
-    block = 0
     derivative_order = 2
     args = 'c' # should be empty
   [../]
@@ -365,7 +374,6 @@
     type = ElasticEnergyMaterial
     base_name = phase2
     f_name = Fe2
-    block = 0
     derivative_order = 2
     args = 'c' # should be empty
   [../]
@@ -373,7 +381,6 @@
     type = ElasticEnergyMaterial
     base_name = phase3
     f_name = Fe3
-    block = 0
     derivative_order = 2
     args = 'c' # should be empty
   [../]
@@ -381,7 +388,6 @@
   # phase free energies (chemical + elastic)
   [./phase_free_energy_1]
     type = DerivativeSumMaterial
-    block = 0
     f_name = F1
     sum_materials = 'Fc1 Fe1'
     args = 'c'
@@ -389,7 +395,6 @@
   [../]
   [./phase_free_energy_2]
     type = DerivativeSumMaterial
-    block = 0
     f_name = F2
     sum_materials = 'Fc2 Fe2'
     args = 'c'
@@ -397,7 +402,6 @@
   [../]
   [./phase_free_energy_3]
     type = DerivativeSumMaterial
-    block = 0
     f_name = F3
     sum_materials = 'Fc3 Fe3'
     args = 'c'
@@ -407,7 +411,6 @@
   # global free energy
   [./free_energy]
     type = DerivativeMultiPhaseMaterial
-    block = 0
     f_name = F
     fi_names = 'F1  F2  F3'
     hi_names = 'h1  h2  h3'
@@ -419,7 +422,6 @@
   # Generate the global stress from the phase stresses
   [./global_stress]
     type = MultiPhaseStressMaterial
-    block = 0
     phase_base = 'phase1 phase2 phase3'
     h          = 'h1     h2     h3'
   [../]
@@ -461,7 +463,7 @@
       auto_direction = 'x'
     [../]
 
-    # all other phase field vaiables are fully periodic
+    # all other phase field variables are fully periodic
     [./c]
       auto_direction = 'x y'
     [../]
@@ -487,7 +489,7 @@
   [../]
 []
 
-# We monitor the total free energy and teh total solute concentration (should be constant)
+# We monitor the total free energy and the total solute concentration (should be constant)
 [Postprocessors]
   [./total_free_energy]
     type = ElementIntegralVariablePostprocessor
@@ -522,15 +524,8 @@
 []
 
 [Outputs]
-  interval = 1
+  execute_on = 'timestep_end'
   exodus = true
-  output_on = 'timestep_end'
-  print_perf_log = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'timestep_end failed nonlinear'
-  [../]
   [./table]
     type = CSV
     delimiter = ' '

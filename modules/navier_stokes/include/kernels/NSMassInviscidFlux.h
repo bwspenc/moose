@@ -19,8 +19,7 @@ InputParameters validParams<NSMassInviscidFlux>();
 class NSMassInviscidFlux : public NSKernel
 {
 public:
-
-  NSMassInviscidFlux(const std::string & name, InputParameters parameters);
+  NSMassInviscidFlux(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
@@ -28,4 +27,4 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 };
 
-#endif
+#endif //NSMASSINVISCIDFLUX_H

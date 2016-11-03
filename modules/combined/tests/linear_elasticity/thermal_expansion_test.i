@@ -18,6 +18,10 @@
   elem_type = QUAD4
 []
 
+[GlobalParams]
+  displacements = 'disp_x disp_y'
+[]
+
 [Variables]
   [./disp_x]
     order = FIRST
@@ -47,8 +51,6 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = disp_x
-    disp_y = disp_y
   [../]
 []
 
@@ -77,15 +79,26 @@
 []
 
 [Materials]
-  [./Anisotropic]
-    type = LinearElasticMaterial
-    block = 0
-    disp_x = disp_x
-    disp_y = disp_y
+  [./elasticity_tensor]
+    type = ComputeElasticityTensor
     fill_method = symmetric9
     C_ijkl = '1e6 0 0 1e6 0 1e6 .5e6 .5e6 .5e6'
-    thermal_expansion_coeff = 1.0e-6
-    T = 400
+  [../]
+  [./strain]
+    type = ComputeSmallStrain
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress]
+    type = ComputeLinearElasticStress
+  [../]
+  [./eigenstrain]
+    type = ComputeEigenstrain
+    # this models the
+    #   thermal_expansion_coeff = 1.0e-6
+    #   T = 400
+    #   T0 = 300
+    # options of LinearElasticMaterial (T-T0)*1e-6 = 1e-4
+    eigen_base = '1e-4'
   [../]
 []
 
@@ -122,8 +135,5 @@
 
 [Outputs]
   file_base = thermal_expansion
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

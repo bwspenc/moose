@@ -30,20 +30,19 @@ InputParameters validParams<TensorMechanicsPlasticMohrCoulomb>();
 class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
 {
  public:
-  TensorMechanicsPlasticMohrCoulomb(const std::string & name, InputParameters parameters);
+  TensorMechanicsPlasticMohrCoulomb(const InputParameters & parameters);
 
   /// Returns the model name (MohrCoulomb)
   virtual std::string modelName() const;
 
  protected:
-
   /**
    * The yield function
    * @param stress the stress at which to calculate the yield function
    * @param intnl internal parameter
    * @return the yield function
    */
-  Real yieldFunction(const RankTwoTensor & stress, const Real & intnl) const;
+  Real yieldFunction(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of yield function with respect to stress
@@ -51,7 +50,7 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * @param intnl internal parameter
    * @return df_dstress(i, j) = dyieldFunction/dstress(i, j)
    */
-  RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, const Real & intnl) const;
+  RankTwoTensor dyieldFunction_dstress(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of yield function with respect to the internal parameter
@@ -59,7 +58,7 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * @param intnl internal parameter
    * @return the derivative
    */
-  Real dyieldFunction_dintnl(const RankTwoTensor & stress, const Real & intnl) const;
+  Real dyieldFunction_dintnl(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The flow potential
@@ -67,7 +66,7 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * @param intnl internal parameter
    * @return the flow potential
    */
-  RankTwoTensor flowPotential(const RankTwoTensor & stress, const Real & intnl) const;
+  RankTwoTensor flowPotential(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of the flow potential with respect to stress
@@ -75,7 +74,7 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * @param intnl internal parameter
    * @return dr_dstress(i, j, k, l) = dr(i, j)/dstress(k, l)
    */
-  RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress, const Real & intnl) const;
+  RankFourTensor dflowPotential_dstress(const RankTwoTensor & stress, Real intnl) const;
 
   /**
    * The derivative of the flow potential with respect to the internal parameter
@@ -83,7 +82,7 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * @param intnl internal parameter
    * @return dr_dintnl(i, j) = dr(i, j)/dintnl
    */
-  RankTwoTensor dflowPotential_dintnl(const RankTwoTensor & stress, const Real & intnl) const;
+  RankTwoTensor dflowPotential_dintnl(const RankTwoTensor & stress, Real intnl) const;
 
   /// Hardening model for cohesion
   const TensorMechanicsHardeningModel & _cohesion;
@@ -164,16 +163,14 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
   /// d(psi)/d(internal_param);
   virtual Real dpsi(const Real internal_param) const;
 
-
  private:
-
   /**
    * Computes Abbo et al's A, B and C parameters
    * @param sin3lode sin(3*(lode angle))
    * @param sin_angle sin(friction_angle) (for yield function), or sin(dilation_angle) (for potential function)
-   * @param aaa (output) Abbo's A
-   * @param bbb (output) Abbo's B
-   * @param ccc (output) Abbo's C
+   * @param[out] aaa Abbo's A
+   * @param[out] bbb Abbo's B
+   * @param[out] ccc Abbo's C
    */
   void abbo(const Real sin3lode, const Real sin_angle, Real & aaa, Real & bbb, Real & ccc) const;
 
@@ -181,9 +178,9 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * Computes derivatives of Abbo et al's A, B and C parameters wrt sin_angle
    * @param sin3lode sin(3*(lode angle))
    * @param sin_angle sin(friction_angle) (for yield function), or sin(dilation_angle) (for potential function)
-   * @param daaa (output) d(Abbo's A)/d(sin_angle)
-   * @param dbbb (output) d(Abbo's B)/d(sin_angle)
-   * @param dccc (output) d(Abbo's C)/d(sin_angle)
+   * @param[out] daaa d(Abbo's A)/d(sin_angle)
+   * @param[out] dbbb d(Abbo's B)/d(sin_angle)
+   * @param[out] dccc d(Abbo's C)/d(sin_angle)
    */
   void dabbo(const Real sin3lode, const Real sin_angle, Real & daaa, Real & dbbb, Real & dccc) const;
 
@@ -193,8 +190,6 @@ class TensorMechanicsPlasticMohrCoulomb : public TensorMechanicsPlasticModel
    * @param sin_angle either sin(friction angle) or sin(dilation angle)
    */
   RankTwoTensor df_dsig(const RankTwoTensor & stress, const Real sin_angle) const;
-
-
 };
 
 #endif // TENSORMECHANICSPLASTICMOHRCOULOMB_H

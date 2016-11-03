@@ -31,11 +31,11 @@ class PostprocessorDT :
     public PostprocessorInterface
 {
 public:
-  PostprocessorDT(const std::string & name, InputParameters parameters);
+  PostprocessorDT(const InputParameters & parameters);
 
 protected:
-  virtual Real computeInitialDT();
-  virtual Real computeDT();
+  virtual Real computeInitialDT() override;
+  virtual Real computeDT() override;
 
   const PostprocessorValue & _pps_value;
   bool _has_initial_dt;

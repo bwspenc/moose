@@ -34,12 +34,10 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  SpatialUserObjectAux(const std::string & name, InputParameters parameters);
-
-  virtual ~SpatialUserObjectAux() {}
+  SpatialUserObjectAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   /// UserObject to be queried for a value
   const UserObject & _user_object;

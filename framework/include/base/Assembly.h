@@ -15,25 +15,32 @@
 #ifndef ASSEMBLY_H
 #define ASSEMBLY_H
 
-#include <vector>
 #include "ParallelUniqueId.h"
-#include "MooseVariable.h"
-#include "MooseVariableScalar.h"
 #include "MooseTypes.h"
+#include "MooseVariableBase.h"
+
 // libMesh
-#include "libmesh/dof_map.h"
 #include "libmesh/dense_matrix.h"
 #include "libmesh/dense_vector.h"
-#include "libmesh/coupling_matrix.h"
-#include "libmesh/fe.h"
-#include "libmesh/quadrature.h"
-#include "libmesh/elem.h"
-#include "libmesh/node.h"
+#include "libmesh/fe_base.h"
+#include "libmesh/enum_quadrature_type.h"
 
 // MOOSE Forward Declares
 class MooseMesh;
 class ArbitraryQuadrature;
 class SystemBase;
+class MooseVariable;
+class XFEMInterface;
+
+// libMesh forward declarations
+namespace libMesh
+{
+class DofMap;
+class CouplingMatrix;
+class Elem;
+class Node;
+template <typename T> class SparseMatrix;
+}
 
 /**
  * Keeps track of stuff related to assembling
@@ -58,6 +65,12 @@ public:
   void buildFaceFE(FEType type);
 
   /**
+   * Build FEs for a neighbor with a type
+   * @param type The type of FE
+   */
+  void buildNeighborFE(FEType type);
+
+  /**
    * Build FEs for a neighbor face with a type
    * @param type The type of FE
    */
@@ -78,6 +91,14 @@ public:
    * @return A _reference_ to the pointer.  Make sure to store this as a reference!
    */
   FEBase * & getFEFace(FEType type, unsigned int dim);
+
+  /**
+   * Get a reference to a pointer that will contain the current 'neighbor' FE.
+   * @param type The type of FE
+   * @param dim The dimension of the current volume
+   * @return A _reference_ to the pointer.  Make sure to store this as a reference!
+   */
+  FEBase * & getFENeighbor(FEType type, unsigned int dim);
 
   /**
    * Get a reference to a pointer that will contain the current "neighbor" FE.
@@ -287,14 +308,16 @@ public:
   void reinitElemAndNeighbor(const Elem * elem, unsigned int side, const Elem * neighbor, unsigned int neighbor_side);
 
   /**
-   * Reinitializes the neighbor at the reference coordinates given.
-   */
-  void reinitNeighborAtReference(const Elem * neighbor, const std::vector<Point> & reference_points);
-
-  /**
-   * Reinitializes the neighbor at the physical coordinates given.
+   * Reinitializes the neighbor at the physical coordinates on neighbor side given.
    */
   void reinitNeighborAtPhysical(const Elem * neighbor, unsigned int neighbor_side, const std::vector<Point> & physical_points);
+
+  /**
+   * Reinitializes the neighbor at the physical coordinates within element given.
+   */
+  void reinitNeighborAtPhysical(const Elem * neighbor, const std::vector<Point> & physical_points);
+
+  void reinitNeighbor(const Elem * neighbor, const std::vector<Point> & reference_points);
 
   /**
    * Reinitialize assembly data for a node
@@ -308,6 +331,9 @@ public:
 
   void init();
 
+  /// Create pair of vaiables requiring nonlocal jacobian contibiutions
+  void initNonlocalCoupling();
+
   /**
    * Whether or not this assembly should utilize FE shape function caching.
    *
@@ -316,6 +342,7 @@ public:
   void useFECache(bool fe_cache) { _should_use_fe_cache = fe_cache; }
 
   void prepare();
+  void prepareNonlocal();
 
   /**
    * Used for preparing the dense residual and jacobian blocks for one particular variable.
@@ -323,8 +350,10 @@ public:
    * @param var The variable that needs to have it's datastructures prepared
    */
   void prepareVariable(MooseVariable * var);
+  void prepareVariableNonlocal(MooseVariable * var);
   void prepareNeighbor();
   void prepareBlock(unsigned int ivar, unsigned jvar, const std::vector<dof_id_type> & dof_indices);
+  void prepareBlockNonlocal(unsigned int ivar, unsigned jvar, const std::vector<dof_id_type> & idof_indices, const std::vector<dof_id_type> & jdof_indices);
   void prepareScalar();
   void prepareOffDiagScalar();
 
@@ -342,6 +371,20 @@ public:
   void cacheResidual();
 
   /**
+   * Cache individual residual contributions.  These will ultimately get added to the residual when addCachedResidual() is called.
+   *
+   * @param dof The degree of freedom to add the residual contribution to
+   * @param value The value of the residual contribution.
+   * @param type Whether the contribution should go to the Time or Non-Time residual
+   */
+  void cacheResidualContribution(dof_id_type dof, Real value, Moose::KernelType type);
+
+  /**
+   * Lets an external class cache residual at a set of nodes
+   */
+  void cacheResidualNodes(DenseVector<Number> & res, std::vector<dof_id_type> & dof_index);
+
+  /**
    * Takes the values that are currently in _sub_Ke and appends them to the cached values.
    */
   void cacheResidualNeighbor();
@@ -357,7 +400,9 @@ public:
   void setResidualNeighbor(NumericVector<Number> & residual, Moose::KernelType type = Moose::KT_NONTIME);
 
   void addJacobian(SparseMatrix<Number> & jacobian);
+  void addJacobianNonlocal(SparseMatrix<Number> & jacobian);
   void addJacobianBlock(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, std::vector<dof_id_type> & dof_indices);
+  void addJacobianBlockNonlocal(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, const std::vector<dof_id_type> & idof_indices, const std::vector<dof_id_type> & jdof_indices);
   void addJacobianNeighbor(SparseMatrix<Number> & jacobian);
   void addJacobianNeighbor(SparseMatrix<Number> & jacobian, unsigned int ivar, unsigned int jvar, const DofMap & dof_map, std::vector<dof_id_type> & dof_indices, std::vector<dof_id_type> & neighbor_dof_indices);
   void addJacobianScalar(SparseMatrix<Number> & jacobian);
@@ -367,6 +412,11 @@ public:
    * Takes the values that are currently in _sub_Kee and appends them to the cached values.
    */
   void cacheJacobian();
+
+  /**
+   * Takes the values that are currently in _sub_Keg and appends them to the cached values.
+   */
+  void cacheJacobianNonlocal();
 
   /**
    * Takes the values that are currently in the neighbor Dense Matrices and appends them to the cached values.
@@ -384,10 +434,13 @@ public:
   DenseVector<Number> & residualBlockNeighbor(unsigned int var_num, Moose::KernelType type = Moose::KT_NONTIME) { return _sub_Rn[static_cast<unsigned int>(type)][var_num]; }
 
   DenseMatrix<Number> & jacobianBlock(unsigned int ivar, unsigned int jvar);
+  DenseMatrix<Number> & jacobianBlockNonlocal(unsigned int ivar, unsigned int jvar);
   DenseMatrix<Number> & jacobianBlockNeighbor(Moose::DGJacobianType type, unsigned int ivar, unsigned int jvar);
   void cacheJacobianBlock(DenseMatrix<Number> & jac_block, std::vector<dof_id_type> & idof_indices, std::vector<dof_id_type> & jdof_indices, Real scaling_factor);
+  void cacheJacobianBlockNonlocal(DenseMatrix<Number> & jac_block, const std::vector<dof_id_type> & idof_indices, const std::vector<dof_id_type> & jdof_indices, Real scaling_factor);
 
   std::vector<std::pair<MooseVariable *, MooseVariable *> > & couplingEntries() { return _cm_entry; }
+  std::vector<std::pair<MooseVariable *, MooseVariable *> > & nonlocalCouplingEntries() { return _cm_nonlocal_entry; }
 
   const VariablePhiValue & phi() { return _phi; }
   const VariablePhiGradient & gradPhi() { return _grad_phi; }
@@ -397,10 +450,13 @@ public:
   const VariablePhiGradient & gradPhiFace() { return _grad_phi_face; }
   const VariablePhiSecond & secondPhiFace() { return _second_phi_face; }
 
+  const VariablePhiValue & phiNeighbor() { return _phi_neighbor; }
+  const VariablePhiGradient & gradPhiNeighbor() { return _grad_phi_neighbor; }
+  const VariablePhiSecond & secondPhiNeighbor() { return _second_phi_neighbor; }
+
   const VariablePhiValue & phiFaceNeighbor() { return _phi_face_neighbor; }
   const VariablePhiGradient & gradPhiFaceNeighbor() { return _grad_phi_face_neighbor; }
   const VariablePhiSecond & secondPhiFaceNeighbor() { return _second_phi_face_neighbor; }
-
 
   const VariablePhiValue & fePhi(FEType type);
   const VariablePhiGradient & feGradPhi(FEType type);
@@ -409,6 +465,10 @@ public:
   const VariablePhiValue & fePhiFace(FEType type);
   const VariablePhiGradient & feGradPhiFace(FEType type);
   const VariablePhiSecond & feSecondPhiFace(FEType type);
+
+  const VariablePhiValue & fePhiNeighbor(FEType type);
+  const VariablePhiGradient & feGradPhiNeighbor(FEType type);
+  const VariablePhiSecond & feSecondPhiNeighbor(FEType type);
 
   const VariablePhiValue & fePhiFaceNeighbor(FEType type);
   const VariablePhiGradient & feGradPhiFaceNeighbor(FEType type);
@@ -422,31 +482,29 @@ public:
   std::map<FEType, bool> _need_second_derivative;
 
   /**
-   * Caches the NodalBC Jacobian entry 'value', to eventually be
-   * stored in the (i,j) location of the matrix.
-   *
-   * We can't add NodalBC values to the Jacobian (or preconditioning)
-   * matrix at the time they are computed -- we instead need to
-   * overwrite an entire row of values with the Jacobian associated to
-   * the NodalBC, which may be coupled to other variables, *after*
-   * matrix assembly is finished.
+   * Caches the Jacobian entry 'value', to eventually be
+   * added/set in the (i,j) location of the matrix.
    *
    * We use numeric_index_type for the index arrays (rather than
    * dof_id_type) since that is what the SparseMatrix interface uses,
    * but at the time of this writing, those two types are equivalent.
    */
-  void cacheNodalBCJacobianEntry(numeric_index_type i, numeric_index_type j, Real value);
+  void cacheJacobianContribution(numeric_index_type i, numeric_index_type j, Real value);
 
   /**
-   * Clears any cached NodalBC Jacobian entries that have been
-   * accumulated during previous Assembly calls.
+   * Sets previously-cached Jacobian values via SparseMatrix::set() calls.
    */
-  void clearCachedNodalBCJacobianEntries();
+  void setCachedJacobianContributions(SparseMatrix<Number> & jacobian);
 
   /**
-   * Sets previously-cached NodalBC Jacobian values via SparseMatrix::set() calls.
+   * Adds previously-cached Jacobian values via SparseMatrix::add() calls.
    */
-  void setCachedNodalBCJacobianEntries(SparseMatrix<Number> & jacobian);
+  void addCachedJacobianContributions(SparseMatrix<Number> & jacobian);
+
+  /**
+   * Set the pointer to the XFEM controller object
+   */
+  void setXFEM(MooseSharedPointer<XFEMInterface> xfem) { _xfem = xfem; }
 
 protected:
   /**
@@ -464,6 +522,16 @@ protected:
    */
   void reinitFEFace(const Elem * elem, unsigned int side);
 
+  void reinitFEFaceNeighbor(const Elem * neighbor, const std::vector<Point> & reference_points);
+
+  void reinitFENeighbor(const Elem * neighbor, const std::vector<Point> & reference_points);
+
+  void setCoordinateTransformation(const QBase * qrule, const MooseArray<Point> & q_points);
+
+  void computeCurrentElemVolume();
+
+  void computeCurrentFaceVolume();
+
   void addResidualBlock(NumericVector<Number> & residual, DenseVector<Number> & res_block, const std::vector<dof_id_type> & dof_indices, Real scaling_factor);
   void cacheResidualBlock(std::vector<Real> & cached_residual_values,
                           std::vector<dof_id_type> & cached_residual_rows,
@@ -475,13 +543,31 @@ protected:
 
   void addJacobianBlock(SparseMatrix<Number> & jacobian, DenseMatrix<Number> & jac_block, const std::vector<dof_id_type> & idof_indices, const std::vector<dof_id_type> & jdof_indices, Real scaling_factor);
 
+
+  /**
+   * Clear any currently cached jacobian contributions
+   *
+   * This is automatically called by setCachedJacobianContributions and addCachedJacobianContributions
+   */
+  void clearCachedJacobianContributions();
+
+  /**
+   * Update the integration weights for XFEM partial elements.
+   * This only affects the weights if XFEM is used and if the element is cut.
+   * @param elem The element for which the weights are adjusted
+  */
+  void modifyWeightsDueToXFEM(const Elem* elem);
+
   SystemBase & _sys;
   /// Reference to coupling matrix
   CouplingMatrix * & _cm;
+  const CouplingMatrix & _nonlocal_cm;
   /// Entries in the coupling matrix (only for field variables)
   std::vector<std::pair<MooseVariable *, MooseVariable *> > _cm_entry;
+  std::vector<std::pair<MooseVariable *, MooseVariable *> > _cm_nonlocal_entry;
   /// Flag that indicates if the jacobian block was used
   std::vector<std::vector<unsigned char> > _jacobian_block_used;
+  std::vector<std::vector<unsigned char> > _jacobian_block_nonlocal_used;
   /// Flag that indicates if the jacobian block for neighbor was used
   std::vector<std::vector<unsigned char> > _jacobian_block_neighbor_used;
   /// DOF map
@@ -493,12 +579,17 @@ protected:
 
   unsigned int _mesh_dimension;
 
+  /// The XFEM controller
+  MooseSharedPointer<XFEMInterface> _xfem;
+
   /// The "volume" fe object that matches the current elem
   std::map<FEType, FEBase *> _current_fe;
   /// The "face" fe object that matches the current elem
   std::map<FEType, FEBase *> _current_fe_face;
   /// The "neighbor" fe object that matches the current elem
   std::map<FEType, FEBase *> _current_fe_neighbor;
+  /// The "neighbor face" fe object that matches the current elem
+  std::map<FEType, FEBase *> _current_fe_face_neighbor;
 
   /**** Volume Stuff ****/
 
@@ -564,8 +655,9 @@ protected:
 
   /// types of finite elements
   std::map<unsigned int, std::map<FEType, FEBase *> > _fe_neighbor;
+  std::map<unsigned int, std::map<FEType, FEBase *> > _fe_face_neighbor;
   /// Each dimension's helper objects
-  std::map<unsigned int, FEBase **> _holder_fe_neighbor_helper;
+  std::map<unsigned int, FEBase **> _holder_fe_face_neighbor_helper;
 
   /// quadrature rule used on neighbors
   QBase * _current_qrule_neighbor;
@@ -596,6 +688,10 @@ protected:
   const Node * _current_node;
   /// The current neighboring node we are working with
   const Node * _current_neighbor_node;
+  /// Boolean to indicate whether current element volumes has been computed
+  bool _current_elem_volume_computed;
+  /// Boolean to indicate whether current element side volumes has been computed
+  bool _current_side_volume_computed;
 
   /// This will be filled up with the physical points passed into reinitAtPhysical() if it is called.  Invalid at all other times.
   MooseArray<Point> _current_physical_points;
@@ -609,6 +705,7 @@ protected:
 
   /// jacobian contributions
   std::vector<std::vector<DenseMatrix<Number> > > _sub_Kee;
+  std::vector<std::vector<DenseMatrix<Number> > > _sub_Keg;
 
   /// jacobian contributions from the element and neighbor
   std::vector<std::vector<DenseMatrix<Number> > > _sub_Ken;
@@ -629,6 +726,10 @@ protected:
   VariablePhiGradient _grad_phi_face;
   VariablePhiSecond _second_phi_face;
 
+  VariablePhiValue _phi_neighbor;
+  VariablePhiGradient _grad_phi_neighbor;
+  VariablePhiSecond _second_phi_neighbor;
+
   VariablePhiValue _phi_face_neighbor;
   VariablePhiGradient _grad_phi_face_neighbor;
   VariablePhiSecond _second_phi_face_neighbor;
@@ -645,7 +746,7 @@ protected:
    * Ok - here's the design.  One ElementFEShapeData class will be stored per element in _fe_shape_data_cache.
    * When reinit() is called on an element we will retrieve the ElementFEShapeData class associated with that
    * element.  If it's NULL we'll make one.  Then we'll store a copy of the shape functions computed on that
-   * element within shape_data and JxW and q_points within EleementFEShapeData.
+   * element within shape_data and JxW and q_points within ElementFEShapeData.
    */
   class ElementFEShapeData
   {
@@ -675,6 +776,7 @@ protected:
   // Shape function values, gradients. second derivatives for each FE type
   std::map<FEType, FEShapeData * > _fe_shape_data;
   std::map<FEType, FEShapeData * > _fe_shape_data_face;
+  std::map<FEType, FEShapeData * > _fe_shape_data_neighbor;
   std::map<FEType, FEShapeData * > _fe_shape_data_face_neighbor;
 
   /// Values cached by calling cacheResidual() (the first vector is for TIME vs NONTIME)
@@ -700,12 +802,15 @@ protected:
   /// Temporary work vector to keep from reallocating it
   std::vector<dof_id_type> _temp_dof_indices;
 
+  /// Temporary work data for reinitAtPhysical()
+  std::vector<Point> _temp_reference_points;
+
   /**
-   * Storage for cached NodalBC data.
+   * Storage for cached Jacobian entries
    */
-  std::vector<Real> _cached_nodal_bc_vals;
-  std::vector<numeric_index_type> _cached_nodal_bc_rows;
-  std::vector<numeric_index_type> _cached_nodal_bc_cols;
+  std::vector<Real> _cached_jacobian_contribution_vals;
+  std::vector<numeric_index_type> _cached_jacobian_contribution_rows;
+  std::vector<numeric_index_type> _cached_jacobian_contribution_cols;
 };
 
 #endif /* ASSEMBLY_H */

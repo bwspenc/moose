@@ -23,8 +23,7 @@ InputParameters validParams<GBAnisotropy>();
 class GBAnisotropy : public Material
 {
 public:
-  GBAnisotropy(const std::string & name,
-               InputParameters parameters);
+  GBAnisotropy(const InputParameters & parameters);
 
 protected:
   virtual void computeProperties();
@@ -43,7 +42,7 @@ private:
 
   bool _inclination_anisotropy;
 
-  VariableValue & _T;
+  const VariableValue & _T;
 
   std::vector<std::vector<Real> > _sigma;
   std::vector<std::vector<Real> > _mob;
@@ -65,10 +64,10 @@ private:
   const Real _JtoeV;
   Real _mu_qp;
 
-  unsigned int _ncrys;
+  unsigned int _op_num;
 
-  std::vector<VariableValue *> _vals;
-  std::vector<VariableGradient *> _grad_vals;
+  std::vector<const VariableValue *> _vals;
+  std::vector<const VariableGradient *> _grad_vals;
 };
 
 #endif //GBANISOTROPY_H

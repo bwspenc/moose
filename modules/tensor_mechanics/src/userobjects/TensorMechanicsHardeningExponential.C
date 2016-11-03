@@ -17,8 +17,8 @@ InputParameters validParams<TensorMechanicsHardeningExponential>()
   return params;
 }
 
-TensorMechanicsHardeningExponential::TensorMechanicsHardeningExponential(const std::string & name, InputParameters parameters) :
-  TensorMechanicsHardeningModel(name, parameters),
+TensorMechanicsHardeningExponential::TensorMechanicsHardeningExponential(const InputParameters & parameters) :
+  TensorMechanicsHardeningModel(parameters),
   _val_0(getParam<Real>("value_0")),
   _val_res(parameters.isParamValid("value_residual") ? getParam<Real>("value_residual") : _val_0),
   _rate(getParam<Real>("rate"))
@@ -26,13 +26,19 @@ TensorMechanicsHardeningExponential::TensorMechanicsHardeningExponential(const s
 }
 
 Real
-TensorMechanicsHardeningExponential::value(const Real & intnl) const
+TensorMechanicsHardeningExponential::value(Real intnl) const
 {
   return _val_res + (_val_0 - _val_res)*std::exp(-_rate*intnl);
 }
 
 Real
-TensorMechanicsHardeningExponential::derivative(const Real & intnl) const
+TensorMechanicsHardeningExponential::derivative(Real intnl) const
 {
   return -_rate*(_val_0 - _val_res)*std::exp(-_rate*intnl);
+}
+
+std::string
+TensorMechanicsHardeningExponential::modelName() const
+{
+  return "Exponential";
 }

@@ -33,20 +33,11 @@ public:
 
   /**
    * Class constructor
-   * @param name Name of this action
    * @param params Input parameters for this object
    */
-  CheckOutputAction(const std::string & name, InputParameters params);
+  CheckOutputAction(InputParameters params);
 
-  /**
-   * Class destructor
-   */
-  virtual ~CheckOutputAction();
-
-  /**
-   * Preforms a set of checks on various Output objects
-   */
-  virtual void act();
+  virtual void act() override;
 
 private:
 
@@ -70,11 +61,6 @@ private:
    * Performs PerfLog output settings
    */
   void checkPerfLogOutput();
-
-  /**
-   * Checks for --output-input command line parameter
-   */
-  void checkInputOutput();
 };
 
 #endif //CHECKOUTPUTACTION_H

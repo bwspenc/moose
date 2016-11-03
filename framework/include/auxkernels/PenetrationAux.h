@@ -36,9 +36,7 @@ public:
    * Factory constructor, takes parameters so that all derived classes can be built using the same
    * constructor.
    */
-  PenetrationAux(const std::string & name, InputParameters parameters);
-
-  virtual ~PenetrationAux();
+  PenetrationAux(const InputParameters & parameters);
 
 protected:
   enum PA_ENUM
@@ -76,7 +74,7 @@ protected:
 
   PA_ENUM _quantity;
 
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   PenetrationLocator & _penetration_locator;
 

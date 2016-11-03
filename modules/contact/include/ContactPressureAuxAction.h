@@ -14,7 +14,7 @@
 class ContactPressureAuxAction: public Action
 {
 public:
-  ContactPressureAuxAction(const std::string & name, InputParameters params);
+  ContactPressureAuxAction(const InputParameters & params);
 
   virtual void act();
 

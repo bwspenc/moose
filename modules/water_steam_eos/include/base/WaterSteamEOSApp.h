@@ -17,7 +17,7 @@ InputParameters validParams<WaterSteamEOSApp>();
 class WaterSteamEOSApp : public MooseApp
 {
 public:
-  WaterSteamEOSApp(const std::string & name, InputParameters parameters);
+  WaterSteamEOSApp(const InputParameters & parameters);
   virtual ~WaterSteamEOSApp();
 
   static void registerApps();

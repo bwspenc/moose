@@ -27,11 +27,11 @@ InputParameters validParams<SumMaterial>();
 class SumMaterial : public Material
 {
 public:
-  SumMaterial(const std::string & name, InputParameters parameters);
+  SumMaterial(const InputParameters & parameters);
   virtual ~SumMaterial();
 
 protected:
-  void computeQpProperties();
+  virtual void computeQpProperties();
 
   std::string _sum_prop_name;
   std::string _mp1_prop_name;

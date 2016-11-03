@@ -127,9 +127,6 @@
 [Outputs]
   file_base = nc_lumped_01
   interval = 100000
-  output_initial = true
-  output_final = true
+  execute_on = 'initial final'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

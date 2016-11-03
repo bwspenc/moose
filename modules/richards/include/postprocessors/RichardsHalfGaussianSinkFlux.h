@@ -30,7 +30,7 @@ InputParameters validParams<RichardsHalfGaussianSinkFlux>();
 class RichardsHalfGaussianSinkFlux: public SideIntegralVariablePostprocessor
 {
 public:
-  RichardsHalfGaussianSinkFlux(const std::string & name, InputParameters parameters);
+  RichardsHalfGaussianSinkFlux(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpIntegral();

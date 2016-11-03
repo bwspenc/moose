@@ -4,15 +4,17 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ElementPropertyReadFile.h"
 #include "MooseRandom.h"
+#include "MooseMesh.h"
 
 template<>
 InputParameters validParams<ElementPropertyReadFile>()
 {
   InputParameters params = validParams<GeneralUserObject>();
   params.addClassDescription("User Object to read property data from an external file and assign to elements: Works only for Rectangular geometry (2D-3D)");
-  params.addParam<std::string>("prop_file_name", "", "Name of the property file name");
+  params.addParam<FileName>("prop_file_name", "", "Name of the property file name");
   params.addRequiredParam<unsigned int>("nprop", "Number of tabulated property values");
   params.addParam<unsigned int>("ngrain", 0, "Number of grains");
   params.addParam<MooseEnum>("read_type", MooseEnum("element grain none", "none"), "Type of property distribution: element:element by element property variation; grain:voronoi grain structure");
@@ -21,9 +23,9 @@ InputParameters validParams<ElementPropertyReadFile>()
   return params;
 }
 
-ElementPropertyReadFile::ElementPropertyReadFile(const std::string & name, InputParameters parameters) :
-    GeneralUserObject(name,parameters),
-    _prop_file_name(getParam<std::string>("prop_file_name")),
+ElementPropertyReadFile::ElementPropertyReadFile(const InputParameters & parameters) :
+    GeneralUserObject(parameters),
+    _prop_file_name(getParam<FileName>("prop_file_name")),
     _nprop(getParam<unsigned int>("nprop")),
     _ngrain(getParam<unsigned int>("ngrain")),
     _read_type(getParam<MooseEnum>("read_type")),
@@ -40,6 +42,7 @@ ElementPropertyReadFile::ElementPropertyReadFile(const std::string & name, Input
     _range(i) = _top_right(i) - _bottom_left(i);
   }
 
+  _max_range = _range(0);
   for (unsigned int i = 1; i < LIBMESH_DIM; i++)
     if (_range(i) > _max_range)
       _max_range = _range(i);
@@ -153,7 +156,7 @@ ElementPropertyReadFile::getGrainData(const Elem * elem , unsigned int prop_num)
         //Calculates minimum distance when nothing is specified
         //for rve_type
         Point dist_vec = _center[i] - centroid;
-        dist = dist_vec.size();
+        dist = dist_vec.norm();
     }
 
     if (dist < min_dist)
@@ -171,7 +174,7 @@ Real
 ElementPropertyReadFile::minPeriodicDistance(Point c, Point p) const
 {
   Point dist_vec = c - p;
-  Real min_dist = dist_vec.size();
+  Real min_dist = dist_vec.norm();
 
   Real fac[3] = {-1.0, 0.0, 1.0};
   for ( unsigned int i = 0; i < 3; i++ )
@@ -184,7 +187,7 @@ ElementPropertyReadFile::minPeriodicDistance(Point c, Point p) const
         p1(2) = p(2) + fac[k] * _range(2);
 
         dist_vec = c - p1;
-        Real dist = dist_vec.size();
+        Real dist = dist_vec.norm();
 
         if ( dist < min_dist ) min_dist = dist;
       }

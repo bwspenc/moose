@@ -29,18 +29,18 @@ InputParameters validParams<CoupledForce>();
 class CoupledForce : public Kernel
 {
 public:
-  CoupledForce(const std::string & name, InputParameters parameters);
+  CoupledForce(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
-  virtual Real computeQpJacobian();
+  virtual Real computeQpJacobian() override;
 
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
 private:
   unsigned int _v_var;
-  VariableValue & _v;
+  const VariableValue & _v;
 };
 
 #endif //COUPLEDFORCE_H

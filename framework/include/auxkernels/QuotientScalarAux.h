@@ -30,11 +30,10 @@ InputParameters validParams<QuotientScalarAux>();
 class QuotientScalarAux : public AuxScalarKernel
 {
 public:
-  QuotientScalarAux(const std::string & name, InputParameters parameters);
-  virtual ~QuotientScalarAux();
+  QuotientScalarAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   VariableValue & _a;
   VariableValue & _b;

@@ -29,8 +29,8 @@ InputParameters validParams<InversePowerMethod>()
   return params;
 }
 
-InversePowerMethod::InversePowerMethod(const std::string & name, InputParameters parameters) :
-    EigenExecutionerBase(name, parameters),
+InversePowerMethod::InversePowerMethod(const InputParameters & parameters) :
+    EigenExecutionerBase(parameters),
     _solution_diff_name(getParam<PostprocessorName>("xdiff")),
     _min_iter(getParam<unsigned int>("min_power_iterations")),
     _max_iter(getParam<unsigned int>("max_power_iterations")),
@@ -39,7 +39,9 @@ InversePowerMethod::InversePowerMethod(const std::string & name, InputParameters
     _pfactor(getParam<Real>("pfactor")),
     _cheb_on(getParam<bool>("Chebyshev_acceleration_on"))
 {
-  _eigenvalue = getParam<Real>("k0");
+  if (!_app.isRecovering() && ! _app.isRestarting())
+    _eigenvalue = getParam<Real>("k0");
+
   addAttributeReporter("eigenvalue", _eigenvalue, "initial timestep_end");
 
   if (_max_iter<_min_iter) mooseError("max_power_iterations<min_power_iterations!");
@@ -48,8 +50,23 @@ InversePowerMethod::InversePowerMethod(const std::string & name, InputParameters
 }
 
 void
+InversePowerMethod::init()
+{
+  if (_app.isRecovering())
+  {
+    _console << "\nCannot recover InversePowerMethod solves!\nExiting...\n" << std::endl;
+    return;
+  }
+
+  EigenExecutionerBase::init();
+}
+
+void
 InversePowerMethod::execute()
 {
+  if (_app.isRecovering())
+    return;
+
   preExecute();
 
   takeStep();
@@ -69,10 +86,11 @@ InversePowerMethod::takeStep()
                         _solution_diff_name, _sol_check_tol,
                         _eigenvalue, initial_res);
   postSolve();
-  printEigenvalue();
 
-  _problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::PRE_AUX);
-  _problem.onTimestepEnd();
-  _problem.computeAuxiliaryKernels(EXEC_TIMESTEP_END);
-  _problem.computeUserObjects(EXEC_TIMESTEP_END, UserObjectWarehouse::POST_AUX);
+  if (lastSolveConverged())
+  {
+    printEigenvalue();
+    _problem.onTimestepEnd();
+    _problem.execute(EXEC_TIMESTEP_END);
+  }
 }

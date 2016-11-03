@@ -22,7 +22,7 @@ LIBMESH_OPTIONS = {
       'FALSE' : '0'
       }
                      },
-  'dtk' :          { 're_option' : r'#define\s+LIBMESH_HAVE_DTK\s+(\d+)',
+  'dtk' :          { 're_option' : r'#define\s+LIBMESH_TRILINOS_HAVE_DTK\s+(\d+)',
                      'default'   : 'FALSE',
                      'options'   :
                        {
@@ -54,6 +54,30 @@ LIBMESH_OPTIONS = {
                    },
   'dof_id_bytes' : { 're_option' : r'#define\s+LIBMESH_DOF_ID_BYTES\s+(\d+)',
                      'default'   : '4'
+                   },
+  'petsc_debug'  : { 're_option' : r'#define\s+LIBMESH_PETSC_USE_DEBUG\s+(\d+)',
+                     'default'   : 'FALSE',
+                     'options'   : {'TRUE'  : '1', 'FALSE' : '0'}
+                   },
+  'curl' :         { 're_option' : r'#define\s+LIBMESH_HAVE_CURL\s+(\d+)',
+                     'default'   : 'FALSE',
+                     'options'   : {'TRUE' : '1', 'FALSE' : '0'}
+                   },
+  'tbb' :          { 're_option' : r'#define\s+LIBMESH_HAVE_TBB_API\s+(\d+)',
+                     'default'   : 'FALSE',
+                     'options'   : {'TRUE' : '1', 'FALSE' : '0'}
+                   },
+  'superlu' :      { 're_option' : r'#define\s+LIBMESH_PETSC_HAVE_SUPERLU_DIST\s+(\d+)',
+                     'default'   : 'FALSE',
+                     'options'   : {'TRUE' : '1', 'FALSE' : '0'}
+                   },
+  'cxx11' :        { 're_option' : r'#define\s+LIBMESH_HAVE_CXX11\s+(\d+)',
+                     'default'   : 'FALSE',
+                     'options'   : {'TRUE' : '1', 'FALSE' : '0'}
+                   },
+  'unique_id' :    { 're_option' : r'#define\s+LIBMESH_ENABLE_UNIQUE_ID\s+(\d+)',
+                     'default'   : 'FALSE',
+                     'options'   : {'TRUE' : '1', 'FALSE' : '0'}
                    },
 }
 
@@ -246,6 +270,13 @@ def checkPetscVersion(checks, test):
       return (True, None, version)
   return (False, logic, version)
 
+def getIfAsioExists(moose_dir):
+  option_set = set(['ALL'])
+  if os.path.exists(moose_dir+"/framework/contrib/asio/include/asio.hpp"):
+    option_set.add('TRUE')
+  else:
+    option_set.add('FALSE')
+  return option_set
 
 def getLibMeshConfigOption(libmesh_dir, option):
   # Some tests work differently with parallel mesh enabled

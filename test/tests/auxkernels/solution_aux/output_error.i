@@ -7,8 +7,8 @@
   xmax = 4
   ymin = 1
   ymax = 3
-  # This test uses SolutionUserObject which doesn't work with ParallelMesh.
-  distribution = serial
+  # This test uses SolutionUserObject which doesn't work with DistributedMesh.
+  parallel_type = replicated
 []
 
 [Variables]
@@ -72,8 +72,6 @@
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
   xda = true
-  print_perf_log = true
 []

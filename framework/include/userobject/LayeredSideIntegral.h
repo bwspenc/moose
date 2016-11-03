@@ -15,38 +15,37 @@
 #ifndef LAYEREDSIDEINTEGRAL_H
 #define LAYEREDSIDEINTEGRAL_H
 
+// MOOSE includes
 #include "SideIntegralVariableUserObject.h"
-
 #include "LayeredBase.h"
 
-// libmesh includes
-#include "libmesh/mesh_tools.h"
-
-//Forward Declarations
+// Forward Declarations
 class LayeredSideIntegral;
 
 template<>
 InputParameters validParams<LayeredSideIntegral>();
 
 /**
- * This UserObject computes volume integrals of a variable storing partial sums for the specified number of intervals in a direction (x,y,z).c
+ * This UserObject computes volume integrals of a variable storing
+ * partial sums for the specified number of intervals in a direction
+ * (x,y,z).
  */
 class LayeredSideIntegral : public SideIntegralVariableUserObject, public LayeredBase
 {
 public:
-  LayeredSideIntegral(const std::string & name, InputParameters parameters);
+  LayeredSideIntegral(const InputParameters & parameters);
 
   /**
    * Given a Point return the integral value associated with the layer that point falls in.
    *
    * @param p The point to look for in the layers.
    */
-  virtual Real spatialValue(const Point & p) const { return integralValue(p); }
+  virtual Real spatialValue(const Point & p) const override { return integralValue(p); }
 
-  virtual void initialize();
-  virtual void execute();
-  virtual void finalize();
-  virtual void threadJoin(const UserObject & y);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual void finalize() override;
+  virtual void threadJoin(const UserObject & y) override;
 };
 
 #endif

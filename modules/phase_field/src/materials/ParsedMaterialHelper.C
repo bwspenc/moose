@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "ParsedMaterialHelper.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<ParsedMaterialHelper>()
@@ -15,22 +19,15 @@ InputParameters validParams<ParsedMaterialHelper>()
   return params;
 }
 
-ParsedMaterialHelper::ParsedMaterialHelper(const std::string & name,
-                                           InputParameters parameters,
+ParsedMaterialHelper::ParsedMaterialHelper(const InputParameters & parameters,
                                            VariableNameMappingMode map_mode) :
-    FunctionMaterialBase(name, parameters),
-    FunctionParserUtils(name, parameters),
-    _func_F(NULL),
+    FunctionMaterialBase(parameters),
+    FunctionParserUtils(parameters),
     _variable_names(_nargs),
     _mat_prop_descriptors(0),
     _tol(0),
     _map_mode(map_mode)
 {
-}
-
-ParsedMaterialHelper::~ParsedMaterialHelper()
-{
-  delete _func_F;
 }
 
 void
@@ -61,10 +58,19 @@ ParsedMaterialHelper::functionParse(const std::string & function_expression,
                                     const std::vector<Real> & tol_values)
 {
   // build base function object
-  _func_F =  new ADFunction();
+  _func_F = ADFunctionPtr(new ADFunction());
+
+  // set FParser internal feature flags
+  setParserFeatureFlags(_func_F);
 
   // initialize constants
   addFParserConstants(_func_F, constant_names, constant_expressions);
+
+  // add further constants coming from default value coupling
+  if (_map_mode == USE_PARAM_NAMES)
+    for (std::vector<std::string>::iterator it = _arg_constant_defaults.begin(); it != _arg_constant_defaults.end(); ++it)
+      if (!_func_F->AddConstant(*it, _pars.defaultCoupledValue(*it)))
+        mooseError("Invalid constant name in parsed function object");
 
   // set variable names based on map_mode
   switch (_map_mode)
@@ -142,6 +148,11 @@ void
 ParsedMaterialHelper::functionsPostParse()
 {
   functionsOptimize();
+
+  // force a value update to get the property at least once and register it for the dependencies
+  unsigned int nmat_props = _mat_prop_descriptors.size();
+  for (unsigned int i = 0; i < nmat_props; ++i)
+    _mat_prop_descriptors[i].value();
 }
 
 void

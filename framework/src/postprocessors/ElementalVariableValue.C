@@ -25,15 +25,15 @@ InputParameters validParams<ElementalVariableValue>()
   return params;
 }
 
-ElementalVariableValue::ElementalVariableValue(const std::string & name, InputParameters parameters) :
-    GeneralPostprocessor(name, parameters),
+ElementalVariableValue::ElementalVariableValue(const InputParameters & parameters) :
+    GeneralPostprocessor(parameters),
     _mesh(_subproblem.mesh()),
     _var_name(parameters.get<VariableName>("variable")),
-    _element(_mesh.getMesh().query_elem(parameters.get<unsigned int>("elementid")))
+    _element(_mesh.getMesh().query_elem_ptr(parameters.get<unsigned int>("elementid")))
 {
-  // This class only works with SerialMesh, since it relies on a
-  // specific element numbering that we can't guarantee with ParallelMesh
-  _mesh.errorIfParallelDistribution("ElementalVariableValue");
+  // This class only works with ReplicatedMesh, since it relies on a
+  // specific element numbering that we can't guarantee with DistributedMesh
+  _mesh.errorIfDistributedMesh("ElementalVariableValue");
 }
 
 Real
@@ -47,7 +47,7 @@ ElementalVariableValue::getValue()
     _subproblem.reinitElem(_element, _tid);
 
     MooseVariable & var = _subproblem.getVariable(_tid, _var_name);
-    VariableValue & u = var.sln();
+    const VariableValue & u = var.sln();
     unsigned int n = u.size();
     for (unsigned int i = 0; i < n; i++)
       value += u[i];
@@ -58,3 +58,4 @@ ElementalVariableValue::getValue()
 
   return value;
 }
+

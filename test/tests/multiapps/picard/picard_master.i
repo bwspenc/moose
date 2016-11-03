@@ -3,7 +3,7 @@
   dim = 2
   nx = 10
   ny = 10
-  distribution = serial
+  parallel_type = replicated
 []
 
 [Variables]
@@ -63,14 +63,12 @@
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
-  picard_max_its = 3
+  picard_max_its = 30
+  nl_abs_tol = 1e-14
 []
 
 [Outputs]
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
 
 [MultiApps]
@@ -93,7 +91,6 @@
   [./u_to_sub]
     type = MultiAppNearestNodeTransfer
     direction = to_multiapp
-    execute_on = timestep_end
     multi_app = sub
     source_variable = u
     variable = u

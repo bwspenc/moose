@@ -33,15 +33,9 @@ public:
 
   /**
    * Class constructor
-   * @param name Outputter name
    * @param parameters Outputter input file parameters
    */
-  PetscOutput(const std::string & name, InputParameters & parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~PetscOutput();
+  PetscOutput(const InputParameters & parameters);
 
   /**
    * Get the output time.
@@ -49,7 +43,7 @@ public:
    * by PETSc. To separate theses outputs within the output a pseudo time is defined, this function provides
    * this time and it should be used in place of _time from Outputter.
    */
-  virtual Real time();
+  virtual Real time() override;
 
 protected:
 
@@ -67,7 +61,7 @@ private:
   /**
    * Internal setup function that executes at the beginning of the time step
    */
-  void solveSetup();
+  void solveSetup() override;
 
 #ifdef LIBMESH_HAVE_PETSC
   /**

@@ -25,13 +25,13 @@ InputParameters validParams<RichardsDensityPrimePrimeAux>();
 class RichardsDensityPrimePrimeAux: public AuxKernel
 {
 public:
-  RichardsDensityPrimePrimeAux(const std::string & name, InputParameters parameters);
+  RichardsDensityPrimePrimeAux(const InputParameters & parameters);
 
 protected:
   virtual Real computeValue();
 
   /// porepressure
-  VariableValue & _pressure_var;
+  const VariableValue & _pressure_var;
 
   /// userobject that defines density as a fcn of porepressure
   const RichardsDensity & _density_UO;

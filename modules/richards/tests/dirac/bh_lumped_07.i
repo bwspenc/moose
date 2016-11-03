@@ -101,7 +101,6 @@
     unit_weight = '0 0 0'
     re_constant = 0.1594
     character = 2
-    MyNameIsAndyWilkins = false
   [../]
 []
 
@@ -110,11 +109,13 @@
   [./bh_report]
     type = RichardsPlotQuantity
     uo = borehole_total_outflow_mass
+    execute_on = 'initial timestep_end'
   [../]
 
   [./fluid_mass]
     type = RichardsMass
     variable = pressure
+    execute_on = 'initial timestep_end'
   [../]
 []
 
@@ -176,13 +177,7 @@
 
 [Outputs]
   file_base = bh_lumped_07
-  output_initial = true
-  output_final = true
+  execute_on = 'initial timestep_end final'
   interval = 10000
   exodus = true
-  print_perf_log = true
-[]
-
-[Problem]
-  use_legacy_uo_initialization = true
 []

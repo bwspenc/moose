@@ -23,12 +23,8 @@ InputParameters validParams<DeprecatedBlockAction>()
   return params;
 }
 
-DeprecatedBlockAction::DeprecatedBlockAction(const std::string & name, InputParameters parameters) :
-    Action(name, parameters)
-{
-}
-
-DeprecatedBlockAction::~DeprecatedBlockAction()
+DeprecatedBlockAction::DeprecatedBlockAction(InputParameters parameters) :
+    Action(parameters)
 {
 }
 

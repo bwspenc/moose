@@ -26,7 +26,7 @@ InputParameters validParams<RichardsDensityMethane20degC>();
 class RichardsDensityMethane20degC : public RichardsDensity
 {
 public:
-  RichardsDensityMethane20degC(const std::string & name, InputParameters parameters);
+  RichardsDensityMethane20degC(const InputParameters & parameters);
 
   /**
    * fluid density as a function of porepressure
@@ -45,6 +45,11 @@ public:
    * @param p porepressure
    */
   Real d2density(Real p) const;
+
+private:
+  /// Unit of measurement for pressure (should be 1 for pressure in Pa, 1E6 for pressure in MPa, etc)
+  Real _p_unit;
+
 };
 
 #endif // RICHARDSDENSITYMETHANE20DEGC_H

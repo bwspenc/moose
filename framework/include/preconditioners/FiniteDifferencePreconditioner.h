@@ -28,8 +28,7 @@ InputParameters validParams<FiniteDifferencePreconditioner>();
 class FiniteDifferencePreconditioner : public MoosePreconditioner
 {
 public:
-  FiniteDifferencePreconditioner(const std::string & name, InputParameters params);
-  virtual ~FiniteDifferencePreconditioner();
+  FiniteDifferencePreconditioner(const InputParameters & params);
 };
 
 #endif /* FINITEDIFFERENCEPRECONDITIONER_H */

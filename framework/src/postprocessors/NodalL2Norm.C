@@ -14,18 +14,16 @@
 
 #include "NodalL2Norm.h"
 
-#include <algorithm>
-#include <limits>
-
 template<>
 InputParameters validParams<NodalL2Norm>()
 {
   InputParameters params = validParams<NodalVariablePostprocessor>();
+  params.set<bool>("unique_node_execute") = true;
   return params;
 }
 
-NodalL2Norm::NodalL2Norm(const std::string & name, InputParameters parameters) :
-  NodalVariablePostprocessor(name, parameters),
+NodalL2Norm::NodalL2Norm(const InputParameters & parameters) :
+  NodalVariablePostprocessor(parameters),
   _sum_of_squares(0.0)
 {}
 

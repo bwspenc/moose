@@ -24,8 +24,8 @@ InputParameters validParams<DetermineSystemType>()
 }
 
 
-DetermineSystemType::DetermineSystemType(const std::string & name, InputParameters parameters) :
-    MooseObjectAction(name, parameters)
+DetermineSystemType::DetermineSystemType(InputParameters parameters) :
+    MooseObjectAction(parameters)
 {
 }
 
@@ -39,3 +39,4 @@ DetermineSystemType::act()
   if (_moose_object_pars.isParamValid("_eigen") && _moose_object_pars.get<bool>("_eigen"))
     _app.useNonlinear() = false;
 }
+

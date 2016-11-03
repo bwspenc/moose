@@ -22,7 +22,7 @@ class PointerStoreError;
 template<>
 InputParameters validParams<PointerStoreError>();
 
-class ReallyDumb
+class TypeWithNoStore
 {
 public:
   int _i;
@@ -31,7 +31,7 @@ public:
 class PointerStoreError : public GeneralUserObject
 {
 public:
-  PointerStoreError(const std::string & name, InputParameters params);
+  PointerStoreError(const InputParameters & params);
   virtual ~PointerStoreError();
 
   virtual void initialSetup();
@@ -42,7 +42,7 @@ public:
   virtual void finalize() {};
 
 protected:
-  ReallyDumb * & _pointer_data;
+  TypeWithNoStore * & _pointer_data;
 };
 
 

@@ -13,6 +13,7 @@
 /****************************************************************/
 
 #include "BlockAverageValue.h"
+#include "MooseMesh.h"
 
 // libmesh includes
 #include "libmesh/mesh_tools.h"
@@ -29,8 +30,8 @@ InputParameters validParams<BlockAverageValue>()
   return params;
 }
 
-BlockAverageValue::BlockAverageValue(const std::string & name, InputParameters parameters) :
-    ElementIntegralVariablePostprocessor(name, parameters)
+BlockAverageValue::BlockAverageValue(const InputParameters & parameters) :
+    ElementIntegralVariablePostprocessor(parameters)
 {
 }
 

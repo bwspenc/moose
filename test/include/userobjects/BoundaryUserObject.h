@@ -28,7 +28,7 @@ InputParameters validParams<BoundaryUserObject>();
 class BoundaryUserObject : public SideUserObject
 {
 public:
-  BoundaryUserObject(const std::string & name, InputParameters parameters);
+  BoundaryUserObject(const InputParameters & parameters);
   virtual ~BoundaryUserObject();
 
   virtual void initialize();
@@ -39,7 +39,7 @@ public:
   Real getValue() const { return _value; }
 
 protected:
-  VariableValue & _u;
+  const VariableValue & _u;
 
   Real _value;
 

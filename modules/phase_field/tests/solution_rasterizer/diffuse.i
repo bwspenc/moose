@@ -30,7 +30,6 @@
     invalue = 1.0
     outvalue = 0.0
     int_width = 1.0
-    block = 0
   [../]
 []
 
@@ -45,7 +44,4 @@
 
 [Outputs]
   exodus = true
-  output_initial = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

@@ -15,7 +15,7 @@
 class ComputeFiniteStrainElasticStress : public ComputeStressBase
 {
 public:
-  ComputeFiniteStrainElasticStress(const std:: string & name, InputParameters parameters);
+  ComputeFiniteStrainElasticStress(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();

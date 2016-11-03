@@ -16,13 +16,10 @@
 #define COMPUTEFULLJACOBIANTHREAD_H
 
 #include "ComputeJacobianThread.h"
-// libMesh includes
-#include "libmesh/elem_range.h"
 
-
+// Forward declarations
 class FEProblem;
 class NonlinearSystem;
-
 
 class ComputeFullJacobianThread : public ComputeJacobianThread
 {
@@ -34,14 +31,25 @@ public:
 
   virtual ~ComputeFullJacobianThread();
 
-  void join(const ComputeJacobianThread & /*y*/)
-  {}
-
+  void join(const ComputeJacobianThread & /*y*/) {}
 
 protected:
-  virtual void computeJacobian();
-  virtual void computeFaceJacobian(BoundaryID bnd_id);
-  virtual void computeInternalFaceJacobian();
+  virtual void computeJacobian() override;
+  virtual void computeFaceJacobian(BoundaryID bnd_id) override;
+  virtual void computeInternalFaceJacobian(const Elem * neighbor) override;
+  virtual void computeInternalInterFaceJacobian(BoundaryID bnd_id) override;
+
+  // Reference to BC storage structures
+  const MooseObjectWarehouse<IntegratedBC> & _integrated_bcs;
+
+  // Reference to DGKernel storage
+  const MooseObjectWarehouse<DGKernel> & _dg_kernels;
+
+  // Reference to interface kernel storage
+  const MooseObjectWarehouse<InterfaceKernel> & _interface_kernels;
+
+  // Reference to Kernel storage
+  const KernelWarehouse & _kernels;
 };
 
 #endif //COMPUTEFULLJACOBIANTHREAD_H

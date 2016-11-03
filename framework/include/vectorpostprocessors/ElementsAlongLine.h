@@ -29,19 +29,14 @@ InputParameters validParams<ElementsAlongLine>();
 class ElementsAlongLine : public GeneralVectorPostprocessor
 {
 public:
-  ElementsAlongLine(const std::string & name, InputParameters parameters);
+  ElementsAlongLine(const InputParameters & parameters);
 
-  virtual ~ElementsAlongLine() {}
-
-  /**
-   * Clear it out.
-   */
-  virtual void initialize();
+  virtual void initialize() override;
 
   /**
-   * Find th elements
+   * Find the elements
    */
-  virtual void execute();
+  virtual void execute() override;
 
 protected:
   /// The beginning of the line

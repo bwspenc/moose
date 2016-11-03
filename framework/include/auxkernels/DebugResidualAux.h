@@ -28,11 +28,10 @@ InputParameters validParams<DebugResidualAux>();
 class DebugResidualAux : public AuxKernel
 {
 public:
-  DebugResidualAux(const std::string & name, InputParameters parameters);
-  virtual ~DebugResidualAux();
+  DebugResidualAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   MooseVariable & _debug_var;
   NumericVector<Number> & _residual_copy;

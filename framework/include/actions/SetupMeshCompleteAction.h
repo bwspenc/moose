@@ -26,11 +26,11 @@ InputParameters validParams<SetupMeshCompleteAction>();
 class SetupMeshCompleteAction : public Action
 {
 public:
-  SetupMeshCompleteAction(const std::string & name, InputParameters params);
+  SetupMeshCompleteAction(InputParameters params);
 
   bool completeSetup(MooseMesh *mesh);
 
-  virtual void act();
+  virtual void act() override;
 };
 
 #endif // SETUPMESHCOMPLETEACTION_H

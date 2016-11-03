@@ -12,23 +12,32 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-#ifndef VECTORMOOSEENUM_H
-#define VECTORMOOSEENUM_H
+#ifndef MULTIMOOSEENUM_H
+#define MULTIMOOSEENUM_H
 
+// MOOSE includes
 #include "MooseEnumBase.h"
 
-#include "libmesh/parameters.h"
-
+// C++ includes
 #include <set>
+
+// Forward declarations
+namespace libMesh
+{
+class Parameters;
+}
 
 typedef std::set<std::string>::const_iterator MooseEnumIterator;
 
 /**
- * This is a "smart" enum class intended to replace many of the shortcomings in the C++ enum type
- * It should be initialized with a comma-separated list of strings which become the enum values.
- * You may also optionally supply numeric ints for one or more values similar to a C++ enum.  This
- * is done with the "=" sign. It can be used any place where an integer (switch statements), const char*
- * or std::string is expected.  In addition the InputParameters system has full support for this Enum type
+ * This is a "smart" enum class intended to replace many of the
+ * shortcomings in the C++ enum type It should be initialized with a
+ * comma-separated list of strings which become the enum values.  You
+ * may also optionally supply numeric ints for one or more values
+ * similar to a C++ enum.  This is done with the "=" sign. It can be
+ * used any place where an integer (switch statements), const char* or
+ * std::string is expected.  In addition the InputParameters system
+ * has full support for this Enum type
  */
 class MultiMooseEnum : public MooseEnumBase
 {
@@ -36,7 +45,7 @@ public:
   /**
    * Constructor that takes a list of enumeration values, and a separate string to set a default for this instance
    * @param names - a list of names for this enumeration
-   * @param default_name - the default value for this enumeration instance
+   * @param default_names - the default value for this enumeration instance
    * @param allow_out_of_range - determines whether this enumeration will accept values outside of it's range of
    *                       defined values.
    */
@@ -54,8 +63,6 @@ public:
    * @param other_enum - The other enumeration to copy the validity checking data from
    */
   static MultiMooseEnum withNamesFrom(const MooseEnumBase & other_enum);
-
-  virtual ~MultiMooseEnum();
 
   ///@{
   /**
@@ -159,7 +166,7 @@ public:
    * IsValid
    * @return - a Boolean indicating whether this Enumeration has been set
    */
-  virtual bool isValid() const { return !_current_ids.empty(); }
+  virtual bool isValid() const override { return !_current_ids.empty(); }
 
 
   // InputParameters and Output is allowed to create an empty enum but is responsible for
@@ -168,6 +175,10 @@ public:
 
   /// Operator for printing to iostreams
   friend std::ostream & operator<<(std::ostream & out, const MultiMooseEnum & obj);
+
+protected:
+  /// Check whether any of the current values are deprecated when called
+  virtual void checkDeprecated() const override;
 
 private:
 
@@ -202,4 +213,4 @@ private:
   std::vector<std::string> _current_names_preserved;
 };
 
-#endif //VECTORMOOSEENUM_H
+#endif // MULTIMOOSEENUM_H

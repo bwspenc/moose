@@ -30,14 +30,14 @@ InputParameters validParams<CoupledConvection>();
 class CoupledConvection : public Kernel
 {
 public:
-  CoupledConvection(const std::string & name, InputParameters parameters);
+  CoupledConvection(const InputParameters & parameters);
 
 protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
 
 private:
-  VariableGradient & _velocity_vector;
+  const VariableGradient & _velocity_vector;
 };
 
 #endif //COUPLEDCONVECTION_H

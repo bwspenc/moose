@@ -16,7 +16,6 @@
 
 #include "Material.h"
 
-
 //Forward Declarations
 class StatefulTest;
 
@@ -29,8 +28,7 @@ InputParameters validParams<StatefulTest>();
 class StatefulTest : public Material
 {
 public:
-  StatefulTest(const std::string & name,
-                InputParameters parameters);
+  StatefulTest(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();
@@ -39,6 +37,9 @@ protected:
   MaterialProperty<Real> & _thermal_conductivity;
   MaterialProperty<Real> & _thermal_conductivity_old;
   MaterialProperty<Real> & _thermal_conductivity_older;
+
+  // optional coupled variable
+  const VariableValue * _coupled_val;
 };
 
 #endif //STATEFULTEST_H

@@ -11,7 +11,7 @@
 
 #include "Material.h"
 #include "RankTwoTensor.h"
-#include "ElasticityTensorR4.h"
+#include "RankFourTensor.h"
 #include "RotationTensor.h"
 
 //Forward declaration
@@ -29,7 +29,7 @@ InputParameters validParams<TensorMechanicsMaterial>();
 class TensorMechanicsMaterial : public Material
 {
 public:
-  TensorMechanicsMaterial(const std::string & name, InputParameters parameters);
+  TensorMechanicsMaterial(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties();
@@ -40,13 +40,13 @@ protected:
   virtual void computeQpStrain() = 0;
   virtual void computeQpStress() = 0;
 
-  VariableGradient & _grad_disp_x;
-  VariableGradient & _grad_disp_y;
-  VariableGradient & _grad_disp_z;
+  const VariableGradient & _grad_disp_x;
+  const VariableGradient & _grad_disp_y;
+  const VariableGradient & _grad_disp_z;
 
-  VariableGradient & _grad_disp_x_old;
-  VariableGradient & _grad_disp_y_old;
-  VariableGradient & _grad_disp_z_old;
+  const VariableGradient & _grad_disp_x_old;
+  const VariableGradient & _grad_disp_y_old;
+  const VariableGradient & _grad_disp_z_old;
 
   /// Material property base name to allow for multiple TensorMechanicsMaterial to coexist in the same simulation
   std::string _base_name;
@@ -56,15 +56,15 @@ protected:
   MaterialProperty<RankTwoTensor> & _elastic_strain;
 
   std::string _elasticity_tensor_name;
-  MaterialProperty<ElasticityTensorR4> & _elasticity_tensor;
+  MaterialProperty<RankFourTensor> & _elasticity_tensor;
 
   /// derivative of stress w.r.t. strain (_dstress_dstrain)
-  MaterialProperty<ElasticityTensorR4> & _Jacobian_mult;
+  MaterialProperty<RankFourTensor> & _Jacobian_mult;
 
   RealVectorValue _Euler_angles;
 
   /// Individual material information
-  ElasticityTensorR4 _Cijkl;
+  RankFourTensor _Cijkl;
 
   /// prefactor function to multiply the elasticity tensor with
   Function * const _prefactor_function;

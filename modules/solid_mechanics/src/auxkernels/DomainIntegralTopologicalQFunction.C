@@ -17,8 +17,8 @@ InputParameters validParams<DomainIntegralTopologicalQFunction>()
   return params;
 }
 
-DomainIntegralTopologicalQFunction::DomainIntegralTopologicalQFunction(const std::string & name, InputParameters parameters):
-    AuxKernel(name, parameters),
+DomainIntegralTopologicalQFunction::DomainIntegralTopologicalQFunction(const InputParameters & parameters):
+    AuxKernel(parameters),
     _ring_number(getParam<unsigned int>("ring_index")),
     _crack_front_definition(&getUserObject<CrackFrontDefinition>("crack_front_definition")),
     _has_crack_front_point_index(isParamValid("crack_front_point_index")),

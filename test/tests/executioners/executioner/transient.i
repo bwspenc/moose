@@ -1,3 +1,11 @@
+###########################################################
+# This is a simple test with a time-dependent problem
+# demonstrating the use of a "Transient" Executioner.
+#
+# @Requirement F1.10
+###########################################################
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -107,7 +115,7 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = out_transient
   exodus = true
-  print_perf_log = true
 []

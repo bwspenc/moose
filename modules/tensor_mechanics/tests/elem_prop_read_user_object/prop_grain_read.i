@@ -27,11 +27,6 @@
     family = MONOMIAL
     block = 0
   [../]
-  [./some_state_var]
-    order = CONSTANT
-    family = MONOMIAL
-    block = 0
-  [../]
 []
 
 [Functions]
@@ -73,13 +68,6 @@
     execute_on = timestep_end
     block = 0
   [../]
-  [./some_state_var]
-    type = MaterialRealAux
-    variable = some_state_var
-    property = some_state_var
-    execute_on = timestep_end
-    block = 0
-  [../]
 []
 
 [BCs]
@@ -104,15 +92,21 @@
 []
 
 [Materials]
-  active = 'elastic'
-  [./elastic]
-    type = ElementPropertyReadFileTest
+  [./elasticity_tensor_with_Euler]
+    type = ComputeElasticityTensorCP
     block = 0
-    disp_y = disp_y
-    disp_x = disp_x
     C_ijkl = '1.684e5 1.214e5 1.214e5 1.684e5 1.214e5 1.684e5 0.754e5 0.754e5 0.754e5'
     fill_method = symmetric9
     read_prop_user_object = prop_read
+  [../]
+  [./strain]
+    type = ComputeFiniteStrain
+    block = 0
+    displacements = 'disp_x disp_y'
+  [../]
+  [./stress]
+    type = ComputeFiniteStrainElasticStress
+    block = 0
   [../]
 []
 
@@ -158,16 +152,12 @@
 
 [Outputs]
   file_base = prop_grain_read_out
-  output_initial = true
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []
 
 [Kernels]
   [./TensorMechanics]
-    disp_y = disp_y
-    disp_x = disp_x
+    displacements = 'disp_x disp_y'
     use_displaced_mesh = true
   [../]
 []

@@ -162,7 +162,6 @@
     type = DirichletBC
     variable = pgas
     boundary = left
-    ####value = 1E6+1000
     value = 1000
   [../]
   [./right_w]
@@ -184,12 +183,9 @@
   [./initial_water]
     type = ParsedFunction
     value = 1000000*(1-min(x/5,1))-if(x<5,0,100000)
-    #value = 1000000*(1-min(x/5,1))-100000*(max(x-5,0)/max(abs(x-5),1E-10))
-    #value = max(1000000*(1-x/5),-100000)
   [../]
   [./initial_gas]
     type = ParsedFunction
-    ####value = max(1000000*(1-x/5),0)+1000
     value = 1000
   [../]
 []
@@ -223,9 +219,9 @@
   [./standard]
     type = SMP
     full = true
-    petsc_options = '-snes_converged_reason'
-    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it -ksp_rtol -ksp_atol'
-    petsc_options_value = 'bcgs bjacobi 1E-10 1E-10 20 1E-20 1E-20'
+    petsc_options = '-snes_converged_reason -ksp_diagonal_scale -ksp_diagonal_scale_fix -ksp_gmres_modifiedgramschmidt'
+    petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -sub_pc_factor_shift_type -pc_asm_overlap -snes_atol -snes_rtol -snes_max_it -ksp_rtol -ksp_atol'
+    petsc_options_value = 'gmres      asm      lu           NONZERO                   2               1E-10 1E-10 20 1E-10 1E-100'
   [../]
 
 []
@@ -243,12 +239,12 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = bl22_lumped_fu
-  print_perf_log = true
   [./exodus]
     type = Exodus
     interval = 100000
     hide = 'pgas bounds_dummy'
-    output_on = 'initial final timestep_end'
+    execute_on = 'initial final timestep_end'
   [../]
 []

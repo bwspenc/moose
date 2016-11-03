@@ -24,8 +24,8 @@ InputParameters validParams<SinNeumannBC>()
   return params;
 }
 
-SinNeumannBC::SinNeumannBC(const std::string & name, InputParameters parameters) :
-    IntegratedBC(name, parameters),
+SinNeumannBC::SinNeumannBC(const InputParameters & parameters) :
+    IntegratedBC(parameters),
     _initial(getParam<Real>("initial")),
     _final(getParam<Real>("final")),
     _duration(getParam<Real>("duration"))
@@ -43,4 +43,5 @@ SinNeumannBC::computeQpResidual()
 
   return -_test[_i][_qp]*value;
 }
+
 

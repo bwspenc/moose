@@ -4,7 +4,11 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "DerivativeSumMaterial.h"
+
+// libmesh includes
+#include "libmesh/quadrature.h"
 
 template<>
 InputParameters validParams<DerivativeSumMaterial>()
@@ -14,8 +18,9 @@ InputParameters validParams<DerivativeSumMaterial>()
   params.addParam<std::vector<std::string> >("sum_materials", "Base name of the free energy function (used to name the material properties)");
   //params.addParam<bool>("third_derivatives", true, "Calculate third derivatoves of the free energy");
 
-  // All arguments to the free energies being summed
+  // All arguments of the free energies being summed
   params.addRequiredCoupledVar("args", "Arguments of the free energy functions being summed - use vector coupling");
+  params.addCoupledVar("displacement_gradients", "Vector of displacement gradient variables (see Modules/PhaseField/DisplacementGradients action)");
 
   // Advanced arguments to construct a sum of the form \f$ c+\gamma\sum_iF_i \f$
   params.addParam<std::vector<Real> >("prefactor", "Prefactor to multiply the sum term with.");
@@ -25,9 +30,8 @@ InputParameters validParams<DerivativeSumMaterial>()
   return params;
 }
 
-DerivativeSumMaterial::DerivativeSumMaterial(const std::string & name,
-                                             InputParameters parameters) :
-    DerivativeFunctionMaterialBase(name, parameters),
+DerivativeSumMaterial::DerivativeSumMaterial(const InputParameters & parameters) :
+    DerivativeFunctionMaterialBase(parameters),
     _sum_materials(getParam<std::vector<std::string> >("sum_materials")),
     _num_materials(_sum_materials.size()),
     _prefactor(_num_materials, 1.0),
@@ -35,7 +39,7 @@ DerivativeSumMaterial::DerivativeSumMaterial(const std::string & name,
   {
   // we need at least one material in the sum
   if (_num_materials == 0)
-    mooseError("Please supply at least one material to sum in DerivativeSumMaterial " << name);
+    mooseError("Please supply at least one material to sum in DerivativeSumMaterial " << name());
 
   // get prefactor values if not 1.0
   std::vector<Real> p = getParam<std::vector<Real> >("prefactor");
@@ -80,6 +84,13 @@ DerivativeSumMaterial::DerivativeSumMaterial(const std::string & name,
       }
     }
   }
+}
+
+void
+DerivativeSumMaterial::initialSetup()
+{
+  for (unsigned int n = 0; n < _num_materials; ++n)
+    validateCoupling<Real>(_sum_materials[n]);
 }
 
 void

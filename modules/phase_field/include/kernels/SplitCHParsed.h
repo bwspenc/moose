@@ -9,7 +9,7 @@
 
 #include "SplitCHCRes.h"
 #include "JvarMapInterface.h"
-#include "DerivativeKernelInterface.h"
+#include "DerivativeMaterialInterface.h"
 
 //Forward Declarations
 class SplitCHParsed;
@@ -23,16 +23,19 @@ InputParameters validParams<SplitCHParsed>();
  * This is the split operator variant.
  * \see CHParsed
  */
-class SplitCHParsed : public DerivativeKernelInterface<JvarMapInterface<SplitCHCRes> >
+class SplitCHParsed : public DerivativeMaterialInterface<JvarMapInterface<SplitCHCRes> >
 {
 public:
-  SplitCHParsed(const std::string & name, InputParameters parameters);
+  SplitCHParsed(const InputParameters & parameters);
+
+  virtual void initialSetup();
 
 protected:
   virtual Real computeDFDC(PFFunctionType type);
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
 private:
+  const unsigned int _nvar;
   const MaterialProperty<Real> & _dFdc;
   const MaterialProperty<Real> & _d2Fdc2;
 

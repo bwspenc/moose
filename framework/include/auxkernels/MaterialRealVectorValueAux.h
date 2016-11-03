@@ -33,22 +33,12 @@ public:
 
   /**
    * Class constructor
-   * @param name AuxKernel name
    * @param parameters The input parameters for this object
    */
-  MaterialRealVectorValueAux(const std::string & name, InputParameters parameters);
-
-  /**
-   * Class destructor
-   */
-  virtual ~MaterialRealVectorValueAux();
+  MaterialRealVectorValueAux(const InputParameters & parameters);
 
 protected:
-
-  /**
-   * Compute the value of the material property for the given component
-   */
-  virtual Real computeValue();
+  virtual Real getRealValue() override;
 
   /// The vector component to output
   unsigned int _component;

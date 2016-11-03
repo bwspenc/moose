@@ -30,10 +30,10 @@ InputParameters validParams<PostprocessorDirichletBC>();
 class PostprocessorDirichletBC : public NodalBC
 {
 public:
-  PostprocessorDirichletBC(const std::string & name, InputParameters parameters);
+  PostprocessorDirichletBC(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   /// The value for this BC
   const PostprocessorValue & _postprocessor_value;

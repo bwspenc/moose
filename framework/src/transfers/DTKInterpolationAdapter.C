@@ -11,22 +11,27 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
+
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
+// MOOSE includes
 #include "Moose.h"
-
 #include "DTKInterpolationEvaluator.h"
 #include "DTKInterpolationAdapter.h"
+#include "Transfer.h"
 
+// libMesh includes
 #include "libmesh/mesh.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/elem.h"
+#include "libmesh/equation_systems.h"
 
+// DTK includes
+#include "libmesh/ignore_warnings.h"
 #include <DTK_MeshTypes.hpp>
-
-#include <vector>
+#include "libmesh/restore_warnings.h"
 
 DTKInterpolationAdapter::DTKInterpolationAdapter(Teuchos::RCP<const Teuchos::MpiComm<int> > in_comm, EquationSystems & in_es, const Point & offset, unsigned int from_dim):
     comm(in_comm),
@@ -51,11 +56,9 @@ DTKInterpolationAdapter::DTKInterpolationAdapter(Teuchos::RCP<const Teuchos::Mpi
   {
     GlobalOrdinal i = 0;
 
-    for (std::set<GlobalOrdinal>::iterator it = semi_local_nodes.begin();
-        it != semi_local_nodes.end();
-        ++it)
+    for (const auto & dof : semi_local_nodes)
     {
-      const Node & node = mesh.node(*it);
+      const Node & node = mesh.node_ref(dof);
 
       vertices[i] = node.id();
 
@@ -70,8 +73,8 @@ DTKInterpolationAdapter::DTKInterpolationAdapter(Teuchos::RCP<const Teuchos::Mpi
   }
 
   // Currently assuming all elements are the same!
-  DataTransferKit::DTK_ElementTopology element_topology = get_element_topology(mesh.elem(0));
-  GlobalOrdinal n_nodes_per_elem = mesh.elem(0)->n_nodes();
+  DataTransferKit::DTK_ElementTopology element_topology = get_element_topology(mesh.elem_ptr(0));
+  GlobalOrdinal n_nodes_per_elem = mesh.elem_ptr(0)->n_nodes();
 
   GlobalOrdinal n_local_elem = mesh.n_local_elem();
 
@@ -93,7 +96,7 @@ DTKInterpolationAdapter::DTKInterpolationAdapter(Teuchos::RCP<const Teuchos::Mpi
       elements[i] = elem.id();
 
       for (GlobalOrdinal j=0; j<n_nodes_per_elem; j++)
-        connectivity[(j*n_local_elem)+i] = elem.node(j);
+        connectivity[(j*n_local_elem)+i] = elem.node_id(j);
 
       {
         Point centroid = elem.centroid();
@@ -204,7 +207,7 @@ DTKInterpolationAdapter::get_variable_evaluator(std::string var_name)
 {
   if (evaluators.find(var_name) == evaluators.end()) // We haven't created an evaluator for the variable yet
   {
-    System * sys = find_sys(var_name);
+    System * sys = Transfer::find_sys(es, var_name);
 
     // Create the FieldEvaluator
     evaluators[var_name] = Teuchos::rcp(new DTKInterpolationEvaluator(*sys, var_name, _offset));
@@ -218,7 +221,7 @@ DTKInterpolationAdapter::get_values_to_fill(std::string var_name)
 {
   if (values_to_fill.find(var_name) == values_to_fill.end())
   {
-    System * sys = find_sys(var_name);
+    System * sys = Transfer::find_sys(es, var_name);
     unsigned int var_num = sys->variable_number(var_name);
     bool is_nodal = sys->variable_type(var_num).family == LAGRANGE;
 
@@ -241,7 +244,7 @@ DTKInterpolationAdapter::update_variable_values(std::string var_name, Teuchos::A
 {
   MPI_Comm old_comm = Moose::swapLibMeshComm(*comm->getRawMpiComm());
 
-  System * sys = find_sys(var_name);
+  System * sys = Transfer::find_sys(es, var_name);
   unsigned int var_num = sys->variable_number(var_name);
 
   bool is_nodal = sys->variable_type(var_num).family == LAGRANGE;
@@ -252,14 +255,12 @@ DTKInterpolationAdapter::update_variable_values(std::string var_name, Teuchos::A
   // We're only going to update values for points that were not missed
   std::vector<bool> missed(values->size(), false);
 
-  for (Teuchos::ArrayView<const GlobalOrdinal>::const_iterator i=missed_points.begin();
-      i != missed_points.end();
-      ++i)
-    missed[*i] = true;
+  for (const auto & dof : missed_points)
+    missed[dof] = true;
 
   unsigned int i=0;
   // Loop over the values (one for each node) and assign the value of this variable at each node
-  for (FieldContainerType::iterator it=values->begin(); it != values->end(); ++it)
+  for (const auto & val : *values)
   {
     // If this point "missed" then skip it
     if (missed[i])
@@ -273,13 +274,13 @@ DTKInterpolationAdapter::update_variable_values(std::string var_name, Teuchos::A
     if (is_nodal)
       dof_object = mesh.node_ptr(vertices[i]);
     else
-      dof_object = mesh.elem(elements[i]);
+      dof_object = mesh.elem_ptr(elements[i]);
 
     if (dof_object->processor_id() == mesh.processor_id())
     {
       // The 0 is for the component... this only works for LAGRANGE!
       dof_id_type dof = dof_object->dof_number(sys->number(), var_num, 0);
-      sys->solution->set(dof, *it);
+      sys->solution->set(dof, val);
     }
 
     i++;
@@ -289,32 +290,6 @@ DTKInterpolationAdapter::update_variable_values(std::string var_name, Teuchos::A
 
   // Swap back
   Moose::swapLibMeshComm(old_comm);
-}
-
-
-/**
- * Small helper function for finding the system containing the variable.
- *
- * Note that this implies that variable names are unique across all systems!
- */
-System *
-DTKInterpolationAdapter::find_sys(std::string var_name)
-{
-  System * sys = NULL;
-
-  // Find the system this variable is from
-  for (unsigned int i=0; i<es.n_systems(); i++)
-  {
-    if (es.get_system(i).has_variable(var_name))
-    {
-      sys = &es.get_system(i);
-      break;
-    }
-  }
-
-  libmesh_assert(sys);
-
-  return sys;
 }
 
 DataTransferKit::DTK_ElementTopology
@@ -328,9 +303,15 @@ DTKInterpolationAdapter::get_element_topology(const Elem * elem)
     return DataTransferKit::DTK_TRIANGLE;
   else if (type == QUAD4)
     return DataTransferKit::DTK_QUADRILATERAL;
+  else if (type == QUAD8)
+    return DataTransferKit::DTK_QUADRILATERAL;
+  else if (type == QUAD9)
+    return DataTransferKit::DTK_QUADRILATERAL;
   else if (type == TET4)
     return DataTransferKit::DTK_TETRAHEDRON;
   else if (type == HEX8)
+    return DataTransferKit::DTK_HEXAHEDRON;
+  else if (type == HEX27)
     return DataTransferKit::DTK_HEXAHEDRON;
   else if (type == PYRAMID5)
     return DataTransferKit::DTK_PYRAMID;
@@ -350,8 +331,8 @@ DTKInterpolationAdapter::get_semi_local_nodes(std::set<GlobalOrdinal> & semi_loc
     const Elem & elem = *(*it);
 
     for (unsigned int j=0; j<elem.n_nodes(); j++)
-      semi_local_nodes.insert(elem.node(j));
+      semi_local_nodes.insert(elem.node_id(j));
   }
 }
 
-#endif // #ifdef LIBMESH_HAVE_DTK
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_DTK

@@ -60,7 +60,7 @@
     variable = eta1
   [../]
   [./ACBulk1]
-    type = ACParsed
+    type = AllenCahn
     variable = eta1
     args = 'c eta2'
     f_name = F
@@ -82,7 +82,7 @@
     variable = eta2
   [../]
   [./ACBulk2]
-    type = ACParsed
+    type = AllenCahn
     variable = eta2
     args = 'c eta1'
     f_name = F
@@ -113,7 +113,7 @@
     mob_name = M
   [../]
   [./time1]
-    type = CoupledImplicitEuler
+    type = CoupledTimeDerivative
     variable = w
     v = c
   [../]
@@ -130,20 +130,17 @@
 [Materials]
   [./consts]
     type = GenericConstantMaterial
-    block = 0
     prop_names  = 'L kappa_eta'
     prop_values = '1 1        '
   [../]
   [./consts2]
-    type = PFMobility
-    block = 0
-    kappa = 1
-    mob = 1
+    type = GenericConstantMaterial
+    prop_names  = 'M kappa_c'
+    prop_values = '1 1'
   [../]
 
   [./hsum]
     type = ParsedMaterial
-    block = 0
     function = h1+h2
     f_name = hsum
     material_property_names = 'h1 h2'
@@ -153,14 +150,12 @@
 
   [./switching1]
     type = SwitchingFunctionMaterial
-    block = 0
     function_name = h1
     eta = eta1
     h_order = SIMPLE
   [../]
   [./switching2]
     type = SwitchingFunctionMaterial
-    block = 0
     function_name = h2
     eta = eta2
     h_order = SIMPLE
@@ -168,13 +163,11 @@
 
   [./barrier]
     type = MultiBarrierFunctionMaterial
-    block = 0
     etas = 'eta1 eta2'
   [../]
 
   [./free_energy_A]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = Fa
     args = 'c'
     function = '(c-0.1)^2'
@@ -182,7 +175,6 @@
   [../]
   [./free_energy_B]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = Fb
     args = 'c'
     function = '(c-0.9)^2'
@@ -191,7 +183,6 @@
 
   [./free_energy]
     type = DerivativeMultiPhaseMaterial
-    block = 0
     f_name = F
     fi_names = 'Fa   Fb'
     hi_names = 'h1   h2'
@@ -235,8 +226,6 @@
 []
 
 [Outputs]
-  interval = 1
+  execute_on = 'timestep_end'
   exodus = true
-  print_perf_log = true
-  # print_linear_residuals = true
 []

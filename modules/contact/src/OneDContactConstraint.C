@@ -12,6 +12,7 @@
 
 // libMesh includes
 #include "libmesh/string_to_enum.h"
+#include "libmesh/sparse_matrix.h"
 
 template<>
 InputParameters validParams<OneDContactConstraint>()
@@ -22,8 +23,8 @@ InputParameters validParams<OneDContactConstraint>()
   return params;
 }
 
-OneDContactConstraint::OneDContactConstraint(const std::string & name, InputParameters parameters) :
-    NodeFaceConstraint(name, parameters),
+OneDContactConstraint::OneDContactConstraint(const InputParameters & parameters) :
+    NodeFaceConstraint(parameters),
     _residual_copy(_sys.residualGhosted()),
     _jacobian_update(getParam<bool>("jacobian_update"))
 {}
@@ -121,3 +122,4 @@ OneDContactConstraint::computeQpJacobian(Moose::ConstraintJacobianType type)
   }
   return 0;
 }
+

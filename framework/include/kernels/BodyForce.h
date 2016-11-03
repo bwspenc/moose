@@ -24,17 +24,25 @@ class Function;
 template<>
 InputParameters validParams<BodyForce>();
 
+/**
+ * This kernel implements a generic functional
+ * body force term:
+ * $ - c \cdof f \cdot \phi_i $
+ *
+ * The coefficient and function both have defaults
+ * equal to 1.0.
+ */
 class BodyForce : public Kernel
 {
 public:
-
-  BodyForce(const std::string & name, InputParameters parameters);
+  BodyForce(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual();
+  virtual Real computeQpResidual() override;
 
   Real _value;
   Function & _function;
+  const PostprocessorValue * const _postprocessor;
 };
 
 #endif

@@ -16,7 +16,7 @@
 #define EBSDMESHERRORTEST_H
 
 //CPPUnit includes
-#include "cppunit/extensions/HelperMacros.h"
+#include "GuardedHelperMacros.h"
 
 // Forward declarations
 class Factory;
@@ -45,7 +45,7 @@ private:
   Factory * _factory;
 
   template <typename T>
-  void testParam(unsigned int nparam, const char ** param_list);
+  void testParam(unsigned int nparam, const char ** param_list, std::string name);
 
   void headerErrorHelper(const char * filename, const char * error);
 };

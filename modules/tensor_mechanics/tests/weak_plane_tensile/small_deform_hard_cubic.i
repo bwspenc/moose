@@ -28,9 +28,7 @@
 
 [Kernels]
   [./TensorMechanics]
-    disp_x = x_disp
-    disp_y = y_disp
-    disp_z = z_disp
+    displacements = 'x_disp y_disp z_disp'
   [../]
 []
 
@@ -155,9 +153,7 @@
   [./strain]
     type = ComputeFiniteStrain
     block = 0
-    disp_x = x_disp
-    disp_y = y_disp
-    disp_z = z_disp
+    displacements = 'x_disp y_disp z_disp'
   [../]
   [./mc]
     type = ComputeMultiPlasticityStress
@@ -178,12 +174,8 @@
 
 [Outputs]
   file_base = small_deform_hard_cubic
-  output_initial = true
   exodus = false
-  print_linear_residuals = true
-  print_perf_log = true
   [./csv]
     type = CSV
-    interval = 1
-  [../]
+    [../]
 []

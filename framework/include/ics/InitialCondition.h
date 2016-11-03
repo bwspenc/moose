@@ -16,17 +16,15 @@
 #define INITIALCONDITION_H
 
 #include "MooseObject.h"
+#include "Coupleable.h"
 #include "FunctionInterface.h"
 #include "UserObjectInterface.h"
-#include "CoupleableMooseVariableDependencyIntermediateInterface.h"
 #include "ParallelUniqueId.h"
 #include "Restartable.h"
 #include "BlockRestrictable.h"
 #include "DependencyResolverInterface.h"
 #include "BoundaryRestrictable.h"
 #include "ZeroInterface.h"
-// System includes
-#include <string>
 
 // libMesh
 #include "libmesh/point.h"
@@ -61,10 +59,9 @@ public:
   /**
    * Constructor
    *
-   * @param name The name given to the initial condition in the input file.
    * @param parameters The parameters object holding data for the class to use.
    */
-  InitialCondition(const std::string & name, InputParameters parameters);
+  InitialCondition(const InputParameters & parameters);
 
   virtual ~InitialCondition();
 
@@ -95,9 +92,9 @@ public:
    */
   virtual void initialSetup() {}
 
-  virtual const std::set<std::string> & getRequestedItems();
+  virtual const std::set<std::string> & getRequestedItems() override;
 
-  virtual const std::set<std::string> & getSuppliedItems();
+  virtual const std::set<std::string> & getSuppliedItems() override;
 
 protected:
   FEProblem & _fe_problem;

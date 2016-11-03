@@ -39,8 +39,8 @@ InteractionIntegralAuxFields::getSIFModesEnum()
 }
 
 
-InteractionIntegralAuxFields::InteractionIntegralAuxFields(const std::string & name, InputParameters parameters) :
-    Material(name, parameters),
+InteractionIntegralAuxFields::InteractionIntegralAuxFields(const InputParameters & parameters) :
+    Material(parameters),
     _appended_index_name(getParam<std::string>("appended_index_name")),
     _aux_stress_I(declareProperty<ColumnMajorMatrix>("aux_stress_I_"+_appended_index_name)),
     _aux_disp_I(declareProperty<ColumnMajorMatrix>("aux_disp_I_"+_appended_index_name)),
@@ -352,3 +352,4 @@ InteractionIntegralAuxFields::computeTFields(ColumnMajorMatrix & stress, ColumnM
        + std::sin(3*t)*(1 + _poissons_ratio));
   grad_disp(0,2) = 0.0;
 }
+

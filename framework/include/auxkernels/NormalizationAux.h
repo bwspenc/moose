@@ -30,14 +30,12 @@ InputParameters validParams<NormalizationAux>();
 class NormalizationAux : public AuxKernel
 {
 public:
-  NormalizationAux(const std::string & name, InputParameters parameters);
-
-  virtual ~NormalizationAux() {}
+  NormalizationAux(const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
-  VariableValue & _src;
+  const VariableValue & _src;
   const Real & _pp_on_source;
   Real _normal_factor;
 };

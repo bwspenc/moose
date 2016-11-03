@@ -21,7 +21,6 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
-
   [./stdvec0]
     order = CONSTANT
     family = MONOMIAL
@@ -30,7 +29,14 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
-
+  [./stdvec0_qp0]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvec0_qp1]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
   [./realvec0]
     order = CONSTANT
     family = MONOMIAL
@@ -43,7 +49,6 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
-
   [./densemat00]
     order = CONSTANT
     family = MONOMIAL
@@ -52,7 +57,6 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
-
   [./tensor00]
     order = CONSTANT
     family = MONOMIAL
@@ -62,6 +66,30 @@
     family = MONOMIAL
   [../]
   [./tensor22]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvecgrad00]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvecgrad01]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvecgrad02]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvecgrad10]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvecgrad11]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stdvecgrad12]
     order = CONSTANT
     family = MONOMIAL
   [../]
@@ -81,7 +109,6 @@
     property = real_prop
     execute_on = timestep_end
   [../]
-
   [./stdvec0]
     type = MaterialStdVectorAux
     variable = stdvec0
@@ -96,7 +123,22 @@
     index = 1
     execute_on = timestep_end
   [../]
-
+  [./stdvec0_qp0]
+    type = MaterialStdVectorAux
+    variable = stdvec0_qp0
+    property = stdvec_prop_qp
+    index = 0
+    selected_qp = 0
+    execute_on = timestep_end
+  [../]
+  [./stdvec0_qp1]
+    type = MaterialStdVectorAux
+    variable = stdvec0_qp1
+    property = stdvec_prop_qp
+    index = 0
+    selected_qp = 1
+    execute_on = timestep_end
+  [../]
   [./densemat00]
     type = MaterialRealDenseMatrixAux
     variable = densemat00
@@ -113,7 +155,6 @@
     column = 1
     execute_on = timestep_end
   [../]
-
   [./realvec0]
     type = MaterialRealVectorValueAux
     variable = realvec0
@@ -135,7 +176,6 @@
     component = 2
     execute_on = timestep_end
   [../]
-
   [./realtensor00]
     type = MaterialRealTensorValueAux
     variable = tensor00
@@ -160,6 +200,43 @@
     column = 2
     execute_on = timestep_end
   [../]
+  [./stdvecgrad00]
+    type = MaterialStdVectorRealGradientAux
+    variable = stdvecgrad00
+    property = stdvec_grad_prop
+  [../]
+  [./stdvecgrad01]
+    type = MaterialStdVectorRealGradientAux
+    variable = stdvecgrad01
+    property = stdvec_grad_prop
+    component = 1
+  [../]
+  [./stdvecgrad02]
+    type = MaterialStdVectorRealGradientAux
+    variable = stdvecgrad02
+    property = stdvec_grad_prop
+    component = 2
+  [../]
+  [./stdvecgrad10]
+    type = MaterialStdVectorRealGradientAux
+    variable = stdvecgrad10
+    index = 1
+    property = stdvec_grad_prop
+  [../]
+  [./stdvecgrad11]
+    type = MaterialStdVectorRealGradientAux
+    variable = stdvecgrad11
+    index = 1
+    component = 1
+    property = stdvec_grad_prop
+  [../]
+  [./stdvecgrad12]
+    type = MaterialStdVectorRealGradientAux
+    variable = stdvecgrad12
+    index = 1
+    component = 2
+    property = stdvec_grad_prop
+  [../]
 []
 
 [BCs]
@@ -169,7 +246,6 @@
     boundary = 3
     value = 0
   [../]
-
   [./right]
     type = DirichletBC
     variable = u
@@ -187,17 +263,10 @@
 
 [Executioner]
   type = Steady
-  solve_type = 'PJFNK'
+  solve_type = PJFNK
 []
 
 [Outputs]
-  output_on = 'initial timestep_end'
-  [./out]
-    type = Exodus
-  [../]
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'timestep_end failed nonlinear'
-  [../]
+  file_base = test_out
+  exodus = true
 []

@@ -41,7 +41,7 @@
 
 [Kernels]
   [./c_bulk]
-    type = CHParsed
+    type = CahnHilliard
     variable = c
     mob_name = M
     f_name = F
@@ -72,13 +72,11 @@
 [Materials]
   [./kappa]
     type = GenericConstantMaterial
-    block = 0
     prop_names = kappa_c
     prop_values = 2.0
   [../]
   [./mob]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = M
     args = 'c d'
     function = if(d>0.001,d,0.001)*if(c<0,0.5,if(c>1,0.5,1-0.5*c^2))
@@ -86,7 +84,6 @@
   [../]
   [./free_energy]
     type = MathEBFreeEnergy
-    block = 0
     f_name = F
     c = c
   [../]
@@ -94,7 +91,6 @@
     type = GenericConstantMaterial
     prop_names = diffusivity
     prop_values = 1.0
-    block = 0
   [../]
 []
 
@@ -110,7 +106,7 @@
   scheme = BDF2
 
   solve_type = NEWTON
-  petsc_options_iname = '-pc_type -ksp_grmres_restart -sub_pc_type -pc_asm_overlap'
+  petsc_options_iname = '-pc_type -ksp_gmres_restart -sub_pc_type -pc_asm_overlap'
   petsc_options_value = 'asm         31      lu      1'
 
   l_max_its = 30
@@ -123,8 +119,7 @@
 []
 
 [Outputs]
-  print_linear_residuals = true
-  print_perf_log = true
+  execute_on = 'timestep_end'
   [./oversample]
     refinements = 2
     type = Exodus

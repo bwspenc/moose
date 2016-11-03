@@ -11,9 +11,10 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-#include "FullSolveMultiApp.h"
 
+#include "FullSolveMultiApp.h"
 #include "LayeredSideFluxAverage.h"
+#include "Executioner.h"
 
 // libMesh
 #include "libmesh/mesh_tools.h"
@@ -26,13 +27,9 @@ InputParameters validParams<FullSolveMultiApp>()
 }
 
 
-FullSolveMultiApp::FullSolveMultiApp(const std::string & name, InputParameters parameters):
-    MultiApp(name, parameters),
+FullSolveMultiApp::FullSolveMultiApp(const InputParameters & parameters):
+    MultiApp(parameters),
     _solved(false)
-{
-}
-
-FullSolveMultiApp::~FullSolveMultiApp()
 {
 }
 
@@ -65,19 +62,17 @@ FullSolveMultiApp::initialSetup()
   }
 }
 
-void
+bool
 FullSolveMultiApp::solveStep(Real /*dt*/, Real /*target_time*/, bool auto_advance)
 {
   if (!auto_advance)
     mooseError("FullSolveMultiApp is not compatible with auto_advance=false");
 
   if (!_has_an_app)
-    return;
+    return true;
 
   if (_solved)
-    return;
-
-  _console << "Fully Solving MultiApp " << _name << std::endl;
+    return true;
 
   MPI_Comm swapped = Moose::swapLibMeshComm(_my_comm);
 
@@ -85,10 +80,13 @@ FullSolveMultiApp::solveStep(Real /*dt*/, Real /*target_time*/, bool auto_advanc
   int ierr;
   ierr = MPI_Comm_rank(_orig_comm, &rank); mooseCheckMPIErr(ierr);
 
+  bool last_solve_converged = true;
   for (unsigned int i=0; i<_my_num_apps; i++)
   {
     Executioner * ex = _executioners[i];
     ex->execute();
+    if (!ex->lastSolveConverged())
+      last_solve_converged = false;
   }
 
   // Swap back
@@ -96,5 +94,5 @@ FullSolveMultiApp::solveStep(Real /*dt*/, Real /*target_time*/, bool auto_advanc
 
   _solved = true;
 
-  _console << "Finished Solving MultiApp " << _name << std::endl;
+  return last_solve_converged;
 }

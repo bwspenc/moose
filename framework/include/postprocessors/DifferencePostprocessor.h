@@ -29,13 +29,12 @@ InputParameters validParams<DifferencePostprocessor>();
 class DifferencePostprocessor : public GeneralPostprocessor
 {
 public:
-  DifferencePostprocessor(const std::string & name, InputParameters parameters);
-  virtual ~DifferencePostprocessor();
+  DifferencePostprocessor(const InputParameters & parameters);
 
-  virtual void initialize();
-  virtual void execute();
-  virtual PostprocessorValue getValue();
-  virtual void threadJoin(const UserObject & uo);
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual PostprocessorValue getValue() override;
+  virtual void threadJoin(const UserObject & uo) override;
 
 protected:
   const PostprocessorValue & _value1;

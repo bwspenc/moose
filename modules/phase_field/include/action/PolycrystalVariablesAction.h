@@ -16,7 +16,7 @@
 class PolycrystalVariablesAction: public Action
 {
 public:
-  PolycrystalVariablesAction(const std::string & name, InputParameters params);
+  PolycrystalVariablesAction(const InputParameters & params);
 
   virtual void act();
 

@@ -11,7 +11,6 @@
 /*                                                              */
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
-
 #include "CoefReaction.h"
 
 template<>
@@ -22,22 +21,20 @@ InputParameters validParams<CoefReaction>()
   return params;
 }
 
-
-CoefReaction::CoefReaction(const std::string & name,
-                           InputParameters parameters)
-    : Reaction(name,parameters),
-      _coef(getParam<Real>("coefficient"))
+CoefReaction::CoefReaction(const InputParameters & parameters) :
+    Reaction(parameters),
+    _coef(getParam<Real>("coefficient"))
 {
 }
 
 Real
 CoefReaction::computeQpResidual()
 {
-  return  _coef*Reaction::computeQpResidual();
+  return _coef * Reaction::computeQpResidual();
 }
 
 Real
 CoefReaction::computeQpJacobian()
 {
-  return _coef*Reaction::computeQpJacobian();
+  return _coef * Reaction::computeQpJacobian();
 }

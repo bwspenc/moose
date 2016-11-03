@@ -15,8 +15,7 @@
 class CLSHPlasticMaterial : public SolidModel
 {
 public:
-  CLSHPlasticMaterial(std::string name,
-                      InputParameters parameters);
+  CLSHPlasticMaterial(const InputParameters & parameters);
 
 protected:
 

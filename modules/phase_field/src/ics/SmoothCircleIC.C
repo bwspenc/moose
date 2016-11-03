@@ -18,9 +18,8 @@ InputParameters validParams<SmoothCircleIC>()
   return params;
 }
 
-SmoothCircleIC::SmoothCircleIC(const std::string & name,
-                               InputParameters parameters) :
-    SmoothCircleBaseIC(name, parameters),
+SmoothCircleIC::SmoothCircleIC(const InputParameters & parameters) :
+    SmoothCircleBaseIC(parameters),
     _x1(parameters.get<Real>("x1")),
     _y1(parameters.get<Real>("y1")),
     _z1(parameters.get<Real>("z1")),
@@ -32,14 +31,12 @@ SmoothCircleIC::SmoothCircleIC(const std::string & name,
 void
 SmoothCircleIC::computeCircleRadii()
 {
-  _radii.resize(1);
-  _radii[0] = _radius;
+  _radii = {_radius};
 }
 
 
 void
 SmoothCircleIC::computeCircleCenters()
 {
-  _centers.resize(1);
-  _centers[0] = _center;
+  _centers = {_center};
 }

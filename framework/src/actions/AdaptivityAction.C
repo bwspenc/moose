@@ -24,6 +24,7 @@
 
 // libMesh includes
 #include "libmesh/transient_system.h"
+#include "libmesh/system_norm.h"
 
 template<>
 InputParameters validParams<AdaptivityAction>()
@@ -32,6 +33,7 @@ InputParameters validParams<AdaptivityAction>()
   MooseEnum estimators("KellyErrorEstimator LaplacianErrorEstimator PatchRecoveryErrorEstimator", "KellyErrorEstimator");
 
   params.addParam<unsigned int>("steps",                       0, "The number of adaptivity steps to perform at any one time for steady state");
+  params.addRangeCheckedParam<unsigned int>("interval",        1, "interval>0", "The number of time steps betweeen each adaptivity phase");
   params.addParam<unsigned int>("initial_adaptivity",          0, "The number of adaptivity steps to perform using the initial conditions");
   params.addParam<Real> ("refine_fraction",                    0.0, "The fraction of elements or error to refine. Should be between 0 and 1.");
   params.addParam<Real> ("coarsen_fraction",                   0.0, "The fraction of elements or error to coarsen. Should be between 0 and 1.");
@@ -47,11 +49,12 @@ InputParameters validParams<AdaptivityAction>()
   params.addParam<unsigned int>("cycles_per_step", 1, "The number of adaptivity cycles per step");
 
   params.addParam<bool>("show_initial_progress", true, "Show the progress of the initial adaptivity");
+  params.addParam<bool>("recompute_markers_during_cycles", false, "Recompute markers during adaptivity cycles");
   return params;
 }
 
-AdaptivityAction::AdaptivityAction(const std::string & name, InputParameters params) :
-    Action(name, params)
+AdaptivityAction::AdaptivityAction(InputParameters params) :
+    Action(params)
 {
 }
 
@@ -70,6 +73,7 @@ AdaptivityAction::act()
   adapt.setParam("refine fraction", getParam<Real>("refine_fraction"));
   adapt.setParam("coarsen fraction", getParam<Real>("coarsen_fraction"));
   adapt.setParam("max h-level", getParam<unsigned int>("max_h_level"));
+  adapt.setParam("recompute_markers_during_cycles", getParam<bool>("recompute_markers_during_cycles"));
 
   adapt.setPrintMeshChanged(getParam<bool>("print_changed_info"));
 
@@ -103,6 +107,7 @@ AdaptivityAction::act()
   }
 
   adapt.setTimeActive(getParam<Real>("start_time"), getParam<Real>("stop_time"));
+  adapt.setInterval(getParam<unsigned int>("interval"));
 }
 
 #endif //LIBMESH_ENABLE_AMR

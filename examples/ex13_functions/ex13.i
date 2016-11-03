@@ -13,8 +13,6 @@
 []
 
 [Variables]
-  active = 'forced'
-
   [./forced]
     order = FIRST
     family = LAGRANGE
@@ -22,8 +20,6 @@
 []
 
 [Functions]
-  active = 'bc_func forcing_func'
-
   # A ParsedFunction allows us to supply analytic expressions
   # directly in the input file
   [./bc_func]
@@ -42,8 +38,6 @@
 []
 
 [Kernels]
-  active = 'diff forcing'
-
   [./diff]
     type = Diffusion
     variable = forced
@@ -58,8 +52,6 @@
 []
 
 [BCs]
-  active = 'all'
-
   # The BC can take a function name to use
   [./all]
     type = FunctionDirichletBC
@@ -71,16 +63,10 @@
 
 [Executioner]
   type = Steady
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
 []
 
 [Outputs]
-  file_base = out
+  execute_on = 'timestep_end'
   exodus = true
-  print_linear_residuals = true
-  print_perf_log = true
 []

@@ -104,7 +104,7 @@
 
 # mass_bal just outputs the result to screen
   [./mass_bal]
-    type = PlotFunction
+    type = FunctionValuePostprocessor
     function = mass_bal_fcn
   [../]
 []
@@ -232,13 +232,8 @@
 []
 
 [Outputs]
+  execute_on = 'timestep_end'
   file_base = ex01
-  output_intial = true
   exodus = true
   csv = true
-  [./console]
-    type = Console
-    perf_log = true
-    output_on = 'failed nonlinear linear timestep_end'
-  [../]
 []

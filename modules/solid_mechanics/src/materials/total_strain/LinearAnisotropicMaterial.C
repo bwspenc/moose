@@ -4,6 +4,7 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
+
 #include "LinearAnisotropicMaterial.h"
 #include "SymmAnisotropicElasticityTensor.h"
 
@@ -21,9 +22,8 @@ InputParameters validParams<LinearAnisotropicMaterial>()
   return params;
 }
 
-LinearAnisotropicMaterial::LinearAnisotropicMaterial(const std::string & name,
-                                                     InputParameters parameters)
-  :LinearIsotropicMaterial(name, parameters),
+LinearAnisotropicMaterial::LinearAnisotropicMaterial(const InputParameters & parameters)
+  :LinearIsotropicMaterial(parameters),
    _material_constant_c11(getParam<Real>("material_constant_c11")),
    _material_constant_c12(getParam<Real>("material_constant_c12")),
    _material_constant_c44(getParam<Real>("material_constant_c44")),
@@ -57,3 +57,4 @@ LinearAnisotropicMaterial::LinearAnisotropicMaterial(const std::string & name,
   delete _local_elasticity_tensor;
   _local_elasticity_tensor = aniso_elasticity_tensor;
 }
+
