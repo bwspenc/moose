@@ -48,6 +48,9 @@ protected:
   /// Pointer to SolutionUserObject containing the solution of interest
   const SolutionUserObject * _solution_object_ptr;
 
+  /// Dimensionality of the axisymmetric model from which the solution is mapped
+  const unsigned _axisym_model_dim;
+
   /// Factor to scale the solution by (default = 1)
   const Real _scale_factor;
 
