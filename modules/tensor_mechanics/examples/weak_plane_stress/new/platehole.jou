@@ -1,0 +1,23 @@
+## /Applications/Cubit-15.2/Cubit.app/Contents/MacOS/cubitclx
+## Cubit Version 15.2
+## Cubit Build 405468
+## Revised 2016-09-23 10:47:14 -0600 (Fri, 23 Sep 2016)
+## Running 12/07/2019 01:36:30 AM
+## Command Options:
+create surface rectangle width 1 height 1
+volume 1 move x 0.5 y 0.5
+webcut volume all with cylinder radius 0.4733 axis z
+delete volume 2
+volume 1 move x -0.5 y -0.5
+volume all size 0.04
+surface all scheme pave
+mesh surface all
+block 1 surface all
+block 1 element type QUAD4
+
+sideset 1 curve 6
+sideset 2 curve 4
+sideset 3 curve 1
+sideset 4 curve 7
+
+export mesh 'platehole_04_q4.e' overwrite
