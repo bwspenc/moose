@@ -30,6 +30,14 @@
 [AuxVariables]
   [./temp]
   [../]
+  [./hoop_stress]
+#    family = MONOMIAL
+#    order = FIRST
+  [../]
+  [./axial_stress]
+#    family = MONOMIAL
+#    order = FIRST
+  [../]
 []
 
 [BCs]
@@ -68,7 +76,25 @@
   [./temp]
     type = FunctionAux
     variable = temp
-    function = 'sqrt(x^2+y^2)*1e5+800'
+    function = '(x^2+y^2)*(800-1200)/(0.004^2)+1200'
+  [../]
+  [./hoop_stress]
+    type = RankTwoScalarAux
+    variable = hoop_stress
+    scalar_type = HoopStress
+    rank_two_tensor = stress
+    point1 = '0 0 0'
+    point2 = '0 0 1'
+    execute_on = timestep_end
+  [../]
+  [./axial_stress]
+    type = RankTwoScalarAux
+    variable = axial_stress
+    scalar_type = AxialStress
+    rank_two_tensor = stress
+    point1 = '0 0 0'
+    point2 = '0 0 1'
+    execute_on = timestep_end
   [../]
 []
 
@@ -98,6 +124,24 @@
     end_point = '0.004 0 0'
     num_points = 20
     sort_by = id
+  []
+  [hoop_stress]
+    type = LineValueSampler
+    variable = 'hoop_stress'
+    start_point = '0 0 0'
+    end_point = '0.004 0 0'
+    num_points = 20
+    sort_by = id
+    execute_on = timestep_end
+  []
+  [axial_stress]
+    type = LineValueSampler
+    variable = 'hoop_stress'
+    start_point = '0 0 0'
+    end_point = '0.004 0 0'
+    num_points = 20
+    sort_by = id
+    execute_on = timestep_end
   []
 []
 
