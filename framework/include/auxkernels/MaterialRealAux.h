@@ -10,7 +10,7 @@
 #pragma once
 
 // MOOSE includes
-#include "MaterialAuxBase.h"
+#include "NodalPatchRecovery.h"
 
 // Forward Declarations
 class MaterialRealAux;
@@ -21,7 +21,7 @@ InputParameters validParams<MaterialRealAux>();
 /**
  * Object for passing a scalar, REAL material property to an AuxVariable
  */
-class MaterialRealAux : public MaterialAuxBase<Real>
+class MaterialRealAux : public NodalPatchRecovery
 {
 public:
   static InputParameters validParams();
@@ -34,6 +34,7 @@ public:
 
 protected:
   /// Returns the material property values at quadrature points
-  virtual Real getRealValue();
+  virtual Real computeValue();
+  const MaterialProperty<Real> & _prop;
 };
 

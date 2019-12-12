@@ -60,6 +60,7 @@ TensorMechanicsAction::validParams()
   params.addParam<std::vector<TagName>>(
       "extra_vector_tags",
       "The tag names for extra vectors that residual data should be saved into");
+  params.addParam<bool>("zz_material_output", false, "Whether to use the ZZ nodal patch recovery on material output variables");
 
   return params;
 }
@@ -426,14 +427,24 @@ TensorMechanicsAction::actOutputGeneration()
   //
   if (_current_task == "add_aux_variable")
   {
-    auto params = _factory.getValidParams("MooseVariableConstMonomial");
-    params.set<MooseEnum>("order") = "CONSTANT";
-    params.set<MooseEnum>("family") = "MONOMIAL";
-    // Loop through output aux variables
-    for (auto out : _generate_output)
+    if (getParam<bool>("zz_material_output"))
     {
-      // Create output helper aux variables
-      _problem->addAuxVariable("MooseVariableConstMonomial", _base_name + out, params);
+      auto params = _factory.getValidParams("MooseVariable");
+      // determine necessary order
+      const bool second = _problem->mesh().hasSecondOrderElements();
+
+      params.set<MooseEnum>("order") = second ? "SECOND" : "FIRST";
+      params.set<MooseEnum>("family") = "LAGRANGE";
+      for (auto out : _generate_output)
+        _problem->addAuxVariable("MooseVariable", _base_name + out, params);
+    }
+    else
+    {
+      auto params = _factory.getValidParams("MooseVariableConstMonomial");
+      params.set<MooseEnum>("order") = "CONSTANT";
+      params.set<MooseEnum>("family") = "MONOMIAL";
+      for (auto out : _generate_output)
+        _problem->addAuxVariable("MooseVariableConstMonomial", _base_name + out, params);
     }
   }
 

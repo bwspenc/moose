@@ -16,18 +16,20 @@ defineLegacyParams(MaterialRealAux);
 InputParameters
 MaterialRealAux::validParams()
 {
-  InputParameters params = MaterialAuxBase<Real>::validParams();
+  InputParameters params = NodalPatchRecovery::validParams();
   params.addClassDescription("Outputs element volume-averaged material properties");
+  params.addRequiredParam<MaterialPropertyName>("property", "Name of the Real property to output");
   return params;
 }
 
 MaterialRealAux::MaterialRealAux(const InputParameters & parameters)
-  : MaterialAuxBase<Real>(parameters)
+  : NodalPatchRecovery(parameters),
+  _prop(getMaterialProperty<Real>("property"))
 {
 }
 
 Real
-MaterialRealAux::getRealValue()
+MaterialRealAux::computeValue()
 {
   return _prop[_qp];
 }
