@@ -76,7 +76,7 @@
   [./temp]
     type = FunctionAux
     variable = temp
-    function = '(x^2+y^2)*(800-1200)/(0.004^2)+1200'
+    function = 'r:=sqrt(x^2+y^2);r^2*(800-1200)/(0.004^2)+1200'
   [../]
   [./hoop_stress]
     type = RankTwoScalarAux
