@@ -68,7 +68,7 @@
 
 [Modules/TensorMechanics/Master]
   [plane_stress]
-    planar_formulation = PLANE_STRESS
+    planar_formulation = WEAK_PLANE_STRESS
     strain = SMALL
     generate_output = 'stress_xx stress_yy stress_zz strain_xx strain_yy strain_zz vonmises_stress'
     extra_vector_tags = 'ref'

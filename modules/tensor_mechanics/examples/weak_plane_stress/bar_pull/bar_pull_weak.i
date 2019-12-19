@@ -60,7 +60,7 @@
 
 [Modules/TensorMechanics/Master]
   [3d]
-    planar_formulation = PLANE_STRESS
+    planar_formulation = WEAK_PLANE_STRESS
     strain = FINITE
     generate_output = 'stress_xx stress_yy stress_zz strain_xx strain_yy strain_zz vonmises_stress'
     decomposition_method = EigenSolution
