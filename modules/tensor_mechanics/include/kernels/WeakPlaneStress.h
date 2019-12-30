@@ -31,6 +31,7 @@ public:
   WeakPlaneStress(const InputParameters & parameters);
 
 protected:
+  virtual void computeResidual() override;
   virtual Real computeQpResidual() override;
   virtual Real computeQpJacobian() override;
   virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;

@@ -83,6 +83,28 @@ WeakPlaneStress::WeakPlaneStress(const InputParameters & parameters)
     mooseError("The number of displacement variables supplied must match the mesh dimension.");
 }
 
+void
+WeakPlaneStress::computeResidual()
+{
+  const Real alpha = 0.2;
+  prepareVectorTag(_assembly, _var.number());
+
+//  precalculateResidual();
+  for (_i = 0; _i < _test.size(); _i++)
+    for (_qp = 0; _qp < _qrule->n_points(); _qp++)
+      //_local_re(_i) += _JxW[_qp] * _coord[_qp] * computeQpResidual();
+      _local_re(_i) += _JxW[_qp] * _coord[_qp] * computeQpResidual() * ((1.0 - alpha) / _test[_i][_qp] * 0.25 + alpha) ;
+
+  accumulateTaggedLocalResidual();
+
+  if (_has_save_in)
+  {
+    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+    for (const auto & var : _save_in)
+      var->sys().solution().add_vector(_local_re, var->dofIndices());
+  }
+}
+
 Real
 WeakPlaneStress::computeQpResidual()
 {
