@@ -14,11 +14,11 @@
     type = GeneratedMeshGenerator
     dim = 2
     nx = 40
-    ny = 80
+    ny = 50
     xmin = 0
     xmax = 0.004
     ymin = 0
-    ymax = 0.01
+    ymax = 0.005
   [../]
 []
 
@@ -31,6 +31,10 @@
 
 [AuxVariables]
   [./temp]
+  [../]
+  [./hoop_stress]
+  [../]
+  [./axial_stress]
   [../]
 []
 
@@ -63,7 +67,25 @@
   [./temp]
     type = FunctionAux
     variable = temp
-    function = 'x*1e5+800'
+    function = 'ro:=0.004;ti:=1300;to:=800;r:=x;r^2*(to-ti)/(ro^2)+ti'
+  [../]
+  [./hoop_stress]
+    type = RankTwoScalarAux
+    variable = hoop_stress
+    scalar_type = HoopStress
+    rank_two_tensor = stress
+    point1 = '0 0 0'
+    point2 = '0 1 0'
+    execute_on = timestep_end
+  [../]
+  [./axial_stress]
+    type = RankTwoScalarAux
+    variable = axial_stress
+    scalar_type = AxialStress
+    rank_two_tensor = stress
+    point1 = '0 0 0'
+    point2 = '0 1 0'
+    execute_on = timestep_end
   [../]
 []
 
@@ -93,6 +115,24 @@
     end_point = '0.004 0 0'
     num_points = 20
     sort_by = id
+  []
+  [hoop_stress]
+    type = LineValueSampler
+    variable = 'hoop_stress'
+    start_point = '0 0 0'
+    end_point = '0.004 0 0'
+    num_points = 20
+    sort_by = id
+    execute_on = timestep_end
+  []
+  [axial_stress]
+    type = LineValueSampler
+    variable = 'axial_stress'
+    start_point = '0 0 0'
+    end_point = '0.004 0 0'
+    num_points = 20
+    sort_by = id
+    execute_on = timestep_end
   []
 []
 

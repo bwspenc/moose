@@ -31,12 +31,8 @@
   [./temp]
   [../]
   [./hoop_stress]
-#    family = MONOMIAL
-#    order = FIRST
   [../]
   [./axial_stress]
-#    family = MONOMIAL
-#    order = FIRST
   [../]
 []
 
@@ -76,7 +72,7 @@
   [./temp]
     type = FunctionAux
     variable = temp
-    function = 'r:=sqrt(x^2+y^2);r^2*(800-1200)/(0.004^2)+1200'
+    function = 'ro:=0.004;ti:=1300;to:=800;r:=sqrt(x^2+y^2);r^2*(to-ti)/(ro^2)+ti'
   [../]
   [./hoop_stress]
     type = RankTwoScalarAux
@@ -136,7 +132,7 @@
   []
   [axial_stress]
     type = LineValueSampler
-    variable = 'hoop_stress'
+    variable = 'axial_stress'
     start_point = '0 0 0'
     end_point = '0.004 0 0'
     num_points = 20
@@ -163,7 +159,7 @@
   petsc_options_value = 'lu superlu_dist'
 
   end_time = 1.0
-#  automatic_scaling = true #TODO: Doesn't work with GPS!
+  #automatic_scaling = true #TODO: Doesn't work with GPS!
 []
 
 [Outputs]
