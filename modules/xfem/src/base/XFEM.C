@@ -397,26 +397,38 @@ XFEM::markCutEdgesByGeometry()
   bool marked_edges = false;
   bool marked_nodes = false;
 
+  // Austin: wrap your head around _geom_marked_elems_2d
   for (const auto & gme : _geom_marked_elems_2d)
   {
-    for (const auto & gmei : gme.second)
+    // Austin: gme.second is a vector of all the cut edges associated with one cutting plane
+    auto cur_geom_mark_info = gme.second;
+    for (unsigned int cut_plane_idx = 0; cut_plane_idx < cur_geom_mark_info.size(); ++cut_plane_idx)
+    //for (const auto & gmei : gme.second)
     {
       EFAElement2D * EFAElem = getEFAElem2D(gme.first);
 
-      for (unsigned int i = 0; i < gmei._elem_cut_edges.size(); ++i) // mark element edges
+      for (unsigned int i = 0; i < cur_geom_mark_info[cut_plane_idx]._elem_cut_edges.size(); ++i) // mark element edges
       {
         if (!EFAElem->isEdgePhantom(
-                gmei._elem_cut_edges[i]._host_side_id)) // must not be phantom edge
+                cur_geom_mark_info[cut_plane_idx]._elem_cut_edges[i]._host_side_id)) // must not be phantom edge
         {
+          // Austin: This is where we individually mark the edge intersections in EFA.
+          // We have the full data structure grouping the intersected edges with their
+          // cutting planes at this point, but we're losing that in this call.
+          // We need to preserve the grouping somehow.
+          // Options: pass in group of sides and distances
+          //          pass in an identifier for the cutting plane
           _efa_mesh.addElemEdgeIntersection(gme.first->id(),
-                                            gmei._elem_cut_edges[i]._host_side_id,
-                                            gmei._elem_cut_edges[i]._distance);
+                                            cur_geom_mark_info[cut_plane_idx]._elem_cut_edges[i]._host_side_id,
+                                            cur_geom_mark_info[cut_plane_idx]._elem_cut_edges[i]._distance);
+          // Austin: pass in vec_idx as identifier for the cutting plane
           marked_edges = true;
         }
       }
 
       for (unsigned int i = 0; i < gmei._elem_cut_nodes.size(); ++i) // mark element edges
       {
+        // Austin: do the same thing here to associate nodes with a cutting plane
         _efa_mesh.addElemNodeIntersection(gme.first->id(), gmei._elem_cut_nodes[i]._host_id);
         marked_nodes = true;
       }

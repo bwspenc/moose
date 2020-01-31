@@ -208,6 +208,8 @@ ElementFragmentAlgorithm::initCrackTipTopology()
   }
 }
 
+// Austin: This function needs to be modified to accept either vectors of
+// edgeid and position, or an identifier
 void
 ElementFragmentAlgorithm::addElemEdgeIntersection(unsigned int elemid,
                                                   unsigned int edgeid,
@@ -221,6 +223,7 @@ ElementFragmentAlgorithm::addElemEdgeIntersection(unsigned int elemid,
   EFAElement2D * curr_elem = dynamic_cast<EFAElement2D *>(eit->second);
   if (!curr_elem)
     EFAError("addElemEdgeIntersection: elem ", elemid, " is not of type EFAelement2D");
+  //Austin: this needs to change
   curr_elem->addEdgeCut(edgeid, position, NULL, _embedded_nodes, true);
 }
 
@@ -294,6 +297,10 @@ ElementFragmentAlgorithm::updatePhysicalLinksAndFragments()
   for (eit = _elements.begin(); eit != _elements.end(); ++eit)
   {
     EFAElement * curr_elem = eit->second;
+
+    // Austin: This is where the call for the individual elements to update
+    // their fragments is. Nothing to change with this call -- just FYI
+    //
     curr_elem->updateFragments(_crack_tip_elements, _embedded_nodes);
   } // loop over all elements
 }

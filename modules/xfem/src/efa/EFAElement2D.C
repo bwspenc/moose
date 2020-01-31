@@ -806,6 +806,9 @@ EFAElement2D::isFinalCut() const
   return cut_twice;
 }
 
+//Austin: This function needs to be modified to be able to create more than two
+//fragments from the original fragment.
+//
 void
 EFAElement2D::updateFragments(const std::set<EFAElement *> & CrackTipElements,
                               std::map<unsigned int, EFANode *> & EmbeddedNodes)
@@ -1706,6 +1709,8 @@ EFAElement2D::fragmentEdgeAlreadyCut(unsigned int ElemEdgeID) const
   return has_cut;
 }
 
+// Austin: this needs to change.  Maybe pass in vector of edge_id, position
+//
 void
 EFAElement2D::addEdgeCut(unsigned int edge_id,
                          double position,
@@ -1782,6 +1787,8 @@ EFAElement2D::addEdgeCut(unsigned int edge_id,
         local_embedded = new EFANode(new_node_id, EFANode::N_CATEGORY_EMBEDDED);
         EmbeddedNodes.insert(std::make_pair(new_node_id, local_embedded));
       }
+      // Austin: this where we're adding the data that persists
+      // We could just add an identifier for the cut here.
       _edges[edge_id]->addIntersection(position, local_embedded, edge_node1);
       if (_edges[edge_id]->numEmbeddedNodes() > 2)
         EFAError("element edge can't have >2 embedded nodes");

@@ -27,6 +27,8 @@ private:
   EFANode * _edge_interior_node; // The interior edge node for quad8 and quad9 elements
   std::vector<EFANode *> _embedded_nodes;
   std::vector<double> _intersection_x;
+  //Austin: Add a vector of cutting plane ids
+  // std::vector<unsigned int> _cutting_plane_id;
 
 public:
   bool equivalent(const EFAEdge & other) const;

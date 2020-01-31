@@ -126,6 +126,7 @@ EFAEdge::getNodeMasters(EFANode * node,
 //  return false;
 //}
 
+// Austin: This needs to change.  Pass in an identifier for the cutting plane
 void
 EFAEdge::addIntersection(double position, EFANode * embedded_node_tmp, EFANode * from_node)
 {
