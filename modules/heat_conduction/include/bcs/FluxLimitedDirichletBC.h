@@ -29,18 +29,15 @@ public:
 
   FluxLimitedDirichletBC(const InputParameters & parameters);
 
-  virtual void timestepSetup() override;
   virtual bool shouldApply() override;
 
 protected:
   virtual Real computeQpValue() override;
 
-  /// The function being used for evaluation
-  const Function & _func;
-  /// The postprocessor that provides the flux
-  const PostprocessorValue & _flux_postprocessor;
-  /// Limiting value of the flux above which this BC shuts off
-  const Real & _flux_limit;
-  /// Whether the limiting value of the flux has been exceeded
-  bool _exceeded_flux_limit;
+  /// The high voltage function
+  const Function & _func_high;
+  /// The low voltage function
+  const Function & _func_low;
+  /// The postprocessor that switches between stages
+  const PostprocessorValue & _switch_postprocessor;
 };

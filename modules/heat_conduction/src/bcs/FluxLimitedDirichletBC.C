@@ -18,9 +18,9 @@ InputParameters
 FluxLimitedDirichletBC::validParams()
 {
   InputParameters params = DirichletBCBase::validParams();
-  params.addRequiredParam<FunctionName>("function", "The forcing function.");
-  params.addRequiredParam<PostprocessorName>("flux_postprocessor", "PP that computes the flux");
-  params.addRequiredParam<Real>("flux_limit", "Value of flux at which to shut off this BC");
+  params.addRequiredParam<FunctionName>("function_high", "The high voltage function.");
+  params.addRequiredParam<FunctionName>("function_low", "The low voltage function.");
+  params.addRequiredParam<PostprocessorName>("switch_postprocessor", "PP that switches BCs");
   params.addClassDescription(
       "Imposes the essential boundary condition $u=g(t,\\vec{x})$, where $g$ "
       "is a (possibly) time and space-dependent MOOSE Function.");
@@ -29,31 +29,25 @@ FluxLimitedDirichletBC::validParams()
 
 FluxLimitedDirichletBC::FluxLimitedDirichletBC(const InputParameters & parameters)
   : DirichletBCBase(parameters),
-  _func(getFunction("function")),
-  _flux_postprocessor(getPostprocessorValueOld("flux_postprocessor")),
-  _flux_limit(getParam<Real>("flux_limit")),
-  _exceeded_flux_limit(false)
+  _func_high(getFunction("function_high")),
+  _func_low(getFunction("function_low")),
+  _switch_postprocessor(getPostprocessorValue("switch_postprocessor"))
 {
 }
 
 Real
 FluxLimitedDirichletBC::computeQpValue()
 {
-  return _func.value(_t, *_current_node);
-}
-
-void
-FluxLimitedDirichletBC::timestepSetup()
-{
-  if (_exceeded_flux_limit == false)
-  {
-    if (_flux_postprocessor > _flux_limit)
-      _exceeded_flux_limit = true;
-  }
+  if (_switch_postprocessor == 0)
+    return _func_high.value(_t, *_current_node);
+  else if (_switch_postprocessor == 2)
+    return _func_low.value(_t, *_current_node);
+  else
+    mooseError("Shouldn't get here");
 }
 
 bool
 FluxLimitedDirichletBC::shouldApply()
 {
-  return (_exceeded_flux_limit == false);
+  return (_switch_postprocessor == 0 || _switch_postprocessor == 2);
 }
