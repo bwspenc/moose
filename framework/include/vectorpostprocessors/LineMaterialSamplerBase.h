@@ -97,6 +97,9 @@ protected:
 
   /// The quadrature points
   const MooseArray<Point> & _q_point;
+
+  /// Elements intersected by line
+  std::vector<Elem *> _intersected_elems;
 };
 
 template <typename T>
@@ -148,11 +151,12 @@ template <typename T>
 void
 LineMaterialSamplerBase<T>::execute()
 {
-  std::vector<Elem *> intersected_elems;
-  std::vector<LineSegment> segments;
-
-  std::unique_ptr<PointLocatorBase> pl = _mesh.getPointLocator();
-  Moose::elementsIntersectedByLine(_start, _end, _mesh, *pl, intersected_elems, segments);
+  if (_intersected_elems.empty())
+  {
+    std::vector<LineSegment> segments;
+    std::unique_ptr<PointLocatorBase> pl = _mesh.getPointLocator();
+    Moose::elementsIntersectedByLine(_start, _end, _mesh, *pl, _intersected_elems, segments);
+  }
 
   const RealVectorValue line_vec = _end - _start;
   const Real line_length(line_vec.norm());
@@ -164,7 +168,7 @@ LineMaterialSamplerBase<T>::execute()
   needed_mat_props.insert(mp_deps.begin(), mp_deps.end());
   _fe_problem.setActiveMaterialProperties(needed_mat_props, _tid);
 
-  for (const auto & elem : intersected_elems)
+  for (const auto & elem : _intersected_elems)
   {
     if (elem->processor_id() != processor_id())
       continue;

@@ -34,7 +34,9 @@ int
 sideIntersectedByLine(const Elem * elem,
                       std::vector<int> & not_side,
                       const LineSegment & line_segment,
-                      Point & intersection_point)
+                      Point & intersection_point,
+                      const unsigned int pts_to_try_per_elem,
+                      bool close_tol)
 {
   unsigned int n_sides = elem->n_sides();
 
@@ -81,24 +83,43 @@ sideIntersectedByLine(const Elem * elem,
 
     if (intersect)
     {
-      if (side_elem->contains_point(intersection_point))
+      if (dim > 1)
       {
-        const Elem * neighbor = elem->neighbor_ptr(i);
-
-        // If this side is on a boundary, let's do another search and see if we can find a better
-        // candidate
-        if (!neighbor)
+        //Fraction of the max element size by which we can be off the face
+        const Real tol_size_fraction = 0.5;
+        const Real hmax = side_elem->hmax();
+        const Real hmin = side_elem->hmin();
+        const Real tol = hmax * tol_size_fraction;
+        if (side_elem->close_to_point(intersection_point, tol))
         {
-          not_side.push_back(i); // Make sure we don't find this side again
+          const auto neighbor = elem->neighbor_ptr(i)
+          mooseAssert(neighbor, "All candidate sides must have valid neighbor elements attached");
 
-          int better_side = sideIntersectedByLine(elem, not_side, line_segment, intersection_point);
-
-          if (better_side != -1)
-            return better_side;
+          // Since the tolerance is loose, it isn't a sure bet that the side is actually intersected
+          // Search along the line in both the positive and negative directions from the intersection
+          // point with the plane and see if any of those points are contained in the neighbor element.
+          Point normal = (line_segment.end() - line_segment.start()) / line_segment.length();
+          const unsigned int nintv = (static_cast<unsigned int>(hmax / hmin) * pts_to_try_per_elem) + 1;
+          const Real frac = 1.0 / static_cast<Real>(pts_to_try_per_elem);
+          for (unsigned int j = 0; j < nintv; ++j)
+          {
+            if (!close_tol)
+            {
+              if (neighbor->contains_point(intersection_point + static_cast<Real>(j) * hmin * frac * normal) ||
+                  neighbor->contains_point(intersection_point - static_cast<Real>(j) * hmin * frac * normal))
+                return i;
+            }
+            else
+            {
+              if (neighbor->close_to_point(intersection_point + static_cast<Real>(j) * hmin * frac * normal, hmin * 1e-2) ||
+                  neighbor->close_to_point(intersection_point - static_cast<Real>(j) * hmin * frac * normal, hmin * 1e-2))
+                return i;
+            }
+          }
         }
-
-        return i;
       }
+      else
+        return i;
     }
   }
 
@@ -152,10 +173,31 @@ recursivelyFindElementsIntersectedByLine(const LineSegment & line_segment,
 
   std::vector<int> not_side(1, incoming_side);
 
+  const unsigned int n_sides = current_elem->n_sides();
+
+  for (unsigned int i = 0; i < n_sides; ++i)
+  {
+    if (i != incoming_side)
+    {
+      const Elem * neighbor = current_elem->neighbor_ptr(i);
+      if (!neighbor)
+        not_side.push_back(i);
+    }
+  }
+
   // Find the side of this element that the LineSegment intersects... while ignoring the incoming
   // side (we don't want to move backward!)
   int intersected_side =
-      sideIntersectedByLine(current_elem, not_side, line_segment, intersection_point);
+      sideIntersectedByLine(current_elem, not_side, line_segment, intersection_point, 4, false);
+  
+  if (!current_elem->contains_point(line_segment.end()) && intersected_side == -1)
+  {
+    intersected_side = sideIntersectedByLine(current_elem, not_side, line_segment, intersection_point, 20, false); // try harder
+    if (intersected_side == -1)
+      intersected_side = sideIntersectedByLine(current_elem, not_side, line_segment, intersection_point, 1000, false); // try harder
+    if (intersected_side == -1)
+      intersected_side = sideIntersectedByLine(current_elem, not_side, line_segment, intersection_point, 1000, true); // last ditch effort
+  }
 
   if (intersected_side != -1) // -1 means that we didn't find any side
   {
