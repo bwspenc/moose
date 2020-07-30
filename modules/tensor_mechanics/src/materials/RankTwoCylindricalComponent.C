@@ -29,10 +29,10 @@ RankTwoCylindricalComponentTempl<is_ad>::validParams()
   MooseEnum cylindricalTypes("AxialStress HoopStress RadialStress");
   params.addParam<MooseEnum>(
       "cylindrical_component", cylindricalTypes, "Type of cylindrical scalar output");
-  params.addParam<Point>(
+  params.addRequiredParam<Point>(
       "cylindrical_axis_point1",
       "Start point for determining axis of rotation for cylindrical stress/strain components");
-  params.addParam<Point>(
+  params.addRequiredParam<Point>(
       "cylindrical_axis_point2",
       "End point for determining axis of rotation for cylindrical stress/strain components");
   return params;
@@ -48,12 +48,8 @@ RankTwoCylindricalComponentTempl<is_ad>::RankTwoCylindricalComponentTempl(
     _property(declareGenericProperty<Real, is_ad>(_property_name)),
     _cylindrical_component(getParam<MooseEnum>("cylindrical_component")
                                .template getEnum<RankTwoScalarTools::CYLINDRICAL_COMPONENT>()),
-    _cylindrical_axis_point1(isParamValid("cylindrical_axis_point1")
-                                 ? getParam<Point>("cylindrical_axis_point1")
-                                 : Point(0, 0, 0)),
-    _cylindrical_axis_point2(isParamValid("cylindrical_axis_point2")
-                                 ? getParam<Point>("cylindrical_axis_point2")
-                                 : Point(0, 1, 0))
+    _cylindrical_axis_point1(getParam<Point>("cylindrical_axis_point1")),
+    _cylindrical_axis_point2(getParam<Point>("cylindrical_axis_point2"))
 {
 }
 

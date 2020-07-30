@@ -27,8 +27,6 @@ public:
   static const std::map<std::string, std::pair<std::string, std::vector<std::string>>>
       _rank_two_invariant_table;
   static const std::map<std::string, std::pair<std::string, std::vector<std::string>>>
-      _rank_two_directional_component_table;
-  static const std::map<std::string, std::pair<std::string, std::vector<std::string>>>
       _rank_two_cylindrical_component_table;
   ///@}
 

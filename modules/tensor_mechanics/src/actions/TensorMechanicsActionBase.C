@@ -44,10 +44,6 @@ const std::map<std::string, std::pair<std::string, std::vector<std::string>>>
         {"min_principal", {"MinPrincipal", {"stress", "strain"}}}};
 
 const std::map<std::string, std::pair<std::string, std::vector<std::string>>>
-    TensorMechanicsActionBase::_rank_two_directional_component_table = {
-        {"directional", {"Direction", {"stress", "strain"}}}};
-
-const std::map<std::string, std::pair<std::string, std::vector<std::string>>>
     TensorMechanicsActionBase::_rank_two_cylindrical_component_table = {
         {"axial",
          {"AxialStress", {"stress", "strain", "plastic_strain", "creep_strain", "elastic_strain"}}},
@@ -163,10 +159,6 @@ TensorMechanicsActionBase::outputPropertiesType()
   for (auto & r2i : _rank_two_invariant_table)
     for (auto & t : r2i.second.second)
       options += " " + r2i.first + "_" + t;
-
-  for (auto & r2sdc : _rank_two_directional_component_table)
-    for (auto & r : r2sdc.second.second)
-      options += " " + r2sdc.first + "_" + r;
 
   for (auto & r2cc : _rank_two_cylindrical_component_table)
     for (auto & r : r2cc.second.second)
