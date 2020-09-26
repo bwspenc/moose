@@ -38,21 +38,6 @@ protected:
   virtual void threadJoin(const UserObject & /*uo*/) override{};
   virtual void finalize() override{};
 
-  std::string _stress_name;
-  /*
-   * The effective stress used for the update of the viscoelastic strain
-   * (typically, the real stress).
-   */
-  const MaterialProperty<RankTwoTensor> & _stress;
-
-  std::string _creep_strain_name;
-  /// Name of the creep strain variable used for the update of the viscoelastic strain
-  const MaterialProperty<RankTwoTensor> & _creep_strain;
-
-  std::string _elastic_strain_name;
-  /// Name of the elastic strain variable used for the update of the viscoelastic strain
-  const MaterialProperty<RankTwoTensor> & _elastic_strain;
-
   /// Name of the viscoelastic model to update
   std::string _viscoelastic_model_name;
   /// Pointer to the viscoelastic model to update

@@ -212,6 +212,10 @@ ComputeMultipleInelasticStress::computeQpStress()
 void
 ComputeMultipleInelasticStress::computeQpStressIntermediateConfiguration()
 {
+  //if (_current_elem->id() == 7859 || _current_elem->id() == 8867)
+  //if (_current_elem->id() == 7859) std::cout<<"BWS C0000 = "<<_elasticity_tensor[_qp](0,0,0,0) <<std::endl;
+
+  _stress[_qp] = _elasticity_tensor[_qp] * (_elastic_strain_old[_qp] + _strain_increment[_qp]);
   RankTwoTensor elastic_strain_increment;
   RankTwoTensor combined_inelastic_strain_increment;
 

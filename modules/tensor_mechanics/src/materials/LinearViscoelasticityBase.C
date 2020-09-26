@@ -79,7 +79,7 @@ LinearViscoelasticityBase::LinearViscoelasticityBase(const InputParameters & par
     _driving_eigenstrain_old(_has_driving_eigenstrain
                                  ? &getMaterialPropertyOld<RankTwoTensor>(_driving_eigenstrain_name)
                                  : nullptr),
-    _force_recompute_properties(getParam<bool>("force_recompute_properties")),
+    _force_recompute_properties(true),//getParam<bool>("force_recompute_properties")),
     _step_zero(declareRestartableData<bool>("step_zero", true))
 {
   if (_theta < 0.5)
@@ -87,13 +87,13 @@ LinearViscoelasticityBase::LinearViscoelasticityBase(const InputParameters & par
                  "not converge!");
 
   // force material properties to be considered stateful
-  getMaterialPropertyOld<RankFourTensor>(_base_name + "apparent_elasticity_tensor");
-  getMaterialPropertyOld<RankFourTensor>(_base_name + "apparent_elasticity_tensor_inv");
-  getMaterialPropertyOld<RankFourTensor>(_elasticity_tensor_name);
-  getMaterialPropertyOld<RankFourTensor>(_elasticity_tensor_name + "_inv");
-  getMaterialPropertyOld<RankFourTensor>(_base_name + "spring_elasticity_tensor_0");
-  if (_need_viscoelastic_properties_inverse)
-    getMaterialPropertyOld<RankFourTensor>(_base_name + "spring_elasticity_tensor_0_inv");
+  //getMaterialPropertyOld<RankFourTensor>(_base_name + "apparent_elasticity_tensor");
+  //getMaterialPropertyOld<RankFourTensor>(_base_name + "apparent_elasticity_tensor_inv");
+  //getMaterialPropertyOld<RankFourTensor>(_elasticity_tensor_name);
+  //getMaterialPropertyOld<RankFourTensor>(_elasticity_tensor_name + "_inv");
+  //getMaterialPropertyOld<RankFourTensor>(_base_name + "spring_elasticity_tensor_0");
+  //if (_need_viscoelastic_properties_inverse)
+  //  getMaterialPropertyOld<RankFourTensor>(_base_name + "spring_elasticity_tensor_0_inv");
 }
 
 void
@@ -179,6 +179,8 @@ LinearViscoelasticityBase::recomputeQpApparentProperties(unsigned int qp)
   // 3. we compute the apparent elasticity tensor
   computeQpApparentElasticityTensors();
 
+//  if (_current_elem->id() == 7859) std::cout<<"BWS lvb1 C0000 = "<<_elasticity_tensor[_qp](0,0,0,0) <<std::endl;
+
   // 4. we transform the internal viscous strains in an apparent creep strain
   if (!_step_zero)
     computeQpApparentCreepStrain();
@@ -189,8 +191,11 @@ LinearViscoelasticityBase::recomputeQpApparentProperties(unsigned int qp)
 void
 LinearViscoelasticityBase::computeQpElasticityTensor()
 {
+//  if (_current_elem->id() == 7859) std::cout<<"BWS lvb2 frcp: "<< _force_recompute_properties <<std::endl;
   if (_force_recompute_properties)
     recomputeQpApparentProperties(_qp);
+
+  //if (_current_elem->id() == 7859) std::cout<<"BWS lvb2 C0000 = "<<_elasticity_tensor[_qp](0,0,0,0) <<std::endl;
 }
 
 void

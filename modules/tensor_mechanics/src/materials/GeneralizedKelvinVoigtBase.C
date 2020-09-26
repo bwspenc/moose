@@ -61,6 +61,7 @@ void
 GeneralizedKelvinVoigtBase::computeQpApparentElasticityTensors()
 {
   _elasticity_tensor[_qp] = _first_elasticity_tensor[_qp];
+  //if (_current_elem->id() == 7859) std::cout<<"BWS gkvb C0000 = "<<_elasticity_tensor[_qp](0,0,0,0) <<std::endl;
   _elasticity_tensor_inv[_qp] = (*_first_elasticity_tensor_inv)[_qp];
   _apparent_elasticity_tensor_inv[_qp] = (*_first_elasticity_tensor_inv)[_qp];
 

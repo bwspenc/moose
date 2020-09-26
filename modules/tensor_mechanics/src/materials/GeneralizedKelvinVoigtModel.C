@@ -26,8 +26,8 @@ GeneralizedKelvinVoigtModel::validParams()
       "list of the characteristic times of the different dashpots in the material");
   params.addParam<std::vector<Real>>(
       "creep_ratio", "list of the poisson ratios of the different springs in the material");
-  params.set<bool>("force_recompute_properties") = false;
-  params.suppressParameter<bool>("force_recompute_properties");
+//  params.set<bool>("force_recompute_properties") = false;
+//  params.suppressParameter<bool>("force_recompute_properties");
   return params;
 }
 
@@ -80,6 +80,8 @@ GeneralizedKelvinVoigtModel::GeneralizedKelvinVoigtModel(const InputParameters &
 void
 GeneralizedKelvinVoigtModel::computeQpViscoelasticProperties()
 {
+  //if (_current_elem->id() == 7859 || _current_elem->id() == 8867)
+  //if (_current_elem->id() == 7859) std::cout<<"BWS gkvm C0000 = "<<_C0(0,0,0,0) <<std::endl;
   _first_elasticity_tensor[_qp] = _C0;
 
   for (unsigned int i = 0; i < _Ci.size(); ++i)
