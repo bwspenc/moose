@@ -94,6 +94,8 @@ DomainIntegralAction::validParams()
   params.addParam<std::vector<MaterialName>>(
       "inelastic_models",
       "The material objects to use to calculate the strain energy rate density.");
+  params.addParam<MaterialPropertyName>("eigenstrain_gradient", "Material defining gradient of eigenstrain tensor");
+  params.addParam<MaterialPropertyName>("body_force", "Material defining body force");
   return params;
 }
 
@@ -660,6 +662,8 @@ DomainIntegralAction::act()
             params.set<Real>("K_factor") =
                 0.5 * _youngs_modulus / (1.0 - std::pow(_poissons_ratio, 2.0));
             params.set<MooseEnum>("sif_mode") = "KI";
+            params.set<MaterialPropertyName>("eigenstrain_gradient") = parameters().get<MaterialPropertyName>("eigenstrain_gradient");
+            params.set<MaterialPropertyName>("body_force") = parameters().get<MaterialPropertyName>("body_force");
             break;
 
           case INTERACTION_INTEGRAL_KII:
@@ -667,18 +671,24 @@ DomainIntegralAction::act()
             params.set<Real>("K_factor") =
                 0.5 * _youngs_modulus / (1.0 - std::pow(_poissons_ratio, 2.0));
             params.set<MooseEnum>("sif_mode") = "KII";
+            params.set<MaterialPropertyName>("eigenstrain_gradient") = parameters().get<MaterialPropertyName>("eigenstrain_gradient");
+            params.set<MaterialPropertyName>("body_force") = parameters().get<MaterialPropertyName>("body_force");
             break;
 
           case INTERACTION_INTEGRAL_KIII:
             vpp_base_name = "II_KIII";
             params.set<Real>("K_factor") = 0.5 * _youngs_modulus / (1.0 + _poissons_ratio);
             params.set<MooseEnum>("sif_mode") = "KIII";
+            params.set<MaterialPropertyName>("eigenstrain_gradient") = parameters().get<MaterialPropertyName>("eigenstrain_gradient");
+            params.set<MaterialPropertyName>("body_force") = parameters().get<MaterialPropertyName>("body_force");
             break;
 
           case INTERACTION_INTEGRAL_T:
             vpp_base_name = "II_T";
             params.set<Real>("K_factor") = _youngs_modulus / (1 - std::pow(_poissons_ratio, 2));
             params.set<MooseEnum>("sif_mode") = "T";
+            params.set<MaterialPropertyName>("eigenstrain_gradient") = parameters().get<MaterialPropertyName>("eigenstrain_gradient");
+            params.set<MaterialPropertyName>("body_force") = parameters().get<MaterialPropertyName>("body_force");
             break;
         }
         if (_treat_as_2d)
