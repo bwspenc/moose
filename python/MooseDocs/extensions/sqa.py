@@ -322,6 +322,22 @@ class SQARequirementsCommand(command.CommandComponent):
             return parent
 
         group_map = self.extension.get('requirement-groups', dict())
+        print ("BWS reqs len: "+ str(len(self.extension.requirements(category))))
+        print ("BWS collections: "+ str(settings['collections']))
+        num_reqs_this_collection = 0
+        for group, requirements in self.extension.requirements(category).items():
+            for req in requirements:
+                print ("BWS req collections: "+ str(req.collections))
+                for c in settings['collections']:
+                    for rc in req.collections:
+                        if c == rc:
+                            num_reqs_this_collection += 1
+
+
+#            if any(c in collections for c in req.collections):
+                num_reqs_this_collection += 1
+        print ("BWS num reqs this collection: "+str(num_reqs_this_collection))
+
         if len(self.extension.requirements(category)) == 0:
             tokens.String(parent, content="No requirements of this type exist for this application.")
 
