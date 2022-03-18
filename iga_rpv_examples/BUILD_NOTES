@@ -1,0 +1,17 @@
+Building executable to run this:
+
+1) Check out the 'exodus_iga_test' branch on Roy's repository:
+git@github.com:roystgnr/moose.git
+
+2) Create a conda environment that doesn't include libmesh (called moose_nolibmesh) by doing:
+mamba create --name moose_nolibmesh -q -y
+mamba activate moose_nolibmesh
+mamba install moose-tools moose-petsc
+
+3) Load the conda environment that doesn't include libmesh:
+mamba activate moose_nolibmesh
+
+3) Build libmesh with HDF support (paths are for a Mac)
+JOBS=28 ./scripts/update_and_rebuild_libmesh.sh --enable-hdf5 --with-hdf5=/Users/your_username/miniconda3/lib --enable-hdf5-required 
+
+4) Build the combined module

@@ -1,0 +1,61 @@
+reset
+undo on
+
+#{convert = 0.0254} #converts inches to meters
+
+# cladding Thickness
+#{t_clad = .16*convert}  #was .156
+
+# Base material thickness
+#{t_base = 8.47*convert} #was 8.494
+
+# total thickness ('t' in favor)
+#{t = t_clad+t_base}
+
+# Inner most radius ('R' in favor)
+#{R_i = 86.5*convert}
+
+#{mesh_size = .010}
+
+##################################
+## Building the RPV 1D model
+
+# create curves for clad and base
+create vertex {R_i} 0 0
+create vertex {R_i+t_clad} 0 0
+create vertex {R_i+t} 0 0
+create curve vertex 1 2
+create curve vertex 2 3
+
+merge all
+
+##################################
+## Meshing
+
+curve 1 interval 2
+mesh curve 1
+
+curve 2 scheme bias factor 1.10 start vertex 2
+mesh curve 2
+
+##################################
+## Final preparations
+
+# base material
+block 1 curve 2
+
+# clad material
+block 2 curve 1
+
+# inner surface
+sideset 3 vertex 1
+
+# outer surface
+sideset 4 vertex 3
+
+block all element type BAR3
+
+###################################
+## Export
+
+export mesh '1d_axisym.e' overwrite
