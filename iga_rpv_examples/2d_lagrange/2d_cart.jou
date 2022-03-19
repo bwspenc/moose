@@ -1,0 +1,68 @@
+reset
+
+#{convert = 0.0254} #converts inches to meters
+
+# cladding Thickness
+#{t_clad = .16*convert}
+
+# Base material thickness
+#{t_base = 8.47*convert}
+
+# total thickness ('t' in favor)
+#{t = t_clad+t_base}
+
+# Inner most radius ('R' in favor)
+#{R_i = 86.5*convert}
+
+#{thru_clad_interval = 2}
+#{phi_interval = 15}
+
+#{mesh_size = .010}
+
+##################################
+## Building the RPV quarter planar model
+
+create surface circle radius {R_i + t}
+
+webcut body 1 with cylinder radius {R_i} axis normal of surface 1
+webcut body 1 with cylinder radius {R_i + t_clad} axis normal of surface 2
+delete body 2
+
+webcut volume all with plane xplane
+webcut volume all with plane yplane
+
+delete body 4 5 6 7 8 9
+
+volume 1 3 reflect y
+
+merge volume all
+
+##################################
+## Meshing
+
+curve 16 28 interval {thru_clad_interval}
+curve 23 29 interval {phi_interval}
+surface 12 size {mesh_size}
+mesh surface 12
+
+curve 8 scheme bias factor 1.10 start vertex 8
+curve 22 scheme bias factor 1.10 start vertex 23
+surface 10 size {mesh_size}
+mesh surface 10
+
+##################################
+## Final preparations
+
+sideset 1 curve 29
+sideset 2 curve 8 16
+sideset 3 curve 22 28
+
+block 1 surface 10
+block 2 surface 12
+
+block all element type QUAD9
+
+###################################
+## Export
+
+export mesh '2d_cart.e' overwrite
