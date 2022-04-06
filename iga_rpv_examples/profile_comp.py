@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-cases=['1d', '1d_coarse', '3d_lagrange', '3d_berenstein', '2d_lagrange']
+cases=['1d', '1d_coarse', '3d_lagrange', '3d_berenstein', '2d_lagrange', '2d_berenstein']
 
 
 names={'3d_berenstein': '3D 2nd order Berenstein, coarse',
         '1d': '1D 2nd order Lagrange, fine',
         '1d_coarse': '1D 2nd order Lagrange, coarse',
         '3d_lagrange': '3D 2nd order Lagrange, coarse',
-        '2d_lagrange': '2D Cartesian, 2nd order Lagrange, fine'}
+        '2d_lagrange': '2D Cartesian, 2nd order Lagrange, fine',
+        '2d_berenstein': '2D Cartesian, 2nd order Berenstein, fine'}
 
 dataframes={}
 for case in cases:
