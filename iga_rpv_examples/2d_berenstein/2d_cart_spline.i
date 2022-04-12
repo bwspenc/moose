@@ -9,13 +9,17 @@
   type = ReferenceResidualProblem
   extra_tag_vectors = 'ref'
   reference_vector = 'ref'
+  #kernel_coverage_check = false
+  #material_coverage_check = false
+  #material_dependency_check = false
 []
 
 [Mesh]
   [igafile]
     type = FileMeshGenerator
+    #file = ../2d_lagrange/2d_cart.e
     file = 2d_cart_spline.e
-    clear_spline_nodes = true
+    #clear_spline_nodes = true
   []
 []
 
@@ -63,6 +67,7 @@
     out_of_plane_pressure_function = coolant_pressure_history
     pressure_factor = -4.773466e6 #R_i^2/(R_o^2-R_i^2) = 4.7735, multiplied by 1e6 Pa per MPa
     extra_vector_tags = 'ref'
+    block = '0 1'
   []
 []
 
@@ -71,11 +76,13 @@
     type = HeatConduction
     variable = temp
     extra_vector_tags = 'ref'
+    block = '0 1'
   []
   [heat_ie]
     type = HeatConductionTimeDerivative
     variable = temp
     extra_vector_tags = 'ref'
+    block = '0 1'
   []
 []
 
