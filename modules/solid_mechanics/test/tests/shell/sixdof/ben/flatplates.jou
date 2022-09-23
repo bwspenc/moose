@@ -1,0 +1,32 @@
+## /Applications/Cubit-15.2/Cubit.app/Contents/MacOS/cubitclx
+## Cubit Version 15.2
+## Cubit Build 405468
+## Revised 2016-09-23 10:47:14 -0600 (Fri, 23 Sep 2016)
+## Running 09/23/2022 10:42:49 AM
+## Command Options:
+brick x 1
+volume 1 move 0.5 0.5 0.5
+volume 1 size 0.25
+mesh surface 2
+block 1 surface 2
+block 1 element type SHELL4
+nodeset 1 vertex 7
+nodeset 2 vertex 8
+nodeset 3 vertex 5
+nodeset 4 vertex 6
+sideset 5 curve 6
+sideset 6 curve 7
+sideset 7 curve 8
+sideset 8 curve 5
+
+export mesh 'flatplates_xy.e' overwrite
+
+rotate volume all about z angle 90
+rotate volume all about y angle 90
+
+export mesh 'flatplates_yz.e' overwrite
+
+rotate volume all about x angle 90
+rotate volume all about z angle 90
+
+export mesh 'flatplates_zx.e' overwrite
