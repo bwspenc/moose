@@ -220,6 +220,8 @@ ADComputeIncrementalShellStrain2::initQpStatefulProperties()
   if (_qrule->get_points().size() != 4)
     mooseError("ADComputeIncrementalShellStrain2: Shell element needs to have exactly four "
                "quadrature points.");
+
+//  std::cout<<"BWS init elem id: "<<_current_elem->id()<<std::endl;
   computeGMatrix();
   computeBMatrix();
 }
@@ -233,7 +235,7 @@ ADComputeIncrementalShellStrain2::computeProperties()
   // derivatives of shape functions (dphidxi, dphideta and dphidzeta) evaluated at quadrature points
   // (in isoparametric space).
   unsigned int dim = _current_elem->dim();
-  FEType fe_type(Utility::string_to_enum<Order>("First"),
+  FEType fe_type(Utility::string_to_enum<Order>("FIRST"),
                  Utility::string_to_enum<FEFamily>("LAGRANGE"));
   auto & fe = _fe_problem.assembly(_tid).getFE(fe_type, dim);
   _dphidxi_map = fe->get_fe_map().get_dphidxi_map();
@@ -348,6 +350,7 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
   _2d_points = _qrule->get_points(); // would be in 2D
 
   unsigned int dim = _current_elem->dim();
+//  std::cout<<"BWS elem id: "<<_current_elem->id()<<std::endl;
 
   // derivatives of shape functions (dphidxi, dphideta and dphidzeta) evaluated at quadrature points
   // (in isoparametric space).
@@ -388,6 +391,7 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
   RankTwoTensor d;
   for (unsigned int t = 0; t < _t_points.size(); ++t)
   {
+//    std::cout<<"BWS t="<<t<<" qp="<<_qp<<std::endl;
     (*_strain_increment[t])[_qp] = a;
     (*_total_strain[t])[_qp] = a;
     (*_B[t])[_qp] = b;
@@ -425,6 +429,8 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
               _thickness[i] * _phi_map[k][i] * _node_normal[k](component) / 2.0;
         }
       }
+//      std::cout<<std::endl<<"BWS node 1:"<<std::endl;
+//      std::cout<<(*_nodes[0])(0)<<" "<<(*_nodes[0])(1)<<" "<<(*_nodes[0])(2)<<std::endl;
     }
   }
 
@@ -522,6 +528,22 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
       (*_ge[j])[i](2, 0) = (gmninv * (*_dxyz_dzeta[j])[i]) * e1;
       (*_ge[j])[i](2, 1) = (gmninv * (*_dxyz_dzeta[j])[i]) * e2;
       (*_ge[j])[i](2, 2) = (gmninv * (*_dxyz_dzeta[j])[i]) * e3;
+
+//      std::cout<<"BWS elem id: "<<_current_elem->id()<<std::endl;
+//      std::cout<<std::endl<<"BWS gmninv:"<<std::endl;
+//      gmninv.printReal();
+//      std::cout<<std::endl<<"BWS dxyz_dxi:"<<std::endl;
+//      std::cout<<(*_dxyz_dxi[j])[i](0)<<" "<<(*_dxyz_dxi[j])[i](1)<<" "<<(*_dxyz_dxi[j])[i](2)<<std::endl;
+//      std::cout<<std::endl<<"BWS dxyz_deta:"<<std::endl;
+//      std::cout<<(*_dxyz_deta[j])[i](0)<<" "<<(*_dxyz_deta[j])[i](1)<<" "<<(*_dxyz_deta[j])[i](2)<<std::endl;
+//      std::cout<<std::endl<<"BWS dxyz_dzeta:"<<std::endl;
+//      std::cout<<(*_dxyz_dzeta[j])[i](0)<<" "<<(*_dxyz_dzeta[j])[i](1)<<" "<<(*_dxyz_dzeta[j])[i](2)<<std::endl;
+//      std::cout<<std::endl<<"BWS ge:"<<std::endl;
+//      (*_ge[j])[i].printReal();
+//      std::cout<<std::endl<<"BWS covariant:"<<std::endl;
+//      (*_covariant_transformation_matrix[j])[i].printReal();
+//      std::cout<<std::endl<<"BWS contravariant:"<<std::endl;
+//      (*_contravariant_transformation_matrix[j])[i].printReal();
     }
   }
 }
@@ -571,6 +593,15 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
     (_cos_zv2[k]) = MathUtils::dotProduct(_x3, _v2[k])/ ( _x3.norm() * _v2[k].norm());
     (_cos_zvn[k]) = MathUtils::dotProduct(_x3, _node_normal[k])/ ( _x3.norm() * _node_normal[k].norm());
 
+    std::cout<<"BWS elem: "<<_current_elem->id()<<" node: "<<k<<std::endl;
+    std::cout << " cosxv1 = " << (_cos_xv1[k]) << " \n";
+    std::cout << " cosxv2  = " << (_cos_xv2[k]) << " \n";
+    std::cout << " cosxvn  = " << (_cos_xvn[k]) << " \n";
+    std::cout << " cosyv1  = " << (_cos_yv1[k]) << " \n";
+    std::cout << " cosyv2  = " << (_cos_yv2[k]) << " \n";
+    std::cout << " cosyvn  = " << (_cos_yvn[k]) << " \n";
+    std::cout << " coszv1  = " << (_cos_zv1[k]) << " \n";
+    std::cout << " coszv2  = " << (_cos_zv2[k]) << " \n";
 
 
         // std::cout << " cosxv1 = " << (_cos_xv1[k]) << " \n";
@@ -593,11 +624,8 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
   // compute B matrix rows correspond to [ux1, ux2, ux3, ux4, uy1, uy2, uy3, uy4, uz1, uz2, uz3,
   // uz4, rx1, rx2, rx3, rx4, ry1, ry2, ry3, ry4, rz1, rz2, rz3, rz4]
 
-  //changes required
-
   for (unsigned int i = 0; i < _2d_points.size(); ++i)
   {
-      // std::cout << " node " << i << "\n";
     for (unsigned int j = 0; j < _t_points.size(); ++j)
     {
       (*_B[j])[i].resize(5, 24);
@@ -605,33 +633,26 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
       for (unsigned int k = 0; k < _nodes.size(); ++k)
       {
         // corresponding to strain(0,0)
-        (*_B[j])[i](0, k) += _dphidxi_map[k][i] * (*_dxyz_dxi[j])[i](0);
+        (*_B[j])[i](0, k) = _dphidxi_map[k][i] * (*_dxyz_dxi[j])[i](0);
         (*_B[j])[i](0, 4 + k) = _dphidxi_map[k][i] * (*_dxyz_dxi[j])[i](1);
         (*_B[j])[i](0, 8 + k) = _dphidxi_map[k][i] * (*_dxyz_dxi[j])[i](2);
-        (*_B[j])[i](0, 12 + k) = _dphidxi_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] *
-                                 ( (-_v2[k] * (*_dxyz_dxi[j])[i] * _cos_xv1[k]) +
-                                  _v1[k] * (*_dxyz_dxi[j])[i] * _cos_xv2[k] );
-        (*_B[j])[i](0, 16 + k) = _dphidxi_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] *
-                                  ((-_v2[k] * (*_dxyz_dxi[j])[i] * _cos_yv1[k]) +
-                                    _v1[k] * (*_dxyz_dxi[j])[i] * _cos_yv2[k] );
-        (*_B[j])[i](0, 20 + k) = _dphidxi_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] *
-                                  ((-_v2[k] * (*_dxyz_dxi[j])[i] * _cos_zv1[k]) +
-                                  _v1[k] * (*_dxyz_dxi[j])[i] * _cos_zv2[k] );
+        (*_B[j])[i](0, 12 + k) = _dphidxi_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] * (*_dxyz_dxi[j])[i] *
+                                 (-_v2[k] * _cos_xv1[k] + _v1[k] * _cos_xv2[k]);
+        (*_B[j])[i](0, 16 + k) = _dphidxi_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] * (*_dxyz_dxi[j])[i] *
+                                 (-_v2[k] * _cos_yv1[k] + _v1[k] * _cos_yv2[k]);
+        (*_B[j])[i](0, 20 + k) = _dphidxi_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] * (*_dxyz_dxi[j])[i] *
+                                 (-_v2[k] * _cos_zv1[k] + _v1[k] * _cos_zv2[k]);
 
         // corresponding to strain(1,1)
         (*_B[j])[i](1, k) = _dphideta_map[k][i] * (*_dxyz_deta[j])[i](0);
         (*_B[j])[i](1, 4 + k) = _dphideta_map[k][i] * (*_dxyz_deta[j])[i](1);
         (*_B[j])[i](1, 8 + k) = _dphideta_map[k][i] * (*_dxyz_deta[j])[i](2);
-        (*_B[j])[i](1, 12 + k) = _dphideta_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] *
-                                 ( ( -_v2[k] * (*_dxyz_deta[j])[i] * _cos_xv1[k]) +
-                                  _v1[k] * (*_dxyz_deta[j])[i] * _cos_xv2[k] );
-        (*_B[j])[i](1, 16 + k) = _dphideta_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] *
-                                ((-_v2[k] * (*_dxyz_deta[j])[i] * _cos_yv1[k]) +
-                                _v1[k] * (*_dxyz_deta[j])[i] * _cos_yv2[k]);
-        (*_B[j])[i](1, 20 + k) = _dphideta_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] *
-                                ((-_v2[k] * (*_dxyz_deta[j])[i] * _cos_zv1[k]) +
-                                _v1[k] * (*_dxyz_deta[j])[i] * _cos_zv2[k]);
-
+        (*_B[j])[i](1, 12 + k) = _dphideta_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] * (*_dxyz_deta[j])[i] *
+                                 (-_v2[k] * _cos_xv1[k] + _v1[k] * _cos_xv2[k]);
+        (*_B[j])[i](1, 16 + k) = _dphideta_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] * (*_dxyz_deta[j])[i] *
+                                 (-_v2[k] * _cos_yv1[k] + _v1[k] * _cos_yv2[k]);
+        (*_B[j])[i](1, 20 + k) = _dphideta_map[k][i] * _t_points[j](0) / 2.0 * _thickness[i] * (*_dxyz_deta[j])[i] *
+                                 (-_v2[k] * _cos_zv1[k] + _v1[k] * _cos_zv2[k]);
 
         // corresponding to strain(2,2) = 0
 
@@ -642,28 +663,15 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
                                        _dphidxi_map[k][i] * (*_dxyz_deta[j])[i](1));
         (*_B[j])[i](2, 8 + k) = 0.5 * (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i](2) +
                                        _dphidxi_map[k][i] * (*_dxyz_deta[j])[i](2));
-        // (*_B[j])[i](2, 12 + k) =
-        //     0.25 * _t_points[j](0) * _thickness[i] * -_v2[k] *
-        //     (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i]);
-        // (*_B[j])[i](2, 16 + k) =
-        //     0.25 * _t_points[j](0) * _thickness[i] * _v1[k] *
-        //     ((*_dxyz_deta[j])[i] * _dphidxi_map[k][i] + (*_dxyz_dxi[j])[i] * _dphideta_map[k][i]);
-        (*_B[j])[i](2, 12 + k) =
-            0.25 * _t_points[j](0) * _thickness[i] * (-(_v2[k] * _cos_xv1[k] * (_dphideta_map[k][i] *
-              (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i])) + (_v1[k] * _cos_xv2[k]
-            * (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i])));
-
-        (*_B[j])[i](2, 16 + k) =
-            0.25 * _t_points[j](0) * _thickness[i] * (-(_v2[k] * _cos_yv1[k] * (_dphideta_map[k][i] *
-              (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i])) + (_v1[k] * _cos_yv2[k]
-            * (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i])));
-
-        (*_B[j])[i](2, 20 + k) =
-            0.25 * _t_points[j](0) * _thickness[i] * (-(_v2[k] * _cos_zv1[k] * (_dphideta_map[k][i] *
-            (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i])) + (_v1[k] * _cos_zv2[k]
-            * (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i])));
-
-
+        (*_B[j])[i](2, 12 + k) = 0.25 * _t_points[j](0) * _thickness[i] * 
+                                 (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i]) *
+                                 (-_v2[k] * _cos_xv1[k] + _v1[k] * _cos_xv2[k]);
+        (*_B[j])[i](2, 16 + k) = 0.25 * _t_points[j](0) * _thickness[i] * 
+                                 (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i]) *
+                                 (-_v2[k] * _cos_yv1[k] + _v1[k] * _cos_yv2[k]);
+        (*_B[j])[i](2, 20 + k) = 0.25 * _t_points[j](0) * _thickness[i] *
+                                 (_dphideta_map[k][i] * (*_dxyz_dxi[j])[i] + _dphidxi_map[k][i] * (*_dxyz_deta[j])[i]) *
+                                 (-_v2[k] * _cos_zv1[k] + _v1[k] * _cos_zv2[k]);
       }
 
       // if( j == 0 && i ==0)
@@ -705,43 +713,33 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
         (*_B[j])[i](3, 1 + component * 4) = 0.125 * (1.0 - _2d_points[i](1)) * _g3_c(component);
         (*_B[j])[i](3, component * 4) = 0.125 * (1.0 - _2d_points[i](1)) * -_g3_c(component);
       }
-      (*_B[j])[i](3, 14) = (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[2]) * _cos_xv1[2]
-                          + (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[2]) * _cos_xv2[2];
-      (*_B[j])[i](3, 18) = (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[2]) * _cos_yv1[2]
-                          + (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[2]) * _cos_yv2[2];
-      (*_B[j])[i](3, 22) = (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[2]) * _cos_zv1[2]
-                          + (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[2]) * _cos_zv2[2];
+      (*_B[j])[i](3, 14) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a *
+                           (-_v2[2] * _cos_xv1[2] + _v1[2] * _cos_xv2[2]);
+      (*_B[j])[i](3, 18) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a *
+                           (-_v2[2] * _cos_yv1[2] + _v1[2] * _cos_yv2[2]);
+      (*_B[j])[i](3, 22) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a *
+                           (-_v2[2] * _cos_zv1[2] + _v1[2] * _cos_zv2[2]);
 
+      (*_B[j])[i](3, 15) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a *
+                           (-_v2[3] * _cos_xv1[3] + _v1[3] * _cos_xv2[3]);
+      (*_B[j])[i](3, 19) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a *
+                           (-_v2[3] * _cos_yv1[3] + _v1[3] * _cos_yv2[3]);
+      (*_B[j])[i](3, 23) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a *
+                           (-_v2[3] * _cos_zv1[3] + _v1[3] * _cos_zv2[3]);
 
-      (*_B[j])[i](3, 15) = (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[3]) * _cos_xv1[3]
-                          + (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[3]) * _cos_xv2[3] ;
-      (*_B[j])[i](3, 19) = (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[3]) * _cos_yv1[3]
-                          + (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[3]) * _cos_yv2[3] ;
-      (*_B[j])[i](3, 23) = (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[3]) * _cos_zv1[3]
-                          + (0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[3]) * _cos_zv2[3] ;
+      (*_B[j])[i](3, 13) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c *
+                           (-_v2[1] * _cos_xv1[1] + _v1[1] * _cos_xv2[1]);
+      (*_B[j])[i](3, 17) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c *
+                           (-_v2[1] * _cos_yv1[1] + _v1[1] * _cos_yv2[1]);
+      (*_B[j])[i](3, 21) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c *
+                           (-_v2[1] * _cos_zv1[1] + _v1[1] * _cos_zv2[1]);
 
-      (*_B[j])[i](3, 13) = (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[1]) * _cos_xv1[1]
-                          + (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[1]) * _cos_xv2[1] ;
-      (*_B[j])[i](3, 17) = (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[1]) * _cos_yv1[1]
-                          + (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[1]) * _cos_yv2[1] ;
-      (*_B[j])[i](3, 21) = (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[1]) * _cos_zv1[1]
-                          + (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[1]) * _cos_zv2[1] ;
-
-      (*_B[j])[i](3, 12) = (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[0]) * _cos_xv1[0]
-                          + (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[0]) * _cos_xv2[0] ;
-      (*_B[j])[i](3, 16) = (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[0]) * _cos_yv1[0]
-                          + (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[0]) * _cos_yv2[0] ;
-      (*_B[j])[i](3, 20) = (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[0]) * _cos_zv1[0]
-                          + (0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[0]) * _cos_zv2[0] ;
-      // (*_B[j])[i](3, 14) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[2];
-      // (*_B[j])[i](3, 18) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[2];
-      // (*_B[j])[i](3, 15) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * -_v2[3];
-      // (*_B[j])[i](3, 19) = 0.125 * (1.0 + _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_a * _v1[3];
-      //
-      // (*_B[j])[i](3, 13) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[1];
-      // (*_B[j])[i](3, 17) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[1];
-      // (*_B[j])[i](3, 12) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * -_v2[0];
-      // (*_B[j])[i](3, 16) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c * _v1[0];
+      (*_B[j])[i](3, 12) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c *
+                           (-_v2[0] * _cos_xv1[0] + _v1[0] * _cos_xv2[0]);
+      (*_B[j])[i](3, 16) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c *
+                           (-_v2[0] * _cos_yv1[0] + _v1[0] * _cos_yv2[0]);
+      (*_B[j])[i](3, 20) = 0.125 * (1.0 - _2d_points[i](1)) * 0.5 * _thickness[i] * _g1_c *
+                           (-_v2[0] * _cos_zv1[0] + _v1[0] * _cos_zv2[0]);
 
       // corresponding to strain(1,2)
       for (unsigned int component = 0; component < 3; component++)
@@ -752,33 +750,33 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
         (*_B[j])[i](4, component * 4) = 0.125 * (1.0 - _2d_points[i](0)) * -_g3_b(component);
       }
 
-      (*_B[j])[i](4, 14) = (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * -_v2[2]) * _cos_xv1[2]
-                          + (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * _v1[2]) * _cos_xv2[2];
-      (*_B[j])[i](4, 18) = (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * -_v2[2]) * _cos_yv1[2]
-                          + (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * _v1[2]) * _cos_yv2[2];
-      (*_B[j])[i](4, 22) = (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * -_v2[2]) * _cos_zv1[2]
-                          + (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * _v1[2]) * _cos_zv2[2];
+      (*_B[j])[i](4, 14) = 0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d *
+                           (-_v2[2] * _cos_xv1[2] + _v1[2] * _cos_xv2[2]);
+      (*_B[j])[i](4, 18) = 0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d *
+                           (-_v2[2] * _cos_yv1[2] + _v1[2] * _cos_yv2[2]);
+      (*_B[j])[i](4, 22) = 0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d *
+                           (-_v2[2] * _cos_zv1[2] + _v1[2] * _cos_zv2[2]);
 
-      (*_B[j])[i](4, 13) = (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * -_v2[1]) * _cos_xv1[1]
-                          + (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * _v1[1]) * _cos_xv2[1];
-      (*_B[j])[i](4, 17) = (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * -_v2[1]) * _cos_yv1[1]
-                          + (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * _v1[1]) * _cos_yv2[1];
-      (*_B[j])[i](4, 21) = (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * -_v2[1]) * _cos_zv1[1]
-                          + (0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d * _v1[1]) * _cos_zv2[1];
+      (*_B[j])[i](4, 13) = 0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d *
+                           (-_v2[1] * _cos_xv1[1] + _v1[1] * _cos_xv2[1]);
+      (*_B[j])[i](4, 17) = 0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d *
+                           (-_v2[1] * _cos_yv1[1] + _v1[1] * _cos_yv2[1]);
+      (*_B[j])[i](4, 21) = 0.125 * (1.0 + _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_d *
+                           (-_v2[1] * _cos_zv1[1] + _v1[1] * _cos_zv2[1]);
 
-      (*_B[j])[i](4, 15) = (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * -_v2[3]) * _cos_xv1[3]
-                          + (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * _v1[3]) * _cos_xv2[3];
-      (*_B[j])[i](4, 19) = (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * -_v2[3]) * _cos_yv1[3]
-                          + (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * _v1[3]) * _cos_yv2[3];
-      (*_B[j])[i](4, 23) = (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * -_v2[3]) * _cos_zv1[3]
-                          + (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * _v1[3]) * _cos_zv2[3];
+      (*_B[j])[i](4, 15) = 0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b *
+                           (-_v2[3] * _cos_xv1[3] + _v1[3] * _cos_xv2[3]);
+      (*_B[j])[i](4, 19) = 0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b *
+                           (-_v2[3] * _cos_yv1[3] + _v1[3] * _cos_yv2[3]);
+      (*_B[j])[i](4, 23) = 0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b *
+                           (-_v2[3] * _cos_zv1[3] + _v1[3] * _cos_zv2[3]);
 
-      (*_B[j])[i](4, 12) = (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * -_v2[0]) * _cos_xv1[0]
-                          + (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * _v1[0]) * _cos_xv2[0];
-      (*_B[j])[i](4, 16) = (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * -_v2[0]) * _cos_yv1[0]
-                          + (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * _v1[0]) * _cos_yv2[0];
-      (*_B[j])[i](4, 20) = (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * -_v2[0]) * _cos_zv1[0]
-                          + (0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b * _v1[0]) * _cos_zv2[0];
+      (*_B[j])[i](4, 12) = 0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b *
+                           (-_v2[0] * _cos_xv1[0] + _v1[0] * _cos_xv2[0]);
+      (*_B[j])[i](4, 16) = 0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b *
+                           (-_v2[0] * _cos_yv1[0] + _v1[0] * _cos_yv2[0]);
+      (*_B[j])[i](4, 20) = 0.125 * (1.0 - _2d_points[i](0)) * 0.5 * _thickness[i] * _g2_b *
+                           (-_v2[0] * _cos_zv1[0] + _v1[0] * _cos_zv2[0]);
     }
   }
 }
