@@ -53,8 +53,8 @@ ADComputeIncrementalShellStrain2::ADComputeIncrementalShellStrain2(const InputPa
     _thickness(coupledValue("thickness")),
     _large_strain(getParam<bool>("large_strain")),
     _strain_increment(),
-    _total_strain(),
-    _total_strain_old(),
+    _total_strain_covariant(),
+    _total_strain_covariant_old(),
     _nonlinear_sys(_fe_problem.getNonlinearSystemBase()),
     _soln_disp_index(4),
     _soln_rot_index(4),
@@ -100,7 +100,8 @@ ADComputeIncrementalShellStrain2::ADComputeIncrementalShellStrain2(const InputPa
     _covariant_transformation_matrix_old(),
     _contravariant_transformation_matrix(),
     _contravariant_transformation_matrix_old(),
-    _total_global_strain(),
+    _total_strain(),
+    _mechanical_strain(),
     _sol(_nonlinear_sys.currentSolution()),
     _sol_old(_nonlinear_sys.solutionOld())
 {
@@ -135,8 +136,8 @@ ADComputeIncrementalShellStrain2::ADComputeIncrementalShellStrain2(const InputPa
   _gamma_test_x.resize(_t_points.size());
   _gamma_test_y.resize(_t_points.size());
   _gamma_test_z.resize(_t_points.size());
-  _total_strain.resize(_t_points.size());
-  _total_strain_old.resize(_t_points.size());
+  _total_strain_covariant.resize(_t_points.size());
+  _total_strain_covariant_old.resize(_t_points.size());
   _B.resize(_t_points.size());
   _B_old.resize(_t_points.size());
   _ge.resize(_t_points.size());
@@ -153,7 +154,8 @@ ADComputeIncrementalShellStrain2::ADComputeIncrementalShellStrain2(const InputPa
   _covariant_transformation_matrix_old.resize(_t_points.size());
   _contravariant_transformation_matrix.resize(_t_points.size());
   _contravariant_transformation_matrix_old.resize(_t_points.size());
-  _total_global_strain.resize(_t_points.size());
+  _total_strain.resize(_t_points.size());
+  _mechanical_strain.resize(_t_points.size());
 
   _transformation_matrix = &declareADProperty<RankTwoTensor>("transformation_matrix_element");
 
@@ -169,10 +171,10 @@ ADComputeIncrementalShellStrain2::ADComputeIncrementalShellStrain2(const InputPa
         &declareADProperty<Real>("gamma_test_y_t_points_" + std::to_string(i));
     _gamma_test_z[i] =
         &declareADProperty<Real>("gamma_test_z_t_points_" + std::to_string(i));
-    _total_strain[i] =
-        &declareADProperty<RankTwoTensor>("total_strain_t_points_" + std::to_string(i));
-    _total_strain_old[i] =
-        &getMaterialPropertyOldByName<RankTwoTensor>("total_strain_t_points_" + std::to_string(i));
+    _total_strain_covariant[i] =
+        &declareADProperty<RankTwoTensor>("t_points_" + std::to_string(i) + "_total_strain_covariant");
+    _total_strain_covariant_old[i] =
+        &getMaterialPropertyOldByName<RankTwoTensor>("t_points_" + std::to_string(i) + "_total_strain_covariant");
     _B[i] = &declareADProperty<DenseMatrix<Real>>("B_t_points_" + std::to_string(i));
     _B_old[i] = &getMaterialPropertyOldByName<DenseMatrix<Real>>("B_t_points_" + std::to_string(i));
     _ge[i] = &declareADProperty<RankTwoTensor>("ge_t_points_" + std::to_string(i));
@@ -191,15 +193,17 @@ ADComputeIncrementalShellStrain2::ADComputeIncrementalShellStrain2(const InputPa
         &getMaterialPropertyOldByName<RealVectorValue>("dxyz_dzeta_t_points_" + std::to_string(i));
     // Create rotation matrix and total strain global for output purposes only
     _covariant_transformation_matrix[i] =
-        &declareProperty<RankTwoTensor>("covariant_transformation_t_points_" + std::to_string(i));
+        &declareADProperty<RankTwoTensor>("covariant_transformation_t_points_" + std::to_string(i));
     _covariant_transformation_matrix_old[i] = &getMaterialPropertyOldByName<RankTwoTensor>(
         "covariant_transformation_t_points_" + std::to_string(i));
-    _contravariant_transformation_matrix[i] = &declareProperty<RankTwoTensor>(
+    _contravariant_transformation_matrix[i] = &declareADProperty<RankTwoTensor>(
         "contravariant_transformation_t_points_" + std::to_string(i));
     _contravariant_transformation_matrix_old[i] = &getMaterialPropertyOldByName<RankTwoTensor>(
         "contravariant_transformation_t_points_" + std::to_string(i));
-    _total_global_strain[i] =
-        &declareProperty<RankTwoTensor>("total_global_strain_t_points_" + std::to_string(i));
+    _total_strain[i] =
+        &declareADProperty<RankTwoTensor>("t_points_" + std::to_string(i) + "_total_strain");
+    _mechanical_strain[i] =
+        &declareADProperty<RankTwoTensor>("t_points_" + std::to_string(i) + "_mechanical_strain");
   }
 
   // used later for computing local coordinate system
@@ -285,7 +289,7 @@ ADComputeIncrementalShellStrain2::computeProperties()
       (*_strain_increment[j])[i](2, 0) = (*_strain_increment[j])[i](0, 2);
       (*_strain_increment[j])[i](2, 1) = (*_strain_increment[j])[i](1, 2);
 
-      (*_total_strain[j])[i] = (*_total_strain_old[j])[i] + (*_strain_increment[j])[i];
+      (*_total_strain_covariant[j])[i] = (*_total_strain_covariant_old[j])[i] + (*_strain_increment[j])[i];
 
       /// was trying to use the current solution but was giving zero. So, had to use the solution vector. Should
       /// still work for the single timestep solution as old soln is zero  and sol vector should give current soln
@@ -322,12 +326,10 @@ ADComputeIncrementalShellStrain2::computeProperties()
           // std::cout << " soln  = " << (_soln_vector(12+i)) << " \n";
       }
 
-      for (unsigned int ii = 0; ii < 3; ++ii)
-        for (unsigned int jj = 0; jj < 3; ++jj)
-          _unrotated_total_strain(ii, jj) = MetaPhysicL::raw_value((*_total_strain[j])[i](ii, jj));
-      (*_total_global_strain[j])[i] = (*_contravariant_transformation_matrix[j])[i] *
-                                      _unrotated_total_strain *
+      (*_total_strain[j])[i] = (*_contravariant_transformation_matrix[j])[i] *
+                                      (*_total_strain_covariant[j])[i] *
                                       (*_contravariant_transformation_matrix[j])[i].transpose();
+      (*_mechanical_strain[j])[i] = (*_total_strain[j])[i];
       // if(j == 0)
       // {
       //   std::cout << " i = " << i << " \n";
@@ -393,7 +395,7 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
   {
 //    std::cout<<"BWS t="<<t<<" qp="<<_qp<<std::endl;
     (*_strain_increment[t])[_qp] = a;
-    (*_total_strain[t])[_qp] = a;
+    (*_total_strain_covariant[t])[_qp] = a;
     (*_B[t])[_qp] = b;
     (*_ge[t])[_qp] = a;
     (*_J_map[t])[_qp] = 0;
@@ -465,6 +467,11 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
       (*_contravariant_transformation_matrix[j])[i] =
           (*_covariant_transformation_matrix[j])[i].inverse();
 
+      std::cout<<"BWS cov: "<<std::endl;
+      (*_covariant_transformation_matrix[j])[i].printReal();
+      std::cout<<"BWS contrav: "<<std::endl;
+      (*_contravariant_transformation_matrix[j])[i].printReal();
+
       Real normx = std::sqrt(J(0, 0) * J(0, 0) + J(0, 1) * J(0, 1) + J(0, 2) * J(0, 2));
       Real normy = std::sqrt(J(1, 0) * J(1, 0) + J(1, 1) * J(1, 1) + J(1, 2) * J(1, 2));
       Real normz = std::sqrt(J(2, 0) * J(2, 0) + J(2, 1) * J(2, 1) + J(2, 2) * J(2, 2));
@@ -530,16 +537,16 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
       (*_ge[j])[i](2, 2) = (gmninv * (*_dxyz_dzeta[j])[i]) * e3;
 
 //      std::cout<<"BWS elem id: "<<_current_elem->id()<<std::endl;
-//      std::cout<<std::endl<<"BWS gmninv:"<<std::endl;
-//      gmninv.printReal();
+      std::cout<<std::endl<<"BWS gmninv:"<<std::endl;
+      gmninv.printReal();
 //      std::cout<<std::endl<<"BWS dxyz_dxi:"<<std::endl;
 //      std::cout<<(*_dxyz_dxi[j])[i](0)<<" "<<(*_dxyz_dxi[j])[i](1)<<" "<<(*_dxyz_dxi[j])[i](2)<<std::endl;
 //      std::cout<<std::endl<<"BWS dxyz_deta:"<<std::endl;
 //      std::cout<<(*_dxyz_deta[j])[i](0)<<" "<<(*_dxyz_deta[j])[i](1)<<" "<<(*_dxyz_deta[j])[i](2)<<std::endl;
 //      std::cout<<std::endl<<"BWS dxyz_dzeta:"<<std::endl;
 //      std::cout<<(*_dxyz_dzeta[j])[i](0)<<" "<<(*_dxyz_dzeta[j])[i](1)<<" "<<(*_dxyz_dzeta[j])[i](2)<<std::endl;
-//      std::cout<<std::endl<<"BWS ge:"<<std::endl;
-//      (*_ge[j])[i].printReal();
+      std::cout<<std::endl<<"BWS ge:"<<std::endl;
+      (*_ge[j])[i].printReal();
 //      std::cout<<std::endl<<"BWS covariant:"<<std::endl;
 //      (*_covariant_transformation_matrix[j])[i].printReal();
 //      std::cout<<std::endl<<"BWS contravariant:"<<std::endl;
@@ -593,15 +600,15 @@ ADComputeIncrementalShellStrain2::computeBMatrix()
     (_cos_zv2[k]) = MathUtils::dotProduct(_x3, _v2[k])/ ( _x3.norm() * _v2[k].norm());
     (_cos_zvn[k]) = MathUtils::dotProduct(_x3, _node_normal[k])/ ( _x3.norm() * _node_normal[k].norm());
 
-    std::cout<<"BWS elem: "<<_current_elem->id()<<" node: "<<k<<std::endl;
-    std::cout << " cosxv1 = " << (_cos_xv1[k]) << " \n";
-    std::cout << " cosxv2  = " << (_cos_xv2[k]) << " \n";
-    std::cout << " cosxvn  = " << (_cos_xvn[k]) << " \n";
-    std::cout << " cosyv1  = " << (_cos_yv1[k]) << " \n";
-    std::cout << " cosyv2  = " << (_cos_yv2[k]) << " \n";
-    std::cout << " cosyvn  = " << (_cos_yvn[k]) << " \n";
-    std::cout << " coszv1  = " << (_cos_zv1[k]) << " \n";
-    std::cout << " coszv2  = " << (_cos_zv2[k]) << " \n";
+//    std::cout<<"BWS elem: "<<_current_elem->id()<<" node: "<<k<<std::endl;
+//    std::cout << " cosxv1 = " << (_cos_xv1[k]) << " \n";
+//    std::cout << " cosxv2  = " << (_cos_xv2[k]) << " \n";
+//    std::cout << " cosxvn  = " << (_cos_xvn[k]) << " \n";
+//    std::cout << " cosyv1  = " << (_cos_yv1[k]) << " \n";
+//    std::cout << " cosyv2  = " << (_cos_yv2[k]) << " \n";
+//    std::cout << " cosyvn  = " << (_cos_yvn[k]) << " \n";
+//    std::cout << " coszv1  = " << (_cos_zv1[k]) << " \n";
+//    std::cout << " coszv2  = " << (_cos_zv2[k]) << " \n";
 
 
         // std::cout << " cosxv1 = " << (_cos_xv1[k]) << " \n";
