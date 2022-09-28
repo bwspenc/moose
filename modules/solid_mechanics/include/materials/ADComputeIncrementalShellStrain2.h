@@ -78,10 +78,10 @@ protected:
 
 
   /// Total strain increment in the covariant coordinate system
-  std::vector<ADMaterialProperty<RankTwoTensor> *> _total_strain;
+  std::vector<ADMaterialProperty<RankTwoTensor> *> _total_strain_covariant;
 
   /// Old total strain increment in the covariant coordinate system
-  std::vector<const MaterialProperty<RankTwoTensor> *> _total_strain_old;
+  std::vector<const MaterialProperty<RankTwoTensor> *> _total_strain_covariant_old;
 
   /// Reference to the nonlinear system object
   NonlinearSystemBase & _nonlinear_sys;
@@ -203,15 +203,17 @@ protected:
   std::vector<const MaterialProperty<Real> *> _J_map_old;
 
   /// Covariant base vector matrix material property to transform stress
-  std::vector<MaterialProperty<RankTwoTensor> *> _covariant_transformation_matrix;
+  std::vector<ADMaterialProperty<RankTwoTensor> *> _covariant_transformation_matrix;
   std::vector<const MaterialProperty<RankTwoTensor> *> _covariant_transformation_matrix_old;
 
   /// Contravariant base vector matrix material property to transform strain
-  std::vector<MaterialProperty<RankTwoTensor> *> _contravariant_transformation_matrix;
+  std::vector<ADMaterialProperty<RankTwoTensor> *> _contravariant_transformation_matrix;
   std::vector<const MaterialProperty<RankTwoTensor> *> _contravariant_transformation_matrix_old;
 
   /// Total strain in global coordinate system
-  std::vector<MaterialProperty<RankTwoTensor> *> _total_global_strain;
+  std::vector<ADMaterialProperty<RankTwoTensor> *> _total_strain;
+
+  std::vector<ADMaterialProperty<RankTwoTensor> *> _mechanical_strain;
 
   /// Rotation matrix material property
   ADMaterialProperty<RankTwoTensor> * _transformation_matrix;
@@ -230,5 +232,4 @@ protected:
   ADRealVectorValue _g1_c;
   ADRealVectorValue _g2_b;
   ADRealVectorValue _g2_d;
-  RankTwoTensor _unrotated_total_strain;
 };

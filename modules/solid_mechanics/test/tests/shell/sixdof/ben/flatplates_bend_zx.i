@@ -156,11 +156,17 @@
 []
 
 [Materials]
-  [elasticity]
-    type = ADComputeIsotropicElasticityTensorShell
+  [elasticity_t0]
+    type = ADComputeIsotropicElasticityTensor
     youngs_modulus = 1e6
     poissons_ratio = 0.0
-    through_thickness_order = SECOND
+    base_name = t_points_0
+  []
+  [elasticity_t1]
+    type = ADComputeIsotropicElasticityTensor
+    youngs_modulus = 1e6
+    poissons_ratio = 0.0
+    base_name = t_points_1
   []
   [strain]
     type = ADComputeIncrementalShellStrain2
@@ -169,21 +175,41 @@
     thickness = 0.01
     through_thickness_order = SECOND
   []
-  [stress]
-    type = ADComputeShellStress2
-    through_thickness_order = SECOND
+  [stress_t0]
+    type = ADComputeLinearElasticStress
+    base_name = t_points_0
+  []
+  [stress_t1]
+    type = ADComputeLinearElasticStress
+    base_name = t_points_1
+  []
+  [total_strain_zz_0]
+    type = ADRankTwoCartesianComponent
+    rank_two_tensor = t_points_0_total_strain
+    property_name = 'total_strain_zz_0t'
+    index_i = 2
+    index_j = 2
+    outputs = all
+  []
+  [total_strain_zz_1]
+    type = ADRankTwoCartesianComponent
+    rank_two_tensor = t_points_1_total_strain
+    property_name = 'total_strain_zz_1t'
+    index_i = 2
+    index_j = 2
+    outputs = all
   []
   [stress_zz_0]
-    type = RankTwoCartesianComponent
-    rank_two_tensor = global_stress_t_points_0
+    type = ADRankTwoCartesianComponent
+    rank_two_tensor = t_points_0_stress
     property_name = 'stress_zz_0t'
     index_i = 2
     index_j = 2
     outputs = all
   []
   [stress_zz_1]
-    type = RankTwoCartesianComponent
-    rank_two_tensor = global_stress_t_points_1
+    type = ADRankTwoCartesianComponent
+    rank_two_tensor = t_points_1_stress
     property_name = 'stress_zz_1t'
     index_i = 2
     index_j = 2

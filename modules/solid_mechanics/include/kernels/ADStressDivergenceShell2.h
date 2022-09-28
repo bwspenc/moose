@@ -40,6 +40,7 @@ protected:
 
   std::vector<const ADMaterialProperty<RankTwoTensor> *> _stress;
   std::vector<const MaterialProperty<RankTwoTensor> *> _stress_old;
+  std::vector<const ADMaterialProperty<RankTwoTensor> *> _contravariant_transformation_matrix;
   std::vector<const ADMaterialProperty<DenseMatrix<Real>> *> _B_mat;
   std::vector<const ADMaterialProperty<DenseMatrix<Real>> *> _B_nl;
   std::vector<const ADMaterialProperty<Real> *> _J_map;
@@ -59,4 +60,7 @@ protected:
 
   /// qp index in out of plane direction
   unsigned int _qp_z;
+
+  ADRankTwoTensor _stress_covariant;
+  ADRankTwoTensor _stress_covariant_old;
 };
