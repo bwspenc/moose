@@ -1,0 +1,32 @@
+## /Applications/Cubit-15.2/Cubit.app/Contents/MacOS/cubitclx
+## Cubit Version 15.2
+## Cubit Build 405468
+## Revised 2016-09-23 10:47:14 -0600 (Fri, 23 Sep 2016)
+## Running 09/28/2022 03:07:30 PM
+## Command Options:
+#{t=0.01}
+create cylinder height 1 radius {1+t/2}
+webcut volume 1 with cylinder radius {1-t/2} axis z
+delete volume 2
+webcut volume all with plane xplane
+webcut volume all with plane yplane
+delete volume 5 3 1
+move volume 4 z 0.5
+curve 11 40 interval 150 #1
+curve 43 44 interval 150 #2
+curve 12 14 39 41 interval 5
+mesh surface 28
+mesh volume 4
+block 1 volume 4
+block 1 element type HEX8
+sideset 1 surface 31
+sideset 2 surface 27
+sideset 3 surface 29
+sideset 4 surface 11
+sideset 1 name "AB"
+sideset 2 name "BC"
+sideset 3 name "CD"
+sideset 4 name "AD"
+nodeset 10 vertex 29
+nodeset 11 vertex 12
+export mesh "cyl_3d.e" overwrite

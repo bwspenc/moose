@@ -467,10 +467,10 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
       (*_contravariant_transformation_matrix[j])[i] =
           (*_covariant_transformation_matrix[j])[i].inverse();
 
-      std::cout<<"BWS cov: "<<std::endl;
-      (*_covariant_transformation_matrix[j])[i].printReal();
-      std::cout<<"BWS contrav: "<<std::endl;
-      (*_contravariant_transformation_matrix[j])[i].printReal();
+//      std::cout<<"BWS cov: "<<std::endl;
+//      (*_covariant_transformation_matrix[j])[i].printReal();
+//      std::cout<<"BWS contrav: "<<std::endl;
+//      (*_contravariant_transformation_matrix[j])[i].printReal();
 
       Real normx = std::sqrt(J(0, 0) * J(0, 0) + J(0, 1) * J(0, 1) + J(0, 2) * J(0, 2));
       Real normy = std::sqrt(J(1, 0) * J(1, 0) + J(1, 1) * J(1, 1) + J(1, 2) * J(1, 2));
@@ -537,16 +537,16 @@ ADComputeIncrementalShellStrain2::computeGMatrix()
       (*_ge[j])[i](2, 2) = (gmninv * (*_dxyz_dzeta[j])[i]) * e3;
 
 //      std::cout<<"BWS elem id: "<<_current_elem->id()<<std::endl;
-      std::cout<<std::endl<<"BWS gmninv:"<<std::endl;
-      gmninv.printReal();
+//      std::cout<<std::endl<<"BWS gmninv:"<<std::endl;
+//      gmninv.printReal();
 //      std::cout<<std::endl<<"BWS dxyz_dxi:"<<std::endl;
 //      std::cout<<(*_dxyz_dxi[j])[i](0)<<" "<<(*_dxyz_dxi[j])[i](1)<<" "<<(*_dxyz_dxi[j])[i](2)<<std::endl;
 //      std::cout<<std::endl<<"BWS dxyz_deta:"<<std::endl;
 //      std::cout<<(*_dxyz_deta[j])[i](0)<<" "<<(*_dxyz_deta[j])[i](1)<<" "<<(*_dxyz_deta[j])[i](2)<<std::endl;
 //      std::cout<<std::endl<<"BWS dxyz_dzeta:"<<std::endl;
 //      std::cout<<(*_dxyz_dzeta[j])[i](0)<<" "<<(*_dxyz_dzeta[j])[i](1)<<" "<<(*_dxyz_dzeta[j])[i](2)<<std::endl;
-      std::cout<<std::endl<<"BWS ge:"<<std::endl;
-      (*_ge[j])[i].printReal();
+//      std::cout<<std::endl<<"BWS ge:"<<std::endl;
+//      (*_ge[j])[i].printReal();
 //      std::cout<<std::endl<<"BWS covariant:"<<std::endl;
 //      (*_covariant_transformation_matrix[j])[i].printReal();
 //      std::cout<<std::endl<<"BWS contravariant:"<<std::endl;

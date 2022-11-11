@@ -95,17 +95,19 @@ ADStressDivergenceShell2::computeQpResidual()
   ADReal residual1 = 0.0;
   for (_qp_z = 0; _qp_z < _t_weights.size(); ++_qp_z)
   {
-    _stress_covariant = (*_contravariant_transformation_matrix[_qp_z])[_qp] *
+    _stress_covariant = (*_contravariant_transformation_matrix[_qp_z])[_qp].transpose() *
       (*_stress[_qp_z])[_qp] *
-      (*_contravariant_transformation_matrix[_qp_z])[_qp].transpose();
+      (*_contravariant_transformation_matrix[_qp_z])[_qp];
 
-    std::cout<<"BWS stress pre: "<<std::endl;
-    (*_stress[_qp_z])[_qp].printReal();
-    std::cout<<"BWS kernel contrav: "<<std::endl;
-    (*_contravariant_transformation_matrix[_qp_z])[_qp].printReal();
-    std::cout<<"BWS stress post: "<<std::endl;
-    _stress_covariant.printReal();
-    std::cout<<std::endl;
+//    std::cout<<"BWS stress pre: "<<std::endl;
+//    (*_stress[_qp_z])[_qp].printReal();
+//    std::cout<<"BWS kernel contrav: "<<std::endl;
+//    (*_contravariant_transformation_matrix[_qp_z])[_qp].printReal();
+//    std::cout<<"BWS kernel ge: "<<std::endl;
+//    (*_ge[_qp_z])[_qp].printReal();
+//    std::cout<<"BWS stress post: "<<std::endl;
+//    _stress_covariant.printReal();
+//    std::cout<<std::endl;
     
     residual1 = _stress_covariant(0, 0) * (*_B_mat[_qp_z])[_qp](0, _i + _component * 4) +
                 _stress_covariant(1, 1) * (*_B_mat[_qp_z])[_qp](1, _i + _component * 4) +
