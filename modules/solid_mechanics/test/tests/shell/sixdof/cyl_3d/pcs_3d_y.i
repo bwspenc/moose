@@ -28,38 +28,14 @@
 
 # Run with -pc_type svd -pc_svd_monitor if convergence issue
 
+[GlobalParams]
+  displacements = 'disp_x disp_y disp_z'
+[]
+
 [Mesh]
   [./mesh]
     type = FileMeshGenerator
-    file = cyl.e
-  [../]
-[]
-
-
-[Variables]
-  [./disp_x]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [./disp_y]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [./disp_z]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [./rot_x]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [./rot_y]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [./rot_z]
-    order = FIRST
-    family = LAGRANGE
+    file = cyl_3d.e
   [../]
 []
 
@@ -82,32 +58,14 @@
     boundary = 'CD AB'
     value = 0.0
   [../]
-  [./simply_support_rot_x]
-    type = DirichletBC
-    variable = rot_x
-    boundary = 'CD BC AB'
-    value = 0.0
-  [../]
-  [./simply_support_rot_y]
-    type = DirichletBC
-    variable = rot_y
-    boundary = 'CD AD AB'
-    value = 0.0
-  [../]
-  [./simply_support_rot_z]
-    type = DirichletBC
-    variable = rot_z
-    boundary = 'CD AD BC'
-    value = 0.0
-  [../]
 []
 
 [NodalKernels]
   [pinch]
     type = UserForcingFunctionNodalKernel
-    boundary = 'BC' #'10'
+    boundary = '11'
     function = -2.5
-    variable = disp_x
+    variable = disp_y
   []
 []
 
@@ -131,75 +89,24 @@
   end_time = 1.0
 []
 
-[Kernels]
-  [./solid_disp_x]
-    type = ADStressDivergenceShell2
-    block = '100'
-    component = 0
-    variable = disp_x
-    through_thickness_order = SECOND
-  [../]
-  [./solid_disp_y]
-    type = ADStressDivergenceShell2
-    block = '100'
-    component = 1
-    variable = disp_y
-    through_thickness_order = SECOND
-  [../]
-  [./solid_disp_z]
-    type = ADStressDivergenceShell2
-    block = '100'
-    component = 2
-    variable = disp_z
-    through_thickness_order = SECOND
-  [../]
-  [./solid_rot_x]
-    type = ADStressDivergenceShell2
-    block = '100'
-    component = 3
-    variable = rot_x
-    through_thickness_order = SECOND
-    penalty = 0
-  [../]
-  [./solid_rot_y]
-    type = ADStressDivergenceShell2
-    block = '100'
-    component = 4
-    variable = rot_y
-    through_thickness_order = SECOND
-    penalty = 0
-  [../]
-  [./solid_rot_z]
-    type = ADStressDivergenceShell2
-    block = '100'
-    component = 5
-    variable = rot_z
-    through_thickness_order = SECOND
-    penalty = 0
-  [../]
+[Modules/TensorMechanics/Master]
+  [all]
+    strain = SMALL
+    incremental = true
+    add_variables = true
+    use_automatic_differentiation = true
+  []
 []
 
 [Materials]
-  [./elasticity]
-    type = ADComputeIsotropicElasticityTensorShell
+  [elasticity]
+    type = ADComputeIsotropicElasticityTensor
     youngs_modulus = 1e6
     poissons_ratio = 0.0
-    block = '100'
-    through_thickness_order = SECOND
-  [../]
-  [./strain]
-    type = ADComputeIncrementalShellStrain2
-    block = '100'
-    displacements = 'disp_x disp_y disp_z'
-    rotations = 'rot_x rot_y rot_z'
-    thickness = 0.01
-    through_thickness_order = SECOND
-  [../]
-  [./stress]
-    type = ADComputeShellStress2
-    block = '100'
-    through_thickness_order = SECOND
-  [../]
+  []
+  [stress]
+    type = ADComputeLinearElasticStress
+  []
 []
 
 [Postprocessors]
