@@ -9,6 +9,7 @@
 []
 
 [Mesh]
+  block = ''
   [generated1]
     type = GeneratedMeshGenerator
     dim = 2

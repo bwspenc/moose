@@ -11,9 +11,11 @@
 [Problem]
   # switch to an axisymmetric coordinate system
   coord_type = RZ
+  block = ''
 []
 
 [Mesh]
+  block = ''
   # inner cylinder
   [inner]
     type = GeneratedMeshGenerator
