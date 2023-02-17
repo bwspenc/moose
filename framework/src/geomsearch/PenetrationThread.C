@@ -745,6 +745,18 @@ PenetrationThread::findRidgeContactPoint(Point & contact_point,
   {
     if (closest_node1) // point is off the ridge between the two elements
     {
+      if (closest_node1 != closest_node2 && closest_node2 != NULL)
+      {
+        std::cout<<"BWS error: cn1: "<<closest_node1->id() <<" cn2: "<<closest_node2->id()<<std::endl;
+        std::cout<<"BWS      : el1: "<<pi1->_elem->id() <<" el2: "<<pi2->_elem->id()<<std::endl;
+        std::cout<<"BWS      :  s1: "<<pi1->_side->id() <<"  s2: "<<pi2->_side->id()<<std::endl;
+        std::cout<<"BWS      :  s1 nodes:"<<std::endl;
+        for (unsigned int iside = 0; iside<side1_nodes.size(); ++iside)
+          std::cout<<"  "<<side1_nodes[iside]->id()<<std::endl;
+        std::cout<<"BWS      :  s2 nodes:"<<std::endl;
+        for (unsigned int iside = 0; iside<side2_nodes.size(); ++iside)
+          std::cout<<"  "<<side2_nodes[iside]->id()<<std::endl;
+      }
       mooseAssert((closest_node1 == closest_node2 || closest_node2 == NULL),
                   "If off edge of ridge, closest node must be the same on both elements");
       closest_node = closest_node1;
