@@ -19,7 +19,7 @@ scalarOptions()
   return MooseEnum("VonMisesStress EffectiveStrain Hydrostatic L2norm MaxPrincipal "
                    "MidPrincipal MinPrincipal VolumetricStrain FirstInvariant SecondInvariant "
                    "ThirdInvariant AxialStress HoopStress RadialStress TriaxialityStress "
-                   "Direction MaxShear StressIntensity");
+                   "Direction MaxShear StressIntensity MaxInPlanePrincipal MinInPlanePrincipal");
 }
 
 MooseEnum

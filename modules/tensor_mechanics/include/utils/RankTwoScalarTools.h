@@ -43,7 +43,9 @@ enum class InvariantType
   StressIntensity,
   MaxPrincipal,
   MidPrincipal,
-  MinPrincipal
+  MinPrincipal,
+  MaxInPlanePrincipal,
+  MinInPlanePrincipal
 };
 
 enum class CylindricalComponent
@@ -229,7 +231,7 @@ thirdInvariant(const RankTwoTensorTempl<T> & r2tensor)
 template <typename T>
 T
 calcEigenValuesEigenVectors(const RankTwoTensorTempl<T> & r2tensor,
-                            unsigned int index,
+                            const unsigned int index,
                             Point & eigenvec)
 {
   std::vector<T> eigenval(LIBMESH_DIM);
@@ -238,6 +240,60 @@ calcEigenValuesEigenVectors(const RankTwoTensorTempl<T> & r2tensor,
 
   T val = eigenval[index];
   eigenvec = eigvecs.column(index);
+
+  return val;
+}
+
+/*
+ * This method is called by the *Principal methods to calculate the eigenvalues
+ * and eigenvectors of a symmetric tensor and return the desired value based on
+ * vector position.
+ * param r2tensor The RankTwoTensor from which to extract eigenvalues/vectors
+ * param index The index of the principal value
+ * param direction The eigenvector corresponding to the computed eigenvalue
+ */
+template <typename T>
+T
+calcInPlaneEigenValuesEigenVectors(const RankTwoTensorTempl<T> & r2tensor,
+                                   const unsigned int index,
+                                   Point & eigenvec,
+                                   const unsigned int out_of_plane_dir)
+{
+  std::vector<T> eigenval(LIBMESH_DIM);
+  RankTwoTensorTempl<T> eigvecs;
+  r2tensor.symmetricEigenvaluesEigenvectors(eigenval, eigvecs);
+
+  unsigned int discard_dir = 3;
+  // Determine which eigenval/eigenvec pair to throw out because it is in the out-of-plane
+  // direction.
+  for (unsigned int dir = 0; dir < 3; ++dir)
+  {
+    if (eigvecs.column(dir)(out_of_plane_dir) > libMesh::TOLERANCE)
+    {
+      if (discard_dir != 3) // Already found one
+        mooseError("Found two principal directions with nonzero out-of-plane components");
+      discard_dir = dir;
+    }
+  }
+  // We still may not have identified it because the out of plane eigenvalue might be zero.
+  // If that's the case, just pick the first one with a zero eigenvector.
+  if (discard_dir == 3)
+  {
+    for (unsigned int dir = 0; dir < 3; ++dir)
+    {
+      if (eigvecs.column(dir).norm() < libMesh::TOLERANCE)
+        discard_dir = dir;
+    }
+  }
+  if (discard_dir == 3)
+    mooseError("Unable to identify out-of-plane eigenvector");
+
+  // If the discard direction is the middle (1), there's nothing to do. If it's
+  // either the max or min value, replace it with the mid value.
+  const unsigned int adj_index = (discard_dir == index ? 1 : index);
+
+  T val = eigenval[adj_index];
+  eigenvec = eigvecs.column(adj_index);
 
   return val;
 }
@@ -279,6 +335,32 @@ T
 minPrincipal(const RankTwoTensorTempl<T> & r2tensor, Point & direction)
 {
   return calcEigenValuesEigenVectors(r2tensor, 0, direction);
+}
+
+/*
+ * The maxInPlanePrincipal method returns the largest principal value for a symmetric
+ * tensor, restricted to values in the plane.
+ * param r2tensor RankTwoTensor from which to extract the principal value
+ * param direction Direction corresponding to the principal value
+ */
+template <typename T>
+T
+maxInPlanePrincipal(const RankTwoTensorTempl<T> & r2tensor, Point & direction)
+{
+  return calcInPlaneEigenValuesEigenVectors(r2tensor, 2, direction, 2); // todo hardcoded to z
+}
+
+/*
+ * The minInPlanePrincipal stress returns the smallest principal value from a symmetric
+ * tensor, restricted to values in the plane.
+ * param r2tensor RankTwoTensor from which to extract the principal value
+ * param direction Direction corresponding to the principal value
+ */
+template <typename T>
+T
+minInPlanePrincipal(const RankTwoTensorTempl<T> & r2tensor, Point & direction)
+{
+  return calcInPlaneEigenValuesEigenVectors(r2tensor, 0, direction, 2); // todo hardcoded to z
 }
 
 /*
@@ -570,6 +652,10 @@ getQuantity(const RankTwoTensorTempl<T> & tensor,
       return maxShear(tensor);
     case 17:
       return stressIntensity(tensor);
+    case 18:
+      return maxInPlanePrincipal(tensor, direction);
+    case 19:
+      return minInPlanePrincipal(tensor, direction);
     default:
       mooseError("RankTwoScalarTools Error: invalid scalar type");
   }
@@ -630,6 +716,10 @@ getPrincipalComponent(const RankTwoTensorTempl<T> & tensor,
       return midPrincipal(tensor, direction);
     case InvariantType::MinPrincipal:
       return minPrincipal(tensor, direction);
+    case InvariantType::MaxInPlanePrincipal:
+      return maxInPlanePrincipal(tensor, direction);
+    case InvariantType::MinInPlanePrincipal:
+      return minInPlanePrincipal(tensor, direction);
     default:
       mooseError("RankTwoInvariant Error: valid invariant");
   }

@@ -28,7 +28,7 @@ RankTwoInvariantTempl<is_ad>::validParams()
   MooseEnum mixedInvariants(
       "VonMisesStress EffectiveStrain Hydrostatic L2norm VolumetricStrain FirstInvariant "
       "SecondInvariant ThirdInvariant TriaxialityStress MaxShear StressIntensity MaxPrincipal "
-      "MidPrincipal MinPrincipal");
+      "MidPrincipal MinPrincipal MaxInPlanePrincipal MinInPlanePrincipal");
 
   params.addParam<MooseEnum>("invariant", mixedInvariants, "Type of invariant output");
 
@@ -64,6 +64,8 @@ RankTwoInvariantTempl<is_ad>::computeQpProperties()
     case RankTwoScalarTools::InvariantType::MaxPrincipal:
     case RankTwoScalarTools::InvariantType::MidPrincipal:
     case RankTwoScalarTools::InvariantType::MinPrincipal:
+    case RankTwoScalarTools::InvariantType::MaxInPlanePrincipal:
+    case RankTwoScalarTools::InvariantType::MinInPlanePrincipal:
     {
       Point dummy_direction;
       _property[_qp] = RankTwoScalarTools::getPrincipalComponent(
