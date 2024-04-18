@@ -36,4 +36,7 @@ protected:
   /// Reference to SelfShadowSideUserObject, which does the determination of which
   /// QPs are exposed.
   const SelfShadowSideUserObject & _self_shadow;
+
+  /// IDs of blocks to include in average
+  std::set<SubdomainID> _block_ids;
 };
