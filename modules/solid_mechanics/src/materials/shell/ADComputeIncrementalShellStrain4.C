@@ -55,7 +55,7 @@ ADComputeIncrementalShellStrain4::ADComputeIncrementalShellStrain4(const InputPa
     _strain_increment(),
     _total_strain(),
     _total_strain_old(),
-    _nonlinear_sys(_fe_problem.getNonlinearSystemBase()),
+    _nonlinear_sys(_fe_problem.getNonlinearSystemBase(/*nl_sys_num=*/0)),
     _soln_disp_index(4),
     _soln_rot_index(4),
     _soln_vector(24, 1),
@@ -240,7 +240,7 @@ ADComputeIncrementalShellStrain4::computeProperties()
   unsigned int dim = _current_elem->dim();
   FEType fe_type(Utility::string_to_enum<Order>("FIRST"),
                  Utility::string_to_enum<FEFamily>("LAGRANGE"));
-  auto & fe = _fe_problem.assembly(_tid).getFE(fe_type, dim);
+  auto & fe = _fe_problem.assembly(_tid, _nonlinear_sys.number()).getFE(fe_type, dim);
   _dphidxi_map = fe->get_fe_map().get_dphidxi_map();
   _dphideta_map = fe->get_fe_map().get_dphideta_map();
   _phi_map = fe->get_fe_map().get_phi_map();
@@ -345,7 +345,7 @@ ADComputeIncrementalShellStrain4::computeGMatrix()
   // (in isoparametric space).
   FEType fe_type(Utility::string_to_enum<Order>("First"),
                  Utility::string_to_enum<FEFamily>("LAGRANGE"));
-  auto & fe = _fe_problem.assembly(_tid).getFE(fe_type, dim);
+  auto & fe = _fe_problem.assembly(_tid, _nonlinear_sys.number()).getFE(fe_type, dim);
   _dphidxi_map = fe->get_fe_map().get_dphidxi_map();
   _dphideta_map = fe->get_fe_map().get_dphideta_map();
   _phi_map = fe->get_fe_map().get_phi_map();
