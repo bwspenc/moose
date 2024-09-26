@@ -40,9 +40,11 @@ private:
 
   /// The strain energy density material property
   MaterialProperty<Real> & _strain_energy_rate_density;
+  const MaterialProperty<Real> & _strain_energy_rate_density_old;
 
   /// Current and old values of stress
   const GenericMaterialProperty<RankTwoTensor, is_ad> & _stress;
+  const MaterialProperty<RankTwoTensor> & _stress_old;
 
   /// Current value of the strain increment for incremental models
   const GenericMaterialProperty<RankTwoTensor, is_ad> & _strain_rate;

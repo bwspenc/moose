@@ -39,7 +39,9 @@ StrainEnergyRateDensityTempl<is_ad>::StrainEnergyRateDensityTempl(
   : DerivativeMaterialInterface<Material>(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _strain_energy_rate_density(declareProperty<Real>(_base_name + "strain_energy_rate_density")),
+    _strain_energy_rate_density_old(getMaterialPropertyOld<Real>(_base_name + "strain_energy_rate_density")),
     _stress(getGenericMaterialProperty<RankTwoTensor, is_ad>(_base_name + "stress")),
+    _stress_old(getMaterialPropertyOld<RankTwoTensor>(_base_name + "stress")),
     _strain_rate(getGenericMaterialProperty<RankTwoTensor, is_ad>(_base_name + "strain_rate")),
     _num_models(getParam<std::vector<MaterialName>>("inelastic_models").size())
 {
@@ -73,10 +75,21 @@ template <bool is_ad>
 void
 StrainEnergyRateDensityTempl<is_ad>::computeQpProperties()
 {
-  for (unsigned int i = 0; i < _inelastic_models.size(); ++i)
-  {
-    _inelastic_models[i]->setQp(_qp);
-    _strain_energy_rate_density[_qp] = MetaPhysicL::raw_value(
-        _inelastic_models[i]->computeStrainEnergyRateDensity(_stress, _strain_rate));
-  }
+//  for (unsigned int i = 0; i < _inelastic_models.size(); ++i)
+//  {
+//    _inelastic_models[i]->setQp(_qp);
+//    _strain_energy_rate_density[_qp] = MetaPhysicL::raw_value(
+//        _inelastic_models[i]->computeStrainEnergyRateDensity(_stress, _strain_rate));
+//  }
+
+  //_strain_energy_rate_density[_qp] =
+  //  _strain_energy_rate_density_old[_qp] + 0.5 *
+  //  (MetaPhysicL::raw_value(_stress[_qp] + _stress_old[_qp]))
+  //   .doubleContraction(MetaPhysicL::raw_value(_strain_rate[_qp]));
+
+
+  //const Real n_exponent = 3.0;
+  //const Real creep_factor = n_exponent / (n_exponent + 1);
+  const Real creep_factor = 1.0;
+  _strain_energy_rate_density[_qp] = MetaPhysicL::raw_value(creep_factor * _stress[_qp].doubleContraction((_strain_rate)[_qp]));
 }
