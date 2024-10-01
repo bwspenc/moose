@@ -216,7 +216,7 @@ XFEMAction::act()
   else if (_current_task == "add_aux_kernel" && _xfem_cut_plane)
   {
     InputParameters params = _factory.getValidParams("XFEMVolFracAux");
-    params.set<ExecFlagEnum>("execute_on") = EXEC_TIMESTEP_BEGIN;
+    params.set<ExecFlagEnum>("execute_on") = EXEC_TIMESTEP_END; //BWS
     params.set<AuxVariableName>("variable") = "xfem_volfrac";
     _problem->addAuxKernel("XFEMVolFracAux", "xfem_volfrac", params);
 
