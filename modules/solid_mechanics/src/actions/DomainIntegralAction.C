@@ -706,7 +706,11 @@ DomainIntegralAction::act()
       if (!getParam<bool>("output_vpp"))
         params.set<std::vector<OutputName>>("outputs") = {"none"};
 
-      params.set<ExecFlagEnum>("execute_on") = EXEC_TIMESTEP_END;
+      if (_use_crack_front_points_provider && !xfem_exec_flags.empty())
+        params.set<ExecFlagEnum>("execute_on") = xfem_exec_flags;
+      else
+        params.set<ExecFlagEnum>("execute_on") = {EXEC_TIMESTEP_END};
+
       params.set<UserObjectName>("crack_front_definition") = uo_name;
       params.set<std::vector<SubdomainName>>("block") = {_blocks};
       params.set<MooseEnum>("position_type") = _position_type;
