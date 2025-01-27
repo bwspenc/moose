@@ -48,6 +48,7 @@ private:
 
   /// Current value of the strain increment for incremental models
   const GenericMaterialProperty<RankTwoTensor, is_ad> & _strain_rate;
+  const MaterialProperty<RankTwoTensor> & _strain_rate_old;
 
   /// number of plastic models
   const unsigned _num_models;
