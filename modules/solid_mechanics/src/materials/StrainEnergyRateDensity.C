@@ -76,21 +76,16 @@ template <bool is_ad>
 void
 StrainEnergyRateDensityTempl<is_ad>::computeQpProperties()
 {
-//  for (unsigned int i = 0; i < _inelastic_models.size(); ++i)
-//  {
-//    _inelastic_models[i]->setQp(_qp);
-//    _strain_energy_rate_density[_qp] = MetaPhysicL::raw_value(
-//        _inelastic_models[i]->computeStrainEnergyRateDensity(_stress, _strain_rate));
-//  }
+  for (unsigned int i = 0; i < _inelastic_models.size(); ++i)
+  {
+    _inelastic_models[i]->setQp(_qp);
+    _strain_energy_rate_density[_qp] = MetaPhysicL::raw_value(
+        _inelastic_models[i]->computeStrainEnergyRateDensity(_stress, _strain_rate));
+  }
 
-  _strain_energy_rate_density[_qp] =
-    _strain_energy_rate_density_old[_qp] + 0.5 *
-    (MetaPhysicL::raw_value(_stress[_qp] + _stress_old[_qp]))
-     .doubleContraction((MetaPhysicL::raw_value(_strain_rate[_qp])) - _strain_rate_old[_qp]);
-
-  //This is the code in the power law creep model:
-  ////const Real n_exponent = 3.0;
-  ////const Real creep_factor = n_exponent / (n_exponent + 1);
-  //const Real creep_factor = 1.0;
-  //_strain_energy_rate_density[_qp] = MetaPhysicL::raw_value(creep_factor * _stress[_qp].doubleContraction((_strain_rate)[_qp]));
+//This is the numerical approach:
+//  _strain_energy_rate_density[_qp] =
+//    _strain_energy_rate_density_old[_qp] + 0.5 *
+//    (MetaPhysicL::raw_value(_stress[_qp] + _stress_old[_qp]))
+//     .doubleContraction((MetaPhysicL::raw_value(_strain_rate[_qp])) - _strain_rate_old[_qp]);
 }
