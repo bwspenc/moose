@@ -24,6 +24,7 @@ public:
   RadialReturnCreepStressUpdateBaseTempl(const InputParameters & parameters);
 
   using Material::_qp;
+  usingTransientInterfaceMembers;
   using RadialReturnStressUpdateTempl<is_ad>::propagateQpStatefulPropertiesRadialReturn;
   using SingleVariableReturnMappingSolutionTempl<is_ad>::computeDerivative;
 
@@ -49,6 +50,10 @@ protected:
   {
     return TangentCalculationMethod::PARTIAL;
   }
+
+  virtual Real computeStrainEnergyRateDensity(
+      const GenericMaterialProperty<RankTwoTensor, is_ad> & stress,
+      const GenericMaterialProperty<RankTwoTensor, is_ad> & strain_rate) override;
 
   /// Creep strain material property
   GenericMaterialProperty<RankTwoTensor, is_ad> & _creep_strain;
