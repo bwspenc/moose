@@ -63,4 +63,6 @@ protected:
   MaterialProperty<std::vector<std::vector>> & _slip_resistance;
   /// Old state of material property for current slip resistances
   const MaterialProperty<std::vector<std::vector>> & _slip_resistance_old;
+  /// VectorPostprocessor containing material constants
+  const VectorPostprocessorValue & _matl_consts_vpp_value;
 };

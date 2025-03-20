@@ -19,6 +19,7 @@ ComputeEHMStress::validParams()
                                              "Vector of initial resistance of the components of the slip system");
   params.addRequiredParam<unsigned int>("num_parts", "Number of parts");
   params.addRequiredParam<unsigned int>("num_slip_systems", "Number of slip systems");
+  params.addRequiredParam<VectorPostprocessorName>("material_constants", "Name of vectorpostprocessor that provides material constants");
   params.addClassDescription("Compute stress using EHM"); //TODO expand on this
   return params;
 }
@@ -42,6 +43,8 @@ ComputeEHMStress::ComputeEHMStress(
     _initial_slip_reisistance(getParam<std:vector<Real>>("slip_resistance")),
     _slip_resistance(declareProperty<std::vector<std::vector>>(_base_name + "slip_resistance")),
     _slip_resistance_old(getMaterialPropertyOldByName<std::vector<std::vector>>(_base_name + "slip_resistance")),
+    _slip_resistance_old(getMaterialPropertyOldByName<std::vector<std::vector>>(_base_name + "slip_resistance")),
+    _matl_consts_vpp_value(getVectorPostprocessorValue("material_constants", "column_0")) //TODO maybe the column name needs to be changed
 {
 
   //TODO error check to make sure _initial_slip_resistance is the right size
@@ -50,6 +53,13 @@ ComputeEHMStress::ComputeEHMStress(
   for (unsigned int i = 0; i< num_parts; ++i)
   {
     _coefficient_data[i]= some_rank_four_tensor;
+    RankFourTensor temp_tensor;
+    std::vector<Real> temp_vec;
+    for (unsigned int j = 0; j< 36; ++j)
+      temp_vec[j] = _matl_consts_vpp_value[j+i*36]; //TODO need to get this right
+    temp_tensor.fillFromInputVector(temp_vec, RankFourTensor::symmetric_isotropic_E_nu); //TODO replace with correct fill method
+
+    _coefficient_data[i] = temp_tensor;
   }
 
 
