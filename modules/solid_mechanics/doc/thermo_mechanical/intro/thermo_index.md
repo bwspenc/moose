@@ -1,18 +1,19 @@
 # Overview
+<!--- Vertical centering is irritating! Looks like it can be configured in reveal.js ...-->
 
 This training covers fundamentals of solid mechanics and heat conduction using MOOSE, including:
 
-- Solid mechanics principles and formulations
+- Solid mechanics principles, formulations, and implementation
 - Heat conduction implementation
 - Numerical solution strategies
 - Contact mechanics and gap heat transfer
-
 
 !---
 
 
 # Course Outline
 
+- MOOSE Introduction
 - Solid Mechanics Fundamentals
 - Heat Conduction
 - Numerical Solution Strategies
@@ -27,7 +28,7 @@ This training covers fundamentals of solid mechanics and heat conduction using M
 # Moose Introduction
 
 
-A basic MOOSE input file requires six parts, each of which will be covered in greater detail later.
+A basic MOOSE input file usually contains these six parts, each of which will be covered in greater detail later.
 
 - `[Mesh]`: Define the geometry of the domain
 - `[Variables]`: Define the unknown(s) of the problem
@@ -43,24 +44,29 @@ A basic MOOSE input file requires six parts, each of which will be covered in gr
 
 # [Mesh System](syntax/Mesh/index.md)
 
-A system for defining a finite element / volume mesh.
+A system for defining a finite element or finite volume mesh.
 
 !---
 
 ## Creating a Mesh
 
-For complicated geometries, we often use CUBIT from Sandia National Laboratories
-[cubit.sandia.gov](https://cubit.sandia.gov).
+- For complicated geometries, we often use external meshing tools:
 
-Other mesh generators can work as long as they output a file format that libMesh reads.
+  - CUBIT from Sandia National Laboratories [cubit.sandia.gov](https://cubit.sandia.gov).
+  - [Gmsh](http://gmsh.info), an open-source mesh generator.
+  - Other mesh generators that output a file format that libMesh reads.
+
+- MOOSE also provides a growing set of internal mesh generating tools
 
 !---
 
 ## Mesh generators
 
-Meshes in MOOSE are built or loaded using [MeshGenerators](syntax/Mesh/index.md).
+- Meshes in MOOSE are built, modified or loaded using [MeshGenerators](syntax/Mesh/index.md).
 
-To only generate the mesh without running the simulation, you can pass `--mesh-only` on the command line.
+- To only generate the mesh without running the simulation, you can pass `--mesh-only` on the command line.
+
+  - Particularly useful for a model using internal MOOSE mesh generators
 
 !---
 
@@ -140,7 +146,7 @@ A parameter that requires an ID will accept either numbers or "names".
 
 Names can be assigned to IDs for existing meshes to ease input file maintenance.
 
-+Note+
++Notes+
 
 - Nodesets and sidesets should have different ids.
 - At construction all sets with the same id are merged.
@@ -288,7 +294,7 @@ Variables can be assigned initial conditions:
 
 ## Variable Scaling
 
-Variable scaling improves solver convergence for multiphysics problems:
+Variable scaling can improve solver convergence for multiphysics problems:
 
 ```
 [Variables]
@@ -302,7 +308,7 @@ Variable scaling improves solver convergence for multiphysics problems:
 ```
 
 - Helps balance variables with different physical units
-- Improves conditioning of the Jacobian matrix
+- Can improve conditioning of the Jacobian matrix
 - Particularly important for coupled multiphysics problems
 
 !---
@@ -338,10 +344,10 @@ A system for implementing the physics of a PDE by defining the residual and Jaco
 ## Kernels: The Physics Building Blocks
 
 - A "Kernel" represents a piece of physics
-- Implements terms in the weak form of PDEs
+- Implements volume integral terms in the weak form of PDEs
 - Evaluates residuals at integration points
 - Assembled to form the complete system of equations
-- Available in standard and AD (Automatic Differentiation) versions
+- Available in standard and automatic differentiation (AD) versions
 
 !---
 
@@ -468,7 +474,7 @@ ADDiffusion::precomputeQpResidual()
 
 +How AD Works+
 
-- Uses dual numbers approach
+- Uses dual-number approach
 - Tracks derivatives along with values
 - Applies chain rule automatically
 - Computes exact Jacobian entries
@@ -482,7 +488,7 @@ ADDiffusion::precomputeQpResidual()
 !---
 
 
-## Example: Complete Diffusion Input
+## Example: Complete Kernel Input for Diffusion
 
 ```
 [Kernels]
@@ -591,7 +597,7 @@ the output file.
 
 ## Supported Property Types for Output
 
-`Material` properties can be of arbitrary (C++) type, but not all types can be output.
+`Material` properties can be of arbitrary (C++) type, but not all types can be directly output.
 
 | Type | AuxKernel | Variable Name(s) |
 | :- | :- | :- |
@@ -618,7 +624,7 @@ There are two flavors of BC objects: Nodal and Integrated.
 Integrated BCs are integrated over a boundary or internal side and should inherit
 from `ADIntegratedBC`.
 
-The structure is very similar to Kernels: objects must override `computeQpResidual`
+The structure is very similar to Kernels: objects must override `computeQpResidual()`
 
 !---
 
@@ -737,11 +743,11 @@ postprocessing, coupling, and proxy calculations.
 
 !---
 
-The term "nonlinear variable" is defined, in MOOSE language, as a variable that is being solved for
+The term "nonlinear variable" is defined, in MOOSE terminology, as a variable that is being solved for
 using a nonlinear system of [!ac](PDEs) using `Kernel` and `BoundaryCondition` objects.
 
 
-The term "auxiliary variable" is defined, in MOOSE language, as a variable that is directly
+The term "auxiliary variable" is defined, in MOOSE terminology, as a variable that is directly
 calculated using an `AuxKernel` object.
 
 !---
@@ -867,6 +873,9 @@ solver. Here are a few common options:
 
 A system for defining schemes for numerical integration in time.
 
+<!-- TODO  This system isn't listed in the up-front list of six systems (although maybe that's OK because it's nested within Executioner -->
+<!-- TODO  This section might be more information than we want to provide at this point for this training, though -->
+
 !---
 
 
@@ -923,7 +932,7 @@ A system for suggesting time steps for transient executioners.
 
 !listing adapt_tstep_grow_dtfunc.i block=Executioner
 
-Custom objects are created by inheriting from `TimeStepper` overriding `computeDT()`.
+Custom objects are created by inheriting from `TimeStepper` and overriding `computeDT()`.
 
 !---
 
@@ -1082,7 +1091,7 @@ using the short-cut syntax.  sub-blocks use the actual sub-block name as the suf
 !style fontsize=85%
 !include output_types.md
 
-Paraview can read many of these (CSV, Exodus, Nemesis, VTK, GMV)
+[Paraview](http://paraview.org), an open-source visualizer, can read many of these (CSV, Exodus, Nemesis, VTK, GMV)
 
 
 !---
@@ -1098,20 +1107,14 @@ that results in a +single+ scalar value.
 
 ## Types of Postprocessors
 
-The operation defined in the `::compute...` routine is applied at various locations
-depending on the Postprocessor type.
+Operations are performed at various locations depending on the Postprocessor type:
 
-ElementPostprocessor: operates on each element
-
-NodalPostprocessor: operates on each node
-
-SidePostprocessor: operates on each element side on a boundary
-
-InternalSidePostprocessor: operates on internal element sides
-
-InterfacePostprocessor: operates on each element side on subdomain interfaces
-
-GeneralPostprocessor: operates once per execution
+- ElementPostprocessor: operates on each element
+- NodalPostprocessor: operates on each node
+- SidePostprocessor: operates on each element side on a boundary
+- InternalSidePostprocessor: operates on internal element sides
+- InterfacePostprocessor: operates on each element side on subdomain interfaces
+- GeneralPostprocessor: operates once per execution
 
 !---
 
@@ -1202,18 +1205,13 @@ that results in one or many vectors of values.
 
 ## Types of VectorPostprocessors
 
-The operation defined in the `::compute...` routine is applied at various locations
-depending on the VectorPostprocessor type.
+Operations are performed at various locations depending on the VectorPostprocessor type.
 
-ElementVectorPostprocessor: operates on each element
-
-NodalVectorPostprocessor: operates on each node
-
-SideVectorPostprocessor: operates on each element side on a boundary
-
-InternalSideVectorPostprocessor: operates on internal element sides
-
-GeneralVectorPostprocessor: operates once per execution
+- ElementVectorPostprocessor: operates on each element
+- NodalVectorPostprocessor: operates on each node
+- SideVectorPostprocessor: operates on each element side on a boundary
+- InternalSideVectorPostprocessor: operates on internal element sides
+- GeneralVectorPostprocessor: operates once per execution
 
 !---
 
@@ -1308,9 +1306,10 @@ Postprocessor values are used within an object by creating a `const` reference t
 - *Deformation:* Departure from rest shape (displacement field $\boldsymbol{u}$)
 - *Strain:* Measure of deformation relative to original size
 - *Stress:* Internal forces that resist deformation
-- Material behavior defined by constitutive relationships:
+- *Constitutive relationships:* Define stress-strain behavior:
   $\boldsymbol{\sigma} = \tilde{\boldsymbol{\sigma}}(\boldsymbol{\epsilon} - \boldsymbol{\epsilon}_0)$
-- For linear elasticity: $\boldsymbol{\sigma} = \boldsymbol{\mathcal{C}}(\boldsymbol{\epsilon} - \boldsymbol{\epsilon}_0)$
+
+  - For linear elasticity: $\boldsymbol{\sigma} = \boldsymbol{\mathcal{C}}(\boldsymbol{\epsilon} - \boldsymbol{\epsilon}_0)$
 
 !---
 
@@ -1324,7 +1323,7 @@ The strong form of the governing equation for solid mechanics:
 
 
 
-Where:
+where:
 
 - $\boldsymbol{\sigma}$ = Cauchy stress tensor
 - $\boldsymbol{\sigma}_0$ = Additional source of stress (e.g., pore pressure)
@@ -1333,30 +1332,61 @@ Where:
 - $\boldsymbol{g}$ = Prescribed displacement boundary condition
 - $\boldsymbol{t}$ = Prescribed traction boundary condition
 
+<!-- TODO  Consider dropping \sigma_0 for simplicity -->
+
 !---
 
 
 # Weak Form Formulation
 
-- The weak form of the residual equation:
+The weak form of the governing equation:
 
-  !equation
-  \mathbb{R} = \left( \boldsymbol{\sigma} + \boldsymbol{\sigma}_0, \nabla \phi_m \right) - \left< \boldsymbol{t}, \phi_m \right> - \left( \boldsymbol{b}, \phi_m \right) = \boldsymbol{0}
+!equation
+\mathbb{R} = \left( \boldsymbol{\sigma} + \boldsymbol{\sigma}_0, \nabla \phi_m \right) - \left< \boldsymbol{t}, \phi_m \right> - \left( \boldsymbol{b}, \phi_m \right) = \boldsymbol{0}
 
-- The Jacobian for Newton's method (ignoring boundary terms):
+The Jacobian for Newton's method (ignoring boundary terms):
 
-  !equation
-  \mathbb{J} = \left( \frac{\partial \boldsymbol{\sigma}}{\partial \nabla \boldsymbol{u}} , \nabla \phi_m \right)
+!equation
+\mathbb{J} = \left( \frac{\partial \boldsymbol{\sigma}}{\partial \nabla \boldsymbol{u}} , \nabla \phi_m \right)
 
-- Where:
+where:
 
-  - $(\cdot)$ represents volume integrals
-  - $\left< \cdot \right>$ represents boundary integrals
-  - $\phi_m$ are the test functions
+- $(\cdot)$ represents volume integrals
+- $\left< \cdot \right>$ represents boundary integrals
+- $\phi_m$ are the test functions
 
 !---
 
-# Small vs Large Deformation Intro
+# MOOSE SolidMechanics Module
+
+The SolidMechanics module provides foundational capabilities for solid mechanics, including:
+
+- Support for a variety of modeling approaches:
+
+  - Small and finite deformation
+  - Multiple dimensionalities
+
+    - 1D: axisymmetric, spherical
+    - 2D: axisymmetric, plane stress, plane strain, generalized plane strain
+    - 3D
+    - Structural elements: shells, trusses, beams
+
+- Basic constitutive models for elasticity, creep, plasticity, damage
+- A variety of other related capabilities
+
+
+!---
+
+# Modular Materials System
+
+The SolidMechanics module
+
+!media modular_mechanics.svg
+       style=width:90%;
+
+!---
+
+# Small vs Large Deformation Introduction
 
 !row!
 
@@ -1364,11 +1394,10 @@ Where:
 
 +Linearized Elasticity+
 
-- Calculated on reference mesh
+- Calculated on reference mesh ($X$)
 - Governing equation:
   $\nabla_X \cdot \sigma(X) = 0$
-- Valid when displacement gradients are small
-- Used with ComputeSmallStrain
+- Valid for small displacement gradients
 
 !col-end!
 
@@ -1376,11 +1405,10 @@ Where:
 
 +Large Deformation+
 
-- Calculated on deformed mesh
+- Calculated on deformed mesh ($x$)
 - Governing equation:
   $\nabla_x \cdot \sigma(x) = 0$
 - Accounts for geometric nonlinearity
-- Used with ComputeFiniteStrain
 
 !col-end!
 
@@ -1400,8 +1428,8 @@ Where:
   - Stress and strain from previous steps are not stored (no stateful update).
 - *Typical Use Case:*
 
+  - Problems where deformations remain small.
   - Verifying linear elasticity problems with hand calculations.
-  - Best suited for problems where deformations remain small.
 
 !---
 
@@ -1442,7 +1470,6 @@ Where:
 
 !---
 
-
 # Closed Loop Large Deformation Loading Cycle
 
 
@@ -1454,6 +1481,8 @@ Where:
 - Initial configuration (A) with dimensions $L \times L$.
 - Intermediate stages show stretching ($\Delta y$) and shearing ($\Delta x$).
 - Final shape (E) might return to a form similar to the initial state, but with residual effects if large deformations are not perfectly elastic.
+
+<!-- TODO I'm not sure what the motivation for this slide at this point in the presentation is. It might just confuse people.  -->
 
 !---
 
@@ -2476,7 +2505,7 @@ J_{ij}(\vec{u}_n) = \dfrac{\partial R_i(\vec{u}_n)}{\partial u_j}
 *Automatic Differentiation (AD):*
 
 - Computes derivatives automatically
-- Uses dual number approach
+- Uses dual-number approach
 - Trade computational cost for development time
 - Uses `ADKernel` instead of `Kernel`
 
