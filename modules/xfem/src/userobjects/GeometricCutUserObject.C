@@ -56,6 +56,7 @@ GeometricCutUserObject::GeometricCutUserObject(const InputParameters & parameter
 void
 GeometricCutUserObject::initialize()
 {
+  std::cout<<"BWS gcuo init"<<std::endl;
   _marked_elems_2d.clear();
   _marked_elems_3d.clear();
 }

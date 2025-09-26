@@ -290,12 +290,20 @@ protected:
     CRACK_FRONT_POINTS
   } _geom_definition_method;
 
+  /**
+   * Initialize crack front.
+   */
+  void initializeCrackFront();
+
   /// Reference to the auxiliary system
   AuxiliarySystem & _aux;
   /// Reference to the mesh
   MooseMesh & _mesh;
   /// Tolerance used in geometric calculations
   static const Real _tol;
+
+  /// Tracks whether crack front has been initialized
+  bool _crack_front_initialized;
 
   /// Crack front nodes ordered from the start to end of the crack front
   std::vector<dof_id_type> _ordered_crack_front_nodes;

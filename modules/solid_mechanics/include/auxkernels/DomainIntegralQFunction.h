@@ -29,8 +29,8 @@ public:
   virtual ~DomainIntegralQFunction() {}
 
 protected:
-  virtual void initialSetup();
-  virtual Real computeValue();
+  virtual void initialSetup() override;
+  virtual Real computeValue() override;
   void projectToFrontAtPoint(Real & dist_to_front, Real & dist_along_tangent);
 
 private:
@@ -40,5 +40,4 @@ private:
   bool _has_crack_front_point_index;
   const unsigned int _crack_front_point_index;
   bool _treat_as_2d;
-  bool _is_point_on_intersecting_boundary;
 };

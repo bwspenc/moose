@@ -358,7 +358,8 @@ DomainIntegralAction::act()
   const std::string aux_stress_base_name("aux_stress");
   const std::string aux_grad_disp_base_name("aux_grad_disp");
 
-  // checking if built with xfem and setting flags for vpps used by xfem
+  // Execute flags used for multiple objects when run with XFEM. 
+  // EXEC_INITIAL is not needed in this list because EXEC_XFEM_MARK gets run during initialization
   std::vector<std::string> xfem_exec_flags = {EXEC_XFEM_MARK, EXEC_TIMESTEP_END};
 
   std::string ad_prepend = "";
@@ -372,7 +373,7 @@ DomainIntegralAction::act()
     InputParameters params = _factory.getValidParams(uo_type_name);
     if (_use_crack_front_points_provider)
     {
-      // The CrackFrontDefinition updates the vpps and MUST execute before them
+      // The CrackFrontDefinition updates the vpps and MUST execute before them //BWS I don't understand this comment.
       params.set<int>("execution_order_group") = -1;
       params.set<ExecFlagEnum>("execute_on") = xfem_exec_flags;
     }
@@ -487,7 +488,7 @@ DomainIntegralAction::act()
     }
 
     InputParameters params = _factory.getValidParams(ak_type_name);
-    params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+    params.set<ExecFlagEnum>("execute_on") = {EXEC_TIMESTEP_END};
     params.set<UserObjectName>("crack_front_definition") = uo_name;
     params.set<bool>("use_displaced_mesh") = _use_displaced_mesh;
 

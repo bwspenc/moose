@@ -138,6 +138,8 @@ CrackMeshCut3DUserObject::initialSetup()
 void
 CrackMeshCut3DUserObject::initialize()
 {
+  std::cout<<"BWS cmc3duo init"<<std::endl;
+  MeshCutUserObjectBase::initialize();
   _is_mesh_modified = false;
 
   if (_grow)

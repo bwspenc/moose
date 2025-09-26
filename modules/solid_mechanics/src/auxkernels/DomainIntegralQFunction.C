@@ -36,8 +36,7 @@ DomainIntegralQFunction::DomainIntegralQFunction(const InputParameters & paramet
     _has_crack_front_point_index(isParamValid("crack_front_point_index")),
     _crack_front_point_index(
         _has_crack_front_point_index ? getParam<unsigned int>("crack_front_point_index") : 0),
-    _treat_as_2d(false),
-    _is_point_on_intersecting_boundary(false)
+    _treat_as_2d(false)
 {
 }
 
@@ -61,8 +60,6 @@ DomainIntegralQFunction::initialSetup()
       mooseError("crack_front_point_index must be specified in DomainIntegralQFunction");
     }
   }
-  _is_point_on_intersecting_boundary =
-      _crack_front_definition->isPointWithIndexOnIntersectingBoundary(_crack_front_point_index);
 }
 
 Real
@@ -107,7 +104,7 @@ DomainIntegralQFunction::computeValue()
 
     // Set to zero if a node is on a designated free surface and its crack front node is not.
     if (_crack_front_definition->isNodeOnIntersectingBoundary(_current_node) &&
-        !_is_point_on_intersecting_boundary)
+        !_crack_front_definition->isPointWithIndexOnIntersectingBoundary(_crack_front_point_index))
       tangent_multiplier = 0.0;
 
     q *= tangent_multiplier;
