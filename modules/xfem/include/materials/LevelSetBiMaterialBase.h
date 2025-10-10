@@ -22,6 +22,11 @@ template <bool is_ad>
 class LevelSetBiMaterialBaseTempl : public Material
 {
 public:
+  /**
+   * Build parameters describing the base class for level-set-driven bi-material models.
+   *
+   * @return Input parameters defining common bi-material behavior.
+   */
   static InputParameters validParams();
 
   LevelSetBiMaterialBaseTempl(const InputParameters & parameters);
@@ -32,12 +37,12 @@ protected:
   virtual void computeQpProperties() override;
 
   /**
-   * assign the material properties for the negative level set region.
+   * Assign the material properties for the negative level-set region.
    */
   virtual void assignQpPropertiesForLevelSetNegative() = 0;
 
   /**
-   * assign the material properties for the positive level set region.
+   * Assign the material properties for the positive level-set region.
    */
   virtual void assignQpPropertiesForLevelSetPositive() = 0;
 

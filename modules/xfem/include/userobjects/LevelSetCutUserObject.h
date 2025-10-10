@@ -16,6 +16,11 @@
 class LevelSetCutUserObject : public GeometricCutUserObject
 {
 public:
+  /**
+   * Build parameters describing the level-set-based geometric cut user object.
+   *
+   * @return Input parameters defining the level-set-driven cut configuration.
+   */
   static InputParameters validParams();
 
   LevelSetCutUserObject(const InputParameters & parameters);
@@ -38,9 +43,11 @@ public:
   getCrackPlaneNormals(unsigned int num_crack_front_points) const override;
 
   /**
-   * If the levelset value is positive, return 1, otherwise return 0.
-   * @param node Pointer to the node
-   * @return an unsigned int indicating the side
+   * Determine the cut subdomain identifier based on the level-set value at a node.
+   *
+   * @param node Pointer to the node whose level-set value is inspected.
+   * @return Cut subdomain identifier indicating whether the node lies on the positive or negative
+   * side.
    */
   virtual CutSubdomainID getCutSubdomainID(const Node * node) const override;
 

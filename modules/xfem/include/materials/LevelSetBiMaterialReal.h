@@ -19,12 +19,24 @@ template <bool is_ad>
 class LevelSetBiMaterialRealTempl : public LevelSetBiMaterialBase
 {
 public:
+  /**
+   * Build parameters describing the bi-material real-valued material.
+   *
+   * @return Input parameters defining the level-set-controlled scalar properties.
+   */
   static InputParameters validParams();
 
   LevelSetBiMaterialRealTempl(const InputParameters & parameters);
 
 protected:
+  /**
+   * Assign quadrature point properties for the positive level-set region.
+   */
   virtual void assignQpPropertiesForLevelSetPositive() override;
+
+  /**
+   * Assign quadrature point properties for the negative level-set region.
+   */
   virtual void assignQpPropertiesForLevelSetNegative() override;
 
   /// Real Material properties for the two separate materials in the bi-material system

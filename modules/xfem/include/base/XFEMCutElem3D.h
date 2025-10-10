@@ -25,11 +25,12 @@ class XFEMCutElem3D : public XFEMCutElem
 {
 public:
   /**
-   * Constructor initializes XFEMCutElem3D object
-   * @param elem The element on which XFEMCutElem3D is built
-   * @param CEMelem The EFAFragment3D object that belongs to XFEMCutElem3D
-   * @param n_qpoints The number of quadrature points
-   * @param n_sides The number of sides which the element has
+   * Construct an XFEM cut element for a three-dimensional host element.
+   *
+   * @param elem Element on which the cut element is built.
+   * @param CEMelem Fragment representing the cut element topology.
+   * @param n_qpoints Number of quadrature points used for integration.
+   * @param n_sides Number of sides in the host element.
    */
   XFEMCutElem3D(Elem * elem,
                 const EFAElement3D * const CEMelem,

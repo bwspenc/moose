@@ -30,7 +30,9 @@ public:
   virtual void finalize() override;
 
   /**
-   * get the map that stores the point index and its values at the positive level set side
+   * Get the map storing point indices and their values on the positive level-set side.
+   *
+   * @return Mapping from point index to solution value on the positive level-set side.
    */
   std::map<unsigned int, Real> getValueAtPositiveLevelSet() const
   {
@@ -38,7 +40,9 @@ public:
   };
 
   /**
-   * get the map that stores the point index and its values at the negative level set side
+   * Get the map storing point indices and their values on the negative level-set side.
+   *
+   * @return Mapping from point index to solution value on the negative level-set side.
    */
   std::map<unsigned int, Real> getValueAtNegativeLevelSet() const
   {
@@ -46,7 +50,9 @@ public:
   };
 
   /**
-   * get the map that stores the point index and its gradient at the positive level set side
+   * Get the map storing point indices and their gradients on the positive level-set side.
+   *
+   * @return Mapping from point index to gradient on the positive level-set side.
    */
   std::map<unsigned int, RealVectorValue> getGradientAtPositiveLevelSet() const
   {
@@ -54,7 +60,9 @@ public:
   };
 
   /**
-   * get the map that stores the point index and its graident at the negative level set side
+   * Get the map storing point indices and their gradients on the negative level-set side.
+   *
+   * @return Mapping from point index to gradient on the negative level-set side.
    */
   std::map<unsigned int, RealVectorValue> getGradientAtNegativeLevelSet() const
   {

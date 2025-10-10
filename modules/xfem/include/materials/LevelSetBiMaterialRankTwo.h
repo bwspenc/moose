@@ -20,12 +20,24 @@ template <bool is_ad>
 class LevelSetBiMaterialRankTwoTempl : public LevelSetBiMaterialBase
 {
 public:
+  /**
+   * Build parameters describing the bi-material rank-two tensor material.
+   *
+   * @return Input parameters defining the level-set-controlled tensor properties.
+   */
   static InputParameters validParams();
 
   LevelSetBiMaterialRankTwoTempl(const InputParameters & parameters);
 
 protected:
+  /**
+   * Assign quadrature point properties for the positive level-set region.
+   */
   virtual void assignQpPropertiesForLevelSetPositive() override;
+
+  /**
+   * Assign quadrature point properties for the negative level-set region.
+   */
   virtual void assignQpPropertiesForLevelSetNegative() override;
 
   /// RankTwoTensor Material properties for the two separate materials in the bi-material system

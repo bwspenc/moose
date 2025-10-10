@@ -102,8 +102,9 @@ class GeometricCutUserObject : public CrackFrontPointsProvider
 {
 public:
   /**
-   * Factory constructor, takes parameters so that all derived classes can be built using the same
-   * constructor.
+   * Build the parameter set describing a geometric cut user object.
+   *
+   * @return Input parameters used to configure geometric cut user objects.
    */
   static InputParameters validParams();
 
@@ -115,61 +116,66 @@ public:
   virtual void finalize() override;
 
   /**
-   * Check to see whether a specified 2D element should be cut based on geometric
-   * conditions
-   * @param elem      Pointer to the libMesh element to be considered for cutting
-   * @param cut_edges Data structure filled with information about edges to be cut
-   * @param cut_nodes Data structure filled with information about nodes to be cut
-   * @return bool     true if element is to be cut
+   * Check whether a specified 2D element should be cut based on geometric conditions.
+   *
+   * @param elem Pointer to the libMesh element considered for cutting.
+   * @param cut_edges Data structure populated with information about edges to be cut.
+   * @param cut_nodes Data structure populated with information about nodes to be cut.
+   * @return True if the element should be cut by the geometric interface.
    */
   virtual bool cutElementByGeometry(const Elem * elem,
                                     std::vector<Xfem::CutEdge> & cut_edges,
                                     std::vector<Xfem::CutNode> & cut_nodes) const = 0;
 
   /**
-   * Check to see whether a specified 3D element should be cut based on geometric
-   * conditions
-   * @param elem      Pointer to the libMesh element to be considered for cutting
-   * @param cut_faces Data structure filled with information about edges to be cut
-   * @return bool     true if element is to be cut
+   * Check whether a specified 3D element should be cut based on geometric conditions.
+   *
+   * @param elem Pointer to the libMesh element considered for cutting.
+   * @param cut_faces Data structure populated with information about faces to be cut.
+   * @return True if the element should be cut by the geometric interface.
    */
   virtual bool cutElementByGeometry(const Elem * elem,
                                     std::vector<Xfem::CutFace> & cut_faces) const = 0;
 
   /**
-   * Check to see whether a fragment of a 2D element should be cut based on geometric conditions
-   * @param frag_edges Data structure defining the current fragment to be considered
-   * @param cut_edges  Data structure filled with information about fragment edges to be cut
-   * @return bool      true if fragment is to be cut
+   * Check whether a fragment of a 2D element should be cut based on geometric conditions.
+   *
+   * @param frag_edges Data structure defining the current fragment to be considered.
+   * @param cut_edges Data structure populated with information about fragment edges to be cut.
+   * @return True if the fragment should be cut by the geometric interface.
    */
   virtual bool cutFragmentByGeometry(std::vector<std::vector<Point>> & frag_edges,
                                      std::vector<Xfem::CutEdge> & cut_edges) const = 0;
 
   /**
-   * Check to see whether a fragment of a 3D element should be cut based on geometric conditions
-   * @param frag_faces Data structure defining the current fragment to be considered
-   * @param cut_faces  Data structure filled with information about fragment faces to be cut
-   * @return bool      true if fragment is to be cut
+   * Check whether a fragment of a 3D element should be cut based on geometric conditions.
+   *
+   * @param frag_faces Data structure defining the current fragment to be considered.
+   * @param cut_faces Data structure populated with information about fragment faces to be cut.
+   * @return True if the fragment should be cut by the geometric interface.
    */
   virtual bool cutFragmentByGeometry(std::vector<std::vector<Point>> & frag_faces,
                                      std::vector<Xfem::CutFace> & cut_faces) const = 0;
 
   /**
    * Get the interface ID for this cutting object.
-   * @return the interface ID
+   *
+   * @return Interface identifier associated with this cut user object.
    */
   unsigned int getInterfaceID() const { return _interface_id; };
 
   /**
    * Set the interface ID for this cutting object.
-   * @param the interface ID
+   *
+   * @param interface_id Interface identifier to associate with this cut user object.
    */
   void setInterfaceID(unsigned int interface_id) { _interface_id = interface_id; };
 
   /**
    * Should the elements cut by this cutting object be healed in the current
    * time step?
-   * @return true if the cut element should be healed
+   *
+   * @return True if the cut element should be healed.
    */
   bool shouldHealMesh() const { return _heal_always; };
 
@@ -177,8 +183,9 @@ public:
    * Get CutSubdomainID telling which side the node belongs to relative to the cut.
    * The returned ID contains no physical meaning, but should be consistent throughout the
    * simulation.
-   * @param node   Pointer to the node
-   * @return       An unsigned int indicating the side
+   *
+   * @param node Pointer to the node.
+   * @return Cut subdomain identifier indicating the side of the cut containing the node.
    */
   virtual CutSubdomainID getCutSubdomainID(const Node * /*node*/) const
   {
@@ -189,8 +196,9 @@ public:
 
   /**
    * Get the CutSubdomainID for the given element.
-   * @param node   Pointer to the element
-   * @return       The CutSubdomainID
+   *
+   * @param elem Pointer to the element of interest.
+   * @return Cut subdomain identifier for the element.
    */
   CutSubdomainID getCutSubdomainID(const Elem * elem) const;
 

@@ -18,6 +18,11 @@
 class XFEMCutPlaneAux : public AuxKernel
 {
 public:
+  /**
+   * Create the parameter set describing the XFEM cut plane auxiliary quantity.
+   *
+   * @return Input parameters required to configure the cut plane auxiliary kernel.
+   */
   static InputParameters validParams();
 
   XFEMCutPlaneAux(const InputParameters & parameters);
@@ -25,6 +30,11 @@ public:
   virtual ~XFEMCutPlaneAux() {}
 
 protected:
+  /**
+   * Evaluate the requested cut plane quantity for the current element.
+   *
+   * @return The scalar cut-plane value computed at the current quadrature point.
+   */
   virtual Real computeValue();
 
 private:

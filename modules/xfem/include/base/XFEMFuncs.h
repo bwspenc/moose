@@ -66,17 +66,17 @@ double r8_acos(double c);
 double angle_rad_3d(double p1[3], double p2[3], double p3[3]);
 
 /**
- * Determine whether a line segment is intersected by a cutting line, and compute the
- * fraction along that line where the intersection occurs
- * @param segment_point1 Point at one end of the line segment
- * @param segment_point1 Point at other end of the line segment
- * @param cutting_line_points Pair of points that define the cutting line
- * @param cutting_line_fraction Fractional distance from the start to end point of the
- *                              cutting line over which the cutting line is currently
- *                              active
- * @param segment_intersection_fraction Frictional distance along the cut segment from
- *                                      segment_point1 where the intersection occurs
- * @return true if the segment is intersected, false if it is not
+ * Determine whether a line segment is intersected by a cutting line and, if so, compute the
+ * fractional location of the intersection.
+ *
+ * @param segment_point1 Point at one end of the line segment.
+ * @param segment_point2 Point at the other end of the line segment.
+ * @param cutting_line_points Pair of points that define the cutting line.
+ * @param cutting_line_fraction Fractional distance from the start to end point of the cutting line
+ * over which the cutting line is currently active.
+ * @param segment_intersection_fraction Fractional distance along the segment from
+ * @p segment_point1 where the intersection occurs.
+ * @return True if the segment is intersected; false otherwise.
  */
 bool intersectSegmentWithCutLine(const Point & segment_point1,
                                  const Point & segment_point2,

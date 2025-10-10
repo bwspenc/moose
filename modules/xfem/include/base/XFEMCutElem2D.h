@@ -25,11 +25,12 @@ class XFEMCutElem2D : public XFEMCutElem
 {
 public:
   /**
-   * Constructor initializes XFEMCutElem2D object
-   * @param elem The element on which XFEMCutElem2D is built
-   * @param CEMelem The EFAFragment2D object that belongs to XFEMCutElem2D
-   * @param n_qpoints The number of quadrature points
-   * @param n_sides The number of sides which the element has
+   * Construct an XFEM cut element for a two-dimensional host element.
+   *
+   * @param elem Element on which the cut element is built.
+   * @param CEMelem Fragment representing the cut element topology.
+   * @param n_qpoints Number of quadrature points used for integration.
+   * @param n_sides Number of sides in the host element.
    */
   XFEMCutElem2D(Elem * elem,
                 const EFAElement2D * const CEMelem,

@@ -15,18 +15,27 @@
 class XFEMMovingInterfaceVelocityBase : public DiscreteElementUserObject
 {
 public:
+  /**
+   * Build the parameter set for XFEM moving interface velocity user objects.
+   *
+   * @return Input parameters defining how interface velocities are computed.
+   */
   static InputParameters validParams();
 
   XFEMMovingInterfaceVelocityBase(const InputParameters & parameters);
   virtual ~XFEMMovingInterfaceVelocityBase() {}
 
+  /**
+   * Initialize state prior to evaluating interface velocities during the current timestep.
+   */
   virtual void initialize() override;
 
   /**
-   * Compute the interface velocity for a node
-   * @param node_id  node ID
-   * @param normal  normal direction at this node
-   * @return Real     Interface velocity
+   * Compute the interface velocity for a node on the cut mesh.
+   *
+   * @param node_id Identifier of the node whose velocity is being computed.
+   * @param normal Normal direction at the node defining positive motion.
+   * @return Interface velocity magnitude projected along the supplied normal.
    */
   virtual Real computeMovingInterfaceVelocity(dof_id_type node_id,
                                               RealVectorValue normal) const = 0;

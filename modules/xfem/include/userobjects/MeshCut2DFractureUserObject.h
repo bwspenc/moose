@@ -23,14 +23,29 @@ class CrackFrontDefinition;
 class MeshCut2DFractureUserObject : public MeshCut2DUserObjectBase
 {
 public:
+  /**
+   * Build parameters describing the fracture-driven mesh cut user object.
+   *
+   * @return Input parameters defining fracture-controlled crack growth.
+   */
   static InputParameters validParams();
 
   MeshCut2DFractureUserObject(const InputParameters & parameters);
 
+  /**
+   * Perform initial setup specific to fracture-controlled crack growth.
+   */
   virtual void initialSetup() override;
+
+  /**
+   * Initialize state prior to applying fracture growth logic for the current step.
+   */
   virtual void initialize() override;
 
 protected:
+  /**
+   * Determine active boundary growth based on fracture integral criteria.
+   */
   virtual void findActiveBoundaryGrowth() override;
 
 private:
@@ -43,11 +58,11 @@ private:
 
   CrackFrontDefinition * _crack_front_definition;
   /**
-   * Compute all of the maximum hoop stress fracture integrals for all crack trips from the fracture
-   * integral vector post processors
-   * @param k1 fracture integrals from KI vector postprocessors
-   * @param k2 fracture integrals from KII vector postprocessors
-   * @return computed fracture integral squared
+   * Compute the squared fracture integral magnitude for each crack tip.
+   *
+   * @param k1 Fracture integrals from mode-I vector postprocessors.
+   * @param k2 Fracture integrals from mode-II vector postprocessors.
+   * @return Vector of squared fracture integral magnitudes used for crack growth decisions.
    */
   std::vector<Real> getKSquared(const std::vector<Real> & k1, const std::vector<Real> & k2) const;
 };

@@ -20,8 +20,10 @@ class ElementFragmentAlgorithm
 {
 public:
   /**
-   * Constructor
-   **/
+   * Construct the element fragmentation algorithm with a target logging stream.
+   *
+   * @param os Output stream used for diagnostic logging during fragmentation operations.
+   */
   ElementFragmentAlgorithm(std::ostream & os);
 
   ~ElementFragmentAlgorithm();

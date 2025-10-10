@@ -29,17 +29,40 @@ class XFEMMovingInterfaceVelocityBase;
 class InterfaceMeshCutUserObjectBase : public GeometricCutUserObject
 {
 public:
+  /**
+   * Build the parameter set describing an interface mesh cut user object.
+   *
+   * @return Input parameters defining the interface mesh cutting configuration.
+   */
   static InputParameters validParams();
 
   InterfaceMeshCutUserObjectBase(const InputParameters & parameters);
 
+  /**
+   * Perform initial setup prior to interface mesh cutting.
+   */
   virtual void initialSetup() override;
 
+  /**
+   * Initialize state for the current execution interval.
+   */
   virtual void initialize() override;
 
+  /**
+   * Retrieve the ordered crack front points to expose to other XFEM components.
+   *
+   * @param num_crack_front_points The number of crack front points requested.
+   * @return Ordered crack front point coordinates suitable for postprocessing.
+   */
   virtual const std::vector<Point>
   getCrackFrontPoints(unsigned int num_crack_front_points) const override;
 
+  /**
+   * Provide normals associated with the crack front points.
+   *
+   * @param num_crack_front_points The number of normals to populate.
+   * @return Crack front normals corresponding to the requested point count.
+   */
   virtual const std::vector<RealVectorValue>
   getCrackPlaneNormals(unsigned int num_crack_front_points) const override;
 
@@ -47,12 +70,11 @@ public:
   std::shared_ptr<MeshBase> getCutterMesh() const { return _cutter_mesh; };
 
   /**
+   * Calculate the signed distance for a point relative to the interface surface.
    *
-   * Calculate the signed distance for a given point relative to the surface. This is computed as
-   * the smallest distance from any face (3D) or edge (2D) in the surface, and the sign is positive
-   * if the node is on the side of that edge that coincides with its normal vector.
-   * @param p Coordinate of point
-   * @return Signed distance
+   * @param p Coordinate of the point whose signed distance is requested.
+   * @return Signed distance from @p p to the closest interface feature with the correct sign based
+   * on the face or edge normal orientation.
    */
   virtual Real calculateSignedDistance(Point p) const = 0;
 
@@ -60,7 +82,7 @@ public:
   virtual Point nodeNormal(const unsigned int & node_id) = 0;
 
   /**
-   * calculate the element normal values for all of the elements.
+   * Calculate the element normal values for all elements in the cutting mesh.
    */
   virtual void calculateNormals() = 0;
 

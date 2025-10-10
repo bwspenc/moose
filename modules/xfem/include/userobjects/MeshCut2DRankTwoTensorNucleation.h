@@ -15,6 +15,11 @@
 class MeshCut2DRankTwoTensorNucleation : public MeshCut2DNucleationBase
 {
 public:
+  /**
+   * Build parameters describing the tensor-driven crack nucleation user object.
+   *
+   * @return Input parameters defining the tensor-based nucleation criterion.
+   */
   static InputParameters validParams();
 
   MeshCut2DRankTwoTensorNucleation(const InputParameters & parameters);
@@ -50,6 +55,13 @@ protected:
   const MooseArray<Real> & _JxW;
   const MooseArray<Real> & _coord;
 
+  /**
+   * Determine whether the current element nucleates a crack based on tensor data.
+   *
+   * @param cutterElemNodes Nodes of the line segment used to create the cutter mesh when a crack is
+   * nucleated.
+   * @return True if the nucleation criterion is met for the element.
+   */
   virtual bool
   doesElementCrack(std::pair<RealVectorValue, RealVectorValue> & cutterElemNodes) override;
 

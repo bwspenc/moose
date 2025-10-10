@@ -19,11 +19,21 @@ class InterfaceMeshCutUserObjectBase;
 class MeshCutLevelSetAux : public AuxKernel
 {
 public:
+  /**
+   * Build parameters controlling the mesh-cut level set auxiliary kernel.
+   *
+   * @return Input parameters that describe how the level set auxiliary value is computed.
+   */
   static InputParameters validParams();
 
   MeshCutLevelSetAux(const InputParameters & parameters);
 
 protected:
+  /**
+   * Compute the signed level set value associated with the coupled interface.
+   *
+   * @return The evaluated level set value at the current quadrature point.
+   */
   virtual Real computeValue() override;
 
   /// Pointer to the InterfaceMeshCutUserObject object

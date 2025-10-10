@@ -48,29 +48,31 @@ public:
                                      std::vector<Xfem::CutFace> & cut_faces) const override;
 
   /**
-    Find all active boundary nodes in the cutter mesh
-    Find boundary nodes that will grow; nodes outside of the structural mesh are inactive
+   * Find all active boundary nodes in the cutter mesh.
+   *
+   * Boundary nodes that lie outside the structural mesh are marked inactive.
    */
   void findActiveBoundaryNodes();
 
   /**
-    Get crack front points in the active segment
-    -1 means inactive; positive is the point's index in the Crack Front Definition starting from 0
+   * Get the indices of crack-front points within the active segment.
+   *
+   * @return Vector of indices where -1 indicates an inactive point and nonnegative values map to
+   * entries in the crack front definition.
    */
   std::vector<int> getFrontPointsIndex();
 
   /**
-    Return growth size at the active boundary to the mesh cutter
+   * Record the growth size at the active boundary for the mesh cutter.
+   *
+   * @param growth_size Growth increments to apply at each active boundary node.
    */
   void setSubCriticalGrowthSize(std::vector<Real> & growth_size);
 
   /**
-    Return the total number of crack front points.
-    This function is currently not called anywhere in the code.
-    Ideally, in a future update, the number of crack front points will be managed by
-    CrackFrontPointsProvider instead of CrackFrontDefinition. In that case,
-    getNumberOfCrackFrontPoints() defined here may be used to override a virtual function defined in
-    CrackFrontPointsProvider
+   * Get the total number of crack front points tracked by the cutter mesh.
+   *
+   * @return Total number of crack front points available in the mesh cutter.
    */
   unsigned int getNumberOfCrackFrontPoints() const;
 
@@ -170,7 +172,13 @@ protected:
   unsigned int _num_crack_front_points;
 
   /**
-    Check if a line intersects with an element
+   * Check if a line intersects with an element defined by its vertices.
+   *
+   * @param p1 First endpoint of the line segment.
+   * @param p2 Second endpoint of the line segment.
+   * @param _vertices Vertices defining the element.
+   * @param point Intersection point when an intersection is detected.
+   * @return True if the line intersects the element; false otherwise.
    */
   virtual bool intersectWithEdge(const Point & p1,
                                  const Point & p2,
@@ -178,7 +186,13 @@ protected:
                                  Point & point) const;
 
   /**
-    Find directional intersection along the positive extension of the vector from p1 to p2
+   * Find the intersection along the positive extension of the vector from @p p1 to @p p2.
+   *
+   * @param p1 Starting point of the direction vector.
+   * @param p2 Ending point defining the direction vector.
+   * @param vertices Vertices defining the candidate element.
+   * @param point Intersection point when the direction intersects the element.
+   * @return True if an intersection is found along the positive direction.
    */
   bool findIntersection(const Point & p1,
                         const Point & p2,
@@ -186,75 +200,92 @@ protected:
                         Point & point) const;
 
   /**
-    Check if point p is inside the edge p1-p2
+   * Check if a point lies inside the segment defined by @p p1 and @p p2.
+   *
+   * @param p1 First endpoint of the segment.
+   * @param p2 Second endpoint of the segment.
+   * @param p Query point.
+   * @return True if @p p lies on the edge; false otherwise.
    */
   bool isInsideEdge(const Point & p1, const Point & p2, const Point & p) const;
 
   /**
-    Get the relative position of p from p1
+   * Get the relative position of a point measured from @p p1 along the segment to @p p2.
+   *
+   * @param p1 First endpoint of the segment.
+   * @param p2 Second endpoint of the segment.
+   * @param p Query point.
+   * @return Relative position of @p p measured from @p p1 along the segment.
    */
   Real getRelativePosition(const Point & p1, const Point & p2, const Point & p) const;
 
   /**
-    Check if point p is inside a plane
+   * Check if a point lies inside a plane defined by a set of vertices.
+   *
+   * @param _vertices Vertices defining the plane.
+   * @param p Query point.
+   * @return True if the point is inside the plane; false otherwise.
    */
   bool isInsideCutPlane(const std::vector<Point> & _vertices, const Point & p) const;
 
   /**
-    Find boundary nodes of the cutter mesh
-    This is a simple algorithm simply based on the added angle = 360 degrees
-    Works fine for planar cutting surface for curved cutting surface, need to re-work this
-    subroutine to make it more general
+   * Find boundary nodes of the cutter mesh.
+   *
+   * This simple algorithm is based on checking whether the accumulated angle equals 360 degrees.
    */
   void findBoundaryNodes();
 
   /**
-    Find boundary edges of the cutter mesh
+   * Find boundary edges of the cutter mesh.
    */
   void findBoundaryEdges();
 
   /**
-    Sort boundary nodes to be in the right order along the boundary
+   * Sort boundary nodes into the correct order along the boundary loop.
    */
   void sortBoundaryNodes();
 
   /**
-    Find distance between two nodes
+   * Find the distance between two boundary nodes.
+   *
+   * @param node1 Identifier of the first node.
+   * @param node2 Identifier of the second node.
+   * @return Euclidean distance between the nodes.
    */
   Real findDistance(dof_id_type node1, dof_id_type node2);
 
   /**
-    If boundary nodes are too sparse, add nodes in between
+   * Refine the boundary by inserting nodes when the spacing is too large.
    */
   void refineBoundary();
 
   /**
-    Find growth direction at each active node
+   * Find the growth direction at each active boundary node.
    */
   void findActiveBoundaryDirection();
 
   /**
-    Grow the cutter mesh
+   * Grow the cutter mesh according to the active growth directions and magnitudes.
    */
   void growFront();
 
   /**
-    Sort the front nodes
+   * Sort the front nodes to maintain a consistent ordering.
    */
   void sortFrontNodes();
 
   /**
-    Find front-structure intersections
+   * Find intersections between the front and the structural mesh.
    */
   void findFrontIntersection();
 
   /**
-    Refine the mesh at the front
+   * Refine the cutter mesh near the crack front.
    */
   void refineFront();
 
   /**
-    Create tri3 elements between the new front and the old front
+   * Create TRI3 elements between the new front and the old front.
    */
   void triangulation();
 

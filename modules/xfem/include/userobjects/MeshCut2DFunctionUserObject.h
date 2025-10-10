@@ -23,13 +23,24 @@ class Function;
 class MeshCut2DFunctionUserObject : public MeshCut2DUserObjectBase
 {
 public:
+  /**
+   * Build the parameters describing a mesh-cut user object driven by functions.
+   *
+   * @return Input parameters defining the functional mesh-cut growth configuration.
+   */
   static InputParameters validParams();
 
   MeshCut2DFunctionUserObject(const InputParameters & parameters);
 
+  /**
+   * Initialize the function-driven crack growth user object at the beginning of an execution step.
+   */
   virtual void initialize() override;
 
 protected:
+  /**
+   * Determine the active boundary growth using the prescribed functions.
+   */
   virtual void findActiveBoundaryGrowth() override;
 
 private:

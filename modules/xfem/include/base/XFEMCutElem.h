@@ -30,10 +30,11 @@ class XFEMCutElem
 {
 public:
   /**
-   * Constructor initializes XFEMCutElem object
-   * @param elem The element on which XFEMCutElem is built
-   * @param n_qpoints The number of quadrature points
-   * @param n_sides The number of sides which the element has
+   * Construct the base XFEM cut element wrapper.
+   *
+   * @param elem Element on which the cut element is built.
+   * @param n_qpoints Number of quadrature points used for integration.
+   * @param n_sides Number of sides in the host element.
    */
   XFEMCutElem(Elem * elem, unsigned int n_qpoints, unsigned int n_sides);
   virtual ~XFEMCutElem();
@@ -61,24 +62,29 @@ public:
   void setQuadraturePointsAndWeights(const std::vector<Point> & qp_points,
                                      const std::vector<Real> & qp_weights);
   /**
-   * Computes the volume fraction of the element fragment
+   * Compute the volume fraction of the element fragment.
    */
   virtual void computePhysicalVolumeFraction() = 0;
 
   /**
-   * Returns the volume fraction of the element fragment
+   * Get the volume fraction of the element fragment.
+   *
+   * @return Physical volume fraction stored for the fragment.
    */
   Real getPhysicalVolumeFraction() const;
 
   /**
-   * Computes the surface area fraction of the element side
-   * @param side The side of the element
+   * Compute the surface area fraction of an element side.
+   *
+   * @param side Side index of the element whose area fraction is requested.
    */
   virtual void computePhysicalFaceAreaFraction(unsigned int side) = 0;
 
   /**
-   * Returns the surface area fraction of the element side
-   * @param side The side of the element
+   * Get the surface area fraction of an element side.
+   *
+   * @param side Side index of the element whose area fraction is requested.
+   * @return Physical surface area fraction of the element side.
    */
   Real getPhysicalFaceAreaFraction(unsigned int side) const;
 
@@ -105,22 +111,23 @@ public:
                                 unsigned int side);
 
   /**
-   * Computes integration weights for the cut element
-   * @param qrule The standard MOOSE quadrature rule
-   * @param xfem_qrule The integration scheme for the cut element
-   * @param q_points The quadrature points for the element
+   * Compute integration weights for the cut element.
+   *
+   * @param qrule Standard MOOSE quadrature rule.
+   * @param xfem_qrule Integration scheme for the cut element.
+   * @param q_points Quadrature points for the element.
    */
   void computeXFEMWeights(QBase * qrule,
                           Xfem::XFEM_QRULE xfem_qrule,
                           const MooseArray<Point> & q_points);
 
   /**
-   * Computes face integration weights for the cut element side
-   * @param qrule The standard MOOSE face quadrature rule
-   * @param xfem_qrule The integration scheme for the cut element (We use surface area fraction
-   * only)
-   * @param q_points The quadrature points for the element side
-   * @param side The side of the element
+   * Compute face integration weights for the cut element side.
+   *
+   * @param qrule Standard MOOSE face quadrature rule.
+   * @param xfem_qrule Integration scheme for the cut element (surface area fraction only).
+   * @param q_points Quadrature points for the element side.
+   * @param side Side index of the element.
    */
   void computeXFEMFaceWeights(QBase * qrule,
                               Xfem::XFEM_QRULE xfem_qrule,

@@ -23,6 +23,11 @@ template <typename T, bool is_ad>
 class XFEMCutSwitchingMaterialTempl : public Material
 {
 public:
+  /**
+   * Build parameters describing the XFEM cut switching material.
+   *
+   * @return Input parameters defining how material properties are switched by cut IDs.
+   */
   static InputParameters validParams();
 
   XFEMCutSwitchingMaterialTempl(const InputParameters & parameters);
@@ -33,8 +38,14 @@ protected:
   // the switching material property.
   virtual void initQpStatefulProperties() override { computeProperties(); }
 
+  /**
+   * Compute the switching material properties based on the geometric cut ID.
+   */
   virtual void computeProperties() override;
 
+  /**
+   * Compute quadrature-point properties by mapping from the selected base material.
+   */
   virtual void computeQpProperties() override { _prop[_qp] = (*_mapped_prop)[_qp]; }
 
 private:

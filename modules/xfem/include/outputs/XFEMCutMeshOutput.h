@@ -27,10 +27,23 @@ class XFEMCutMeshOutput : public FileOutput, public UserObjectInterface
 public:
   XFEMCutMeshOutput(const InputParameters & parameters);
 
+  /**
+   * Build the parameter set describing the XFEM cut mesh output object.
+   *
+   * @return Input parameters governing how the cut mesh is written to disk.
+   */
   static InputParameters validParams();
 
+  /**
+   * Determine the filename for the Exodus output containing the cut mesh.
+   *
+   * @return The Exodus file name used for cut mesh output.
+   */
   virtual std::string filename() override;
 
+  /**
+   * Execute the writing of the cut mesh to the Exodus output file.
+   */
   virtual void output() override;
 
 private:

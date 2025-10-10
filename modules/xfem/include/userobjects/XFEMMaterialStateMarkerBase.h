@@ -20,8 +20,9 @@ class XFEMMaterialStateMarkerBase : public ElementUserObject
 {
 public:
   /**
-   * Factory constructor, takes parameters so that all derived classes can be built using the same
-   * constructor.
+   * Build parameters describing the base XFEM material state marker user object.
+   *
+   * @return Input parameters defining the material state marking behavior.
    */
   static InputParameters validParams();
 
@@ -35,8 +36,9 @@ public:
 protected:
   /**
    * Determine whether the current element should be cut by a new crack.
-   * @param direction Normal direction of crack if it is cracked
-   * @return bool true if element cracks
+   *
+   * @param direction Normal direction of the crack when the element cracks.
+   * @return True if the element nucleates a crack.
    */
   virtual bool doesElementCrack(RealVectorValue & direction);
 

@@ -16,6 +16,11 @@
 class GeometricCut2DUserObject : public GeometricCutUserObject
 {
 public:
+  /**
+   * Build parameters describing the two-dimensional geometric cut user object.
+   *
+   * @return Input parameters defining the 2D geometric cut configuration.
+   */
   static InputParameters validParams();
 
   GeometricCut2DUserObject(const InputParameters & parameters);
@@ -35,11 +40,12 @@ protected:
   std::vector<std::pair<Point, Point>> _cut_line_endpoints;
 
   /**
-   * Find the fractional distance along a specified cut line for the current time
-   * that is currently active. Used for time-based propagation along a line
-   * @param cut_num Index of the cut being queried
-   * @param time      Current simulation time
-   * @return Current fractional distance
+   * Find the fractional distance along a specified cut line at the current time.
+   *
+   * This is used for time-based propagation along a line segment.
+   *
+   * @param cut_num Index of the cut being queried.
+   * @return Current fractional distance along the cut line.
    */
   virtual Real cutFraction(unsigned int cut_num) const;
 

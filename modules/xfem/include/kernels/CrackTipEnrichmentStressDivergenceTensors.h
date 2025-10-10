@@ -26,13 +26,36 @@ class CrackTipEnrichmentStressDivergenceTensors : public ALEKernel,
                                                   public EnrichmentFunctionCalculation
 {
 public:
+  /**
+   * Build parameters describing the crack-tip enrichment stress divergence tensor kernel.
+   *
+   * @return Input parameters required to configure the enrichment stress divergence kernel.
+   */
   static InputParameters validParams();
 
   CrackTipEnrichmentStressDivergenceTensors(const InputParameters & parameters);
 
 protected:
+  /**
+   * Compute the residual contribution for the current quadrature point.
+   *
+   * @return Residual value for the enriched stress divergence equation.
+   */
   virtual Real computeQpResidual() override;
+
+  /**
+   * Compute the on-diagonal Jacobian contribution for the current quadrature point.
+   *
+   * @return On-diagonal Jacobian value associated with the current residual component.
+   */
   virtual Real computeQpJacobian() override;
+
+  /**
+   * Compute the off-diagonal Jacobian contribution for a coupled variable.
+   *
+   * @param jvar The variable number for which the Jacobian contribution is requested.
+   * @return Off-diagonal Jacobian contribution coupling the residual to variable @p jvar.
+   */
   virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   const std::string _base_name;

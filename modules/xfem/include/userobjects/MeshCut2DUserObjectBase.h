@@ -20,6 +20,11 @@ class MeshCut2DNucleationBase;
 class MeshCut2DUserObjectBase : public GeometricCutUserObject
 {
 public:
+  /**
+   * Build parameters describing the base 2D mesh cut user object.
+   *
+   * @return Input parameters defining the base mesh-cut configuration.
+   */
   static InputParameters validParams();
 
   MeshCut2DUserObjectBase(const InputParameters & parameters);
@@ -33,14 +38,23 @@ public:
                                      std::vector<Xfem::CutEdge> & cut_edges) const override;
   virtual bool cutFragmentByGeometry(std::vector<std::vector<Point>> & frag_faces,
                                      std::vector<Xfem::CutFace> & cut_faces) const override;
+  /**
+   * Retrieve the ordered crack front points managed by the base user object.
+   *
+   * @param num_crack_front_points Number of crack front points requested by the caller.
+   * @return Vector of crack front points suitable for downstream consumers.
+   */
   virtual const std::vector<Point>
   getCrackFrontPoints(unsigned int num_crack_front_points) const override;
 
-  /** get a set of normal vectors along a crack front from a XFEM GeometricCutUserObject
-   * CrackFrontDefinition wants the normal so this implementation of getCrackPlaneNormals
-   * gives the CrackFrontDefinition a normal for a line element with a tangent direction
-   * in the [001] direction.
-   * @return A vector which contains all crack front normals
+  /**
+   * Retrieve crack-front normals from the XFEM geometric cut user object.
+   *
+   * CrackFrontDefinition requests normals, so this implementation provides normals for line
+   * elements with a tangent direction in the [001] orientation.
+   *
+   * @param num_crack_front_points Number of crack front normals requested by the caller.
+   * @return Vector containing the crack front normals.
    */
   virtual const std::vector<RealVectorValue>
   getCrackPlaneNormals(unsigned int num_crack_front_points) const override;
@@ -74,8 +88,8 @@ protected:
   std::vector<std::pair<dof_id_type, Point>> _active_front_node_growth_vectors;
 
   /**
-  Find growth direction at each active node
-  */
+   * Find the growth direction at each active node.
+   */
   virtual void findActiveBoundaryGrowth() = 0;
 
   /**
@@ -94,19 +108,22 @@ protected:
 
 private:
   /**
-   * Remove nucleated cracks that are too close too each other.  Lowest map key wins
-   * @param  nucleated_elems_map  map from nucleation userObject with key for mesh element id and
-   * two nodes of nucleated crack
-   * @param  nucleationRadius  exclusion distance between cracks
+   * Remove nucleated cracks that are too close to each other; the lowest map key wins.
+   *
+   * @param nucleated_elems_map Map from the nucleation user object keyed by element id with the
+   * pair of crack-tip nodes.
+   * @param nucleationRadius Minimum exclusion distance permitted between nucleated cracks.
    */
   void removeNucleatedCracksTooCloseToEachOther(
       std::map<unsigned int, std::pair<RealVectorValue, RealVectorValue>> & nucleated_elems_map,
       Real nucleationRadius);
   /**
    * Remove nucleated cracks that are too close to a pre-existing crack in the mesh.
-   * @param  nucleated_elems_map  map from nucleation userObject with key for mesh element id and
-   * two nodes of nucleated crack
-   * @param  nucleationRadius  exclusion distance between cracks
+   *
+   * @param nucleated_elems_map Map from the nucleation user object keyed by element id with the
+   * pair of crack-tip nodes.
+   * @param nucleationRadius Minimum exclusion distance permitted between nucleated cracks and the
+   * existing mesh.
    */
   void removeNucleatedCracksTooCloseToExistingCracks(
       std::map<unsigned int, std::pair<RealVectorValue, RealVectorValue>> & nucleated_elems_map,

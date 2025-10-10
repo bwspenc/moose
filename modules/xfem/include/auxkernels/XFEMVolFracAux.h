@@ -20,8 +20,9 @@ class XFEMVolFracAux : public AuxKernel
 {
 public:
   /**
-   * Factory constructor, takes parameters so that all derived classes can be built using the same
-   * constructor.
+   * Build the parameter set for constructing an XFEM volume fraction auxiliary kernel.
+   *
+   * @return Input parameters describing the configuration for the XFEM volume fraction kernel.
    */
   static InputParameters validParams();
 
@@ -30,6 +31,11 @@ public:
   virtual ~XFEMVolFracAux() {}
 
 protected:
+  /**
+   * Compute the auxiliary value reporting the physical volume fraction.
+   *
+   * @return The computed physical volume fraction for the current quadrature point.
+   */
   virtual Real computeValue();
 
 private:

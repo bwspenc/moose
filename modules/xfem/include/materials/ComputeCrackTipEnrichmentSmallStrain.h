@@ -25,14 +25,25 @@ class ComputeCrackTipEnrichmentSmallStrain : public ComputeStrainBase,
                                              public EnrichmentFunctionCalculation
 {
 public:
+  /**
+   * Build parameters describing the crack-tip enrichment strain material.
+   *
+   * @return Input parameters defining the crack-tip enrichment strain computation.
+   */
   static InputParameters validParams();
 
   ComputeCrackTipEnrichmentSmallStrain(const InputParameters & parameters);
   virtual ~ComputeCrackTipEnrichmentSmallStrain() {}
 
 protected:
+  /**
+   * Compute stateful properties for the crack-tip enrichment strain material.
+   */
   virtual void computeProperties() override;
 
+  /**
+   * Compute quadrature-point properties for the crack-tip enrichment strain material.
+   */
   virtual void computeQpProperties() override;
 
   /// enrichment displacement

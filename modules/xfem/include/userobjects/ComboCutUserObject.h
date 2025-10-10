@@ -14,6 +14,11 @@
 class ComboCutUserObject : public GeometricCutUserObject
 {
 public:
+  /**
+   * Build parameters describing the composite geometric cut user object.
+   *
+   * @return Input parameters defining the combination of component cuts.
+   */
   static InputParameters validParams();
 
   ComboCutUserObject(const InputParameters & parameters);
@@ -31,34 +36,31 @@ public:
                                     std::vector<Xfem::CutNode> & cut_nodes) const override;
 
   /**
-   * Loop over all the provided GeometricCutUserObjects, fill the data structures based on each
-   * cut that wants to cut this 3D element.
-   * @param elem      Pointer to the libMesh element to be considered for cutting
-   * @param cut_edges Data structure filled with information about edges to be cut
-   * @param cut_nodes Data structure filled with information about nodes to be cut
-   * @return bool     true if element is to be cut
+   * Loop over all provided geometric cut user objects to evaluate 3D element cuts.
+   *
+   * @param elem Pointer to the libMesh element considered for cutting.
+   * @param cut_faces Data structure populated with information about faces to be cut.
+   * @return True if any component cut marks the element for cutting.
    */
   virtual bool cutElementByGeometry(const Elem * elem,
                                     std::vector<Xfem::CutFace> & cut_faces) const override;
 
   /**
-   * Loop over all the provided GeometricCutUserObjects, fill the data structures based on each
-   * cut that wants to cut this fragment of 2D element.
-   * @param elem      Pointer to the libMesh element to be considered for cutting
-   * @param cut_edges Data structure filled with information about edges to be cut
-   * @param cut_nodes Data structure filled with information about nodes to be cut
-   * @return bool     true if element is to be cut
+   * Loop over all provided geometric cut user objects to evaluate 2D fragments.
+   *
+   * @param frag_edges Fragment edge geometry considered for cutting.
+   * @param cut_edges Data structure populated with information about fragment edges to be cut.
+   * @return True if any component cut marks the fragment for cutting.
    */
   virtual bool cutFragmentByGeometry(std::vector<std::vector<Point>> & frag_edges,
                                      std::vector<Xfem::CutEdge> & cut_edges) const override;
 
   /**
-   * Loop over all the provided GeometricCutUserObjects, fill the data structures based on each
-   * cut that wants to cut this fragment of 3D element.
-   * @param elem      Pointer to the libMesh element to be considered for cutting
-   * @param cut_edges Data structure filled with information about edges to be cut
-   * @param cut_nodes Data structure filled with information about nodes to be cut
-   * @return bool     true if element is to be cut
+   * Loop over all provided geometric cut user objects to evaluate 3D fragments.
+   *
+   * @param frag_faces Fragment face geometry considered for cutting.
+   * @param cut_faces Data structure populated with information about fragment faces to be cut.
+   * @return True if any component cut marks the fragment for cutting.
    */
   virtual bool cutFragmentByGeometry(std::vector<std::vector<Point>> & frag_faces,
                                      std::vector<Xfem::CutFace> & cut_faces) const override;

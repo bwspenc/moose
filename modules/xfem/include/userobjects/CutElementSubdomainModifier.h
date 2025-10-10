@@ -19,11 +19,21 @@
 class CutElementSubdomainModifier : public ElementSubdomainModifier
 {
 public:
+  /**
+   * Build parameters describing the cut element subdomain modifier.
+   *
+   * @return Input parameters controlling subdomain remapping for cut elements.
+   */
   static InputParameters validParams();
 
   CutElementSubdomainModifier(const InputParameters & parameters);
 
 protected:
+  /**
+   * Compute the subdomain id for the current element based on the cut definition.
+   *
+   * @return Subdomain identifier assigned to the element.
+   */
   virtual SubdomainID computeSubdomainID() override;
 
 private:

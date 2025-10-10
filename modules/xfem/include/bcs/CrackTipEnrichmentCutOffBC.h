@@ -19,11 +19,21 @@
 class CrackTipEnrichmentCutOffBC : public DirichletBC
 {
 public:
+  /**
+   * Build parameters describing the crack-tip enrichment cut-off boundary condition.
+   *
+   * @return Input parameters defining the enrichment cut-off behavior.
+   */
   static InputParameters validParams();
 
   CrackTipEnrichmentCutOffBC(const InputParameters & parameters);
 
 protected:
+  /**
+   * Determine whether the boundary condition should be applied to the current DOF.
+   *
+   * @return True if the degree of freedom lies within the cut-off radius and should be constrained.
+   */
   virtual bool shouldApply() override;
 
   const Real _cut_off_radius;
