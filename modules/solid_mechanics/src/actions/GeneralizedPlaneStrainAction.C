@@ -122,6 +122,30 @@ GeneralizedPlaneStrainAction::act()
         _problem->addKernel(k_type, k_name, params);
       }
     }
+
+    std::string scalar_k_type = "GeneralizedPlaneStrain";
+    InputParameters scalar_params = _factory.getValidParams(scalar_k_type);
+    scalar_params.applyParameters(parameters(),
+                                  {"scalar_out_of_plane_strain",
+                                   "out_of_plane_pressure",
+                                   "out_of_plane_pressure_function",
+                                   "factor",
+                                   "pressure_factor"});
+    scalar_params.set<NonlinearVariableName>("variable") = _displacements[0];
+    scalar_params.set<std::vector<VariableName>>("scalar_out_of_plane_strain") = {
+        getParam<VariableName>("scalar_out_of_plane_strain")};
+    if (parameters().isParamSetByUser("out_of_plane_pressure"))
+      scalar_params.set<FunctionName>("out_of_plane_pressure") =
+          getParam<FunctionName>("out_of_plane_pressure");
+    if (parameters().isParamSetByUser("out_of_plane_pressure_function"))
+      scalar_params.set<FunctionName>("out_of_plane_pressure_function") =
+          getParam<FunctionName>("out_of_plane_pressure_function");
+    if (parameters().isParamSetByUser("factor"))
+      scalar_params.set<Real>("factor") = getParam<Real>("factor");
+    if (parameters().isParamSetByUser("pressure_factor"))
+      scalar_params.set<Real>("pressure_factor") = getParam<Real>("pressure_factor");
+
+    _problem->addKernel(scalar_k_type, _name + "_GeneralizedPlaneStrain", scalar_params);
   }
 
   //
@@ -154,26 +178,9 @@ GeneralizedPlaneStrainAction::act()
   }
 
   //
-  // Add scalar kernel
+  // The scalar residual is assembled by the GeneralizedPlaneStrain Kernel added above.
   //
   else if (_current_task == "add_scalar_kernel")
   {
-    std::string sk_type = "GeneralizedPlaneStrain";
-    InputParameters params = _factory.getValidParams(sk_type);
-
-    params.set<NonlinearVariableName>("variable") =
-        getParam<VariableName>("scalar_out_of_plane_strain");
-
-    // set the UserObjectName from previously added UserObject
-    params.set<UserObjectName>("generalized_plane_strain") = uo_name;
-
-    if (isParamValid("extra_vector_tags"))
-      params.set<std::vector<TagName>>("extra_vector_tags") =
-          getParam<std::vector<TagName>>("extra_vector_tags");
-    if (isParamValid("absolute_value_vector_tags"))
-      params.set<std::vector<TagName>>("absolute_value_vector_tags") =
-          getParam<std::vector<TagName>>("absolute_value_vector_tags");
-
-    _problem->addScalarKernel(sk_type, _name + "_GeneralizedPlaneStrain", params);
   }
 }
