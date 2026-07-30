@@ -361,7 +361,10 @@ PenetrationThread::operator()(const NodeIdRange & range)
         Point normal = (best_point - node).unit();
         const Real dot = normal * p_info[best_i]->_normal;
         if (dot < 0)
+        {
+          std::cout<<"BWS1"<<std::endl;
           normal *= -1;
+        }
         p_info[best_i]->_normal = normal;
 
         switchInfo(info, p_info[best_i]);
@@ -509,14 +512,18 @@ PenetrationThread::operator()(const NodeIdRange & range)
               if (!_do_normal_smoothing)
               {
                 Point normal(closest_point - node);
+                std::cout<<"BWS orig normal: "<<normal<<std::endl;
                 const Real len(normal.norm());
                 if (len > 0)
                 {
                   normal /= len;
                 }
                 const Real dot(normal * p_info[face_index]->_normal);
+                std::cout<<"BWS face normal: "<<p_info[face_index]->_normal<<std::endl;
+                std::cout<<"BWS dot: "<<dot<<std::endl;
                 if (dot < 0)
                 {
+                  std::cout<<"BWS2"<<std::endl;
                   normal *= -1;
                 }
                 p_info[face_index]->_normal = normal;
