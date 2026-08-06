@@ -26,4 +26,7 @@ protected:
   /// Number of displacement variables
   unsigned int _ndisp;
   const unsigned int _out_of_plane_direction;
+
+  /// Whether to use automatic differentiation objects
+  const bool _use_ad;
 };

@@ -16,7 +16,9 @@
 
 #include "libmesh/quadrature.h"
 
-registerMooseObject("SolidMechanicsApp", GeneralizedPlaneStrainUserObject);
+registerMooseObjectDeprecated("SolidMechanicsApp",
+                              GeneralizedPlaneStrainUserObject,
+                              "08/06/2027 00:00");
 
 InputParameters
 GeneralizedPlaneStrainUserObject::validParams()
