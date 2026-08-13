@@ -403,8 +403,6 @@ QuasiStaticSolidMechanicsPhysics::act()
   {
     if (_planar_formulation == PlanarFormulation::GeneralizedPlaneStrain)
     {
-      if (_use_ad)
-        paramError("use_automatic_differentiation", "AD not setup for use with PlaneStrain");
       // Set the action parameters
       const std::string type = "GeneralizedPlaneStrainAction";
       auto action_params = _action_factory.getValidParams(type);
@@ -413,7 +411,7 @@ QuasiStaticSolidMechanicsPhysics::act()
 
       // Skipping selected parameters in applyParameters() and then manually setting them only if
       // they are set by the user is just to prevent both the current and deprecated variants of
-      // these parameters from both getting passed to the UserObject. Once we get rid of the
+      // these parameters from both getting passed to the kernel. Once we get rid of the
       // deprecated versions, we can just set them all with applyParameters().
       action_params.applyParameters(parameters(),
                                     {"use_displaced_mesh",
@@ -422,6 +420,7 @@ QuasiStaticSolidMechanicsPhysics::act()
                                      "factor",
                                      "pressure_factor"});
       action_params.set<bool>("use_displaced_mesh") = _use_displaced_mesh;
+      action_params.set<bool>("use_automatic_differentiation") = _use_ad;
 
       if (parameters().isParamSetByUser("out_of_plane_pressure"))
         action_params.set<FunctionName>("out_of_plane_pressure") =
