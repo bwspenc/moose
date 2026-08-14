@@ -186,11 +186,9 @@ Objects available for generalized plane strain:
 
 Objects specific for generalized plane strain:
 
-- [Generalized Plane Strain ScalarKernel](/GeneralizedPlaneStrain.md): out-of-plane equilibrium condition
+- [Generalized Plane Strain Kernel](/GeneralizedPlaneStrain.md): out-of-plane equilibrium condition and off-diagonal coupling with the in-plane displacement/temperature variables
 
 - [Generalized Plane Strain UserObject](/GeneralizedPlaneStrainUserObject.md): residual and diagonal Jacobian calculation for scalar out-of-plane strain variable
-
-- [Generalized Plane Strain Off-diagonal Kernel](/GeneralizedPlaneStrainOffDiag.md): in-plane displacement variables and scalar out-of-plane strain coupling
 
 - [Strain Calculations](/ComputeFiniteStrain.md): in-plane strain calculation and formation of full strain tensor considering the scalar out-of-plane strain
 

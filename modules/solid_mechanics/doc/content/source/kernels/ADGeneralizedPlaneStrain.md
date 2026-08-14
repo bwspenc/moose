@@ -4,8 +4,10 @@
 
 ## Description
 
-`ADGeneralizedPlaneStrain` assembles the scalar out-of-plane equilibrium equation
-for an automatic-differentiation generalized plane strain model. It contributes no
+`ADGeneralizedPlaneStrain` is the automatic-differentiation instantiation of the
+same templated kernel that provides the non-AD [GeneralizedPlaneStrain.md]
+kernel. It assembles the scalar out-of-plane equilibrium equation for an
+automatic-differentiation generalized plane strain model. It contributes no
 field residual to the displacement variables; instead, it performs area integrals
 over finite elements to compute the contribution to the following scalar residual $R_s$:
 \begin{equation}

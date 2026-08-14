@@ -19,12 +19,10 @@ The `GeneralizedPlaneStrain` Action is used to construct the kernels, user objec
 !table id=generalizedPS_action_table caption=Correspondence Among Action Functionality and MooseObjects for the `GeneralizedPlaneStrain` Action
 | Functionality     | Replaced Classes   | Associated Parameters   |
 |-------------------|--------------------|-------------------------|
-| Scalar out-of-plan strain coupling with in-plane field variables | [Generalized Plane Strain Off-diagonal Kernel](/GeneralizedPlaneStrainOffDiag.md) | `scalar_out_of_plane_strain`: a list of the scalar variables for the out-of-plane strain direction |
+| Out-of-plane scalar variable equilibrium condition and its off-diagonal coupling with the in-plane displacement/temperature variables | [Generalized Plane Strain Kernel](/GeneralizedPlaneStrain.md) | `scalar_out_of_plane_strain`: a list of the scalar variables for the out-of-plane strain direction |
 | | | `displacements` : a string of the displacement field (in-plane) variables |
 | | | `temperature`: a string of the temperature field variable |
-| Out-of-plane scalar variable equilibrium condition | [Generalized Plane Strain ScalarKernel](/GeneralizedPlaneStrain.md) | `scalar_out_of_plane_strain`: a list of the scalar variables for the out-of-plane strain direction |
 | | | `out_of_plane_direction`: the out-of-plane direction for the scalar out-of-plane strain |
-| Residual and diagonal Jacobian calculation for scalar out-of-plane strain variables | [Generalized Plane Strain UserObject](/GeneralizedPlaneStrainUserObject.md) | `scalar_out_of_plane_strain`: a list of the scalar variables for the out-of-plane strain direction |
 
 ## Example Input Syntax
 

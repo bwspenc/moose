@@ -24,6 +24,11 @@ protected:
   /// Return the first displacement component in the plane
   unsigned int firstInPlaneDisplacementIndex() const;
 
+  /// Maps the Action's deprecated 'out_of_plane_pressure'/'factor' params onto the kernel's
+  /// current 'out_of_plane_pressure_function'/'pressure_factor' params, since the kernel only
+  /// carries the current parameter variants. Shared by both the AD and non-AD add_kernel branches.
+  void remapDeprecatedPressureParams(InputParameters & params) const;
+
   std::vector<VariableName> _displacements;
 
   /// Number of displacement variables

@@ -17,11 +17,7 @@
 
 #include <set>
 
-registerMooseAction("SolidMechanicsApp", GeneralizedPlaneStrainAction, "add_scalar_kernel");
-
 registerMooseAction("SolidMechanicsApp", GeneralizedPlaneStrainAction, "add_kernel");
-
-registerMooseAction("SolidMechanicsApp", GeneralizedPlaneStrainAction, "add_user_object");
 
 registerMooseAction("SolidMechanicsApp", GeneralizedPlaneStrainAction, "add_variables_physics");
 
@@ -75,6 +71,16 @@ GeneralizedPlaneStrainAction::validParams()
                         false,
                         "Use automatic differentiation to assemble the generalized plane strain "
                         "equation and its coupling terms");
+  params.addParam<UserObjectName>("subblock_index_provider",
+                                  "SubblockIndexProvider user object name");
+  params.addParam<unsigned int>(
+      "scalar_out_of_plane_strain_index",
+      "The index number of scalar_out_of_plane_strain this kernel acts on");
+  params.addParam<bool>(
+      "reference_residual_excludes_pressure",
+      false,
+      "Whether to exclude the applied out-of-plane pressure from the 'Reference' residual tag "
+      "contribution. Non-AD only.");
 
   return params;
 }
@@ -99,11 +105,28 @@ GeneralizedPlaneStrainAction::firstInPlaneDisplacementIndex() const
 }
 
 void
+GeneralizedPlaneStrainAction::remapDeprecatedPressureParams(InputParameters & params) const
+{
+  if (parameters().isParamSetByUser("out_of_plane_pressure"))
+  {
+    if (parameters().isParamSetByUser("out_of_plane_pressure_function"))
+      paramError("out_of_plane_pressure_function",
+                 "Cannot specify both 'out_of_plane_pressure_function' and "
+                 "'out_of_plane_pressure'");
+    params.set<FunctionName>("out_of_plane_pressure_function") =
+        getParam<FunctionName>("out_of_plane_pressure");
+  }
+  if (parameters().isParamSetByUser("factor"))
+  {
+    if (parameters().isParamSetByUser("pressure_factor"))
+      paramError("pressure_factor", "Cannot specify both 'pressure_factor' and 'factor'");
+    params.set<Real>("pressure_factor") = getParam<Real>("factor");
+  }
+}
+
+void
 GeneralizedPlaneStrainAction::act()
 {
-  // user object name
-  const std::string uo_name = _name + "_GeneralizedPlaneStrainUserObject";
-
   if (_current_task == "add_variables_physics")
   {
     std::set<SubdomainID> block_ids;
@@ -201,23 +224,7 @@ GeneralizedPlaneStrainAction::act()
       params.set<std::vector<VariableName>>("scalar_out_of_plane_strain") = {
           getParam<VariableName>("scalar_out_of_plane_strain")};
 
-      // The kernel only carries the current parameter variants, so map the action's deprecated
-      // parameters onto them
-      if (parameters().isParamSetByUser("out_of_plane_pressure"))
-      {
-        if (parameters().isParamSetByUser("out_of_plane_pressure_function"))
-          paramError("out_of_plane_pressure_function",
-                     "Cannot specify both 'out_of_plane_pressure_function' and "
-                     "'out_of_plane_pressure'");
-        params.set<FunctionName>("out_of_plane_pressure_function") =
-            getParam<FunctionName>("out_of_plane_pressure");
-      }
-      if (parameters().isParamSetByUser("factor"))
-      {
-        if (parameters().isParamSetByUser("pressure_factor"))
-          paramError("pressure_factor", "Cannot specify both 'pressure_factor' and 'factor'");
-        params.set<Real>("pressure_factor") = getParam<Real>("factor");
-      }
+      remapDeprecatedPressureParams(params);
 
       const auto first_in_plane_disp = firstInPlaneDisplacementIndex();
       params.set<NonlinearVariableName>("variable") = _displacements[first_in_plane_disp];
@@ -225,21 +232,29 @@ GeneralizedPlaneStrainAction::act()
     }
     else
     {
-      std::string k_type = "GeneralizedPlaneStrainOffDiag";
+      std::string k_type = "GeneralizedPlaneStrain";
       InputParameters params = _factory.getValidParams(k_type);
 
       params.applyParameters(parameters(), {"scalar_out_of_plane_strain"});
       params.set<std::vector<VariableName>>("scalar_out_of_plane_strain") = {
           getParam<VariableName>("scalar_out_of_plane_strain")};
 
-      // add off-diagonal jacobian kernels for the displacements
+      remapDeprecatedPressureParams(params);
+
+      // Exactly one instance (attached to the first in-plane displacement) is "primary" and owns
+      // the scalar variable's own residual/diagonal Jacobian; the rest only contribute their own
+      // off-diagonal coupling with the scalar variable.
+      const auto first_in_plane_disp = firstInPlaneDisplacementIndex();
+
+      // add a kernel instance for each in-plane displacement
       for (unsigned int i = 0; i < _ndisp; ++i)
       {
         if (_out_of_plane_direction == i)
           continue;
 
-        std::string k_name = _name + "GeneralizedPlaneStrainOffDiag_disp" + Moose::stringify(i);
+        std::string k_name = _name + "_GeneralizedPlaneStrain_disp" + Moose::stringify(i);
         params.set<NonlinearVariableName>("variable") = _displacements[i];
+        params.set<bool>("primary") = (i == first_in_plane_disp);
 
         _problem->addKernel(k_type, k_name, params);
       }
@@ -252,75 +267,13 @@ GeneralizedPlaneStrainAction::act()
           mooseError("Only one variable may be specified in 'temperature'");
         if (_problem->getNonlinearSystemBase(/*nl_sys_num=*/0).hasVariable(temp[0]))
         {
-          std::string k_name = _name + "_GeneralizedPlaneStrainOffDiag_temp";
+          std::string k_name = _name + "_GeneralizedPlaneStrain_temp";
           params.set<NonlinearVariableName>("variable") = temp[0];
+          params.set<bool>("primary") = false;
 
           _problem->addKernel(k_type, k_name, params);
         }
       }
-    }
-  }
-
-  //
-  // Add user object
-  //
-  else if (_current_task == "add_user_object")
-  {
-    // ADKernelScalarBase assembles both the elemental resultant and the scalar equation, so the
-    // UserObject is not needed in AD mode
-    if (!_use_ad)
-    {
-      std::string uo_type = "GeneralizedPlaneStrainUserObject";
-      InputParameters params = _factory.getValidParams(uo_type);
-
-      // Skipping selected parameters in applyParameters() and then manually setting them only if
-      // they are set by the user is just to prevent both the current and deprecated variants of
-      // these parameters from both getting passed to the UserObject. Once we get rid of the
-      // deprecated versions, we can just set them all with applyParameters().
-      params.applyParameters(
-          parameters(),
-          {"out_of_plane_pressure", "out_of_plane_pressure_function", "factor", "pressure_factor"});
-      if (parameters().isParamSetByUser("out_of_plane_pressure"))
-        params.set<FunctionName>("out_of_plane_pressure") =
-            getParam<FunctionName>("out_of_plane_pressure");
-      if (parameters().isParamSetByUser("out_of_plane_pressure_function"))
-        params.set<FunctionName>("out_of_plane_pressure_function") =
-            getParam<FunctionName>("out_of_plane_pressure_function");
-      if (parameters().isParamSetByUser("factor"))
-        params.set<Real>("factor") = getParam<Real>("factor");
-      if (parameters().isParamSetByUser("pressure_factor"))
-        params.set<Real>("pressure_factor") = getParam<Real>("pressure_factor");
-
-      _problem->addUserObject(uo_type, uo_name, params);
-    }
-  }
-
-  //
-  // Add scalar kernel
-  //
-  else if (_current_task == "add_scalar_kernel")
-  {
-    // ADKernelScalarBase assembles the scalar equation directly, so the ScalarKernel is not
-    // needed in AD mode
-    if (!_use_ad)
-    {
-      std::string sk_type = "GeneralizedPlaneStrain";
-      InputParameters params = _factory.getValidParams(sk_type);
-
-      params.set<NonlinearVariableName>("variable") =
-          getParam<VariableName>("scalar_out_of_plane_strain");
-
-      // set the UserObjectName from previously added UserObject
-      params.set<UserObjectName>("generalized_plane_strain") = uo_name;
-
-      if (isParamValid("extra_vector_tags"))
-        params.set<std::vector<TagName>>("extra_vector_tags") =
-            getParam<std::vector<TagName>>("extra_vector_tags");
-      if (isParamValid("absolute_value_vector_tags"))
-        params.set<std::vector<TagName>>("absolute_value_vector_tags") =
-            getParam<std::vector<TagName>>("absolute_value_vector_tags");
-
-      _problem->addScalarKernel(sk_type, _name + "_GeneralizedPlaneStrain", params);
     }
   }
 }
